@@ -26,6 +26,7 @@ from .services.content_reader_service import (
     check_slug_exists, invalidate_cache, list_content, read_content,
     search_content, get_content_stats, list_images,
 )
+from .services.image_catalog import categorise_images
 from .services.git_service import (
     ensure_repo, write_file_to_repo, write_file_to_output,
     commit_locally, push_to_remote, get_unpushed_changes,
@@ -1367,18 +1368,26 @@ def media_library(request):
     profile = request.user.profile
     conversations = Conversation.objects.filter(user=request.user)[:20]
     subdirectory = request.GET.get('dir', '')
+    view_mode = request.GET.get('view', 'sections')
 
     images = list_images(subdirectory or None)
 
     # Can upload: admin, editor, group_lead
     can_upload = profile.role in ('admin', 'editor', 'group_lead')
 
+    # Build hierarchical section data (unless flat view requested)
+    sections = []
+    if view_mode != 'flat':
+        sections = categorise_images(images)
+
     return render(request, 'chat/media_library.html', {
         'conversations': conversations,
         'images': images,
+        'sections': sections,
         'profile': profile,
         'can_upload': can_upload,
         'current_dir': subdirectory,
+        'view_mode': view_mode,
         'active_tab': 'content',
     })
 

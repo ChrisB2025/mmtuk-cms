@@ -6,8 +6,19 @@
 {% block content %}
 <div class="media-container">
   <div class="browser-header">
-    <h2 class="page-title">Media Library</h2>
-    <p style="color: var(--text-light); font-size: 0.85rem;">{{ images|length }} images in public/images/</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h2 class="page-title" style="margin-bottom:4px;">Media Library</h2>
+        <p style="color: var(--text-light); font-size: 0.85rem;">{{ images|length }} images in public/images/</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        {% if view_mode == 'flat' %}
+        <a href="?view=sections" class="btn btn-small btn-secondary" style="text-decoration:none;">Section View</a>
+        {% else %}
+        <a href="?view=flat" class="btn btn-small btn-secondary" style="text-decoration:none;">Flat View</a>
+        {% endif %}
+      </div>
+    </div>
   </div>
 
   {% if can_upload %}
@@ -19,7 +30,9 @@
   </div>
   {% endif %}
 
-  <div class="media-grid">
+  {% if view_mode == 'flat' %}
+  {# ---- Flat View (original) ---- #}
+  <div class="media-grid" style="margin-top:20px;">
     {% for img in images %}
     <div class="media-card">
       {% if img.filename|lower|slice:"-4:" == ".svg" %}
@@ -40,11 +53,100 @@
     </div>
     {% endfor %}
   </div>
+
+  {% else %}
+  {# ---- Hierarchical Section View ---- #}
+  {% for section in sections %}
+  <div class="media-section" data-section-id="{{ section.id }}">
+    <button class="media-section-header" onclick="toggleSection(this)" aria-expanded="true">
+      <span class="media-section-toggle">&#9662;</span>
+      <span class="media-section-name">{{ section.name }}</span>
+      <span class="media-section-count">{{ section.image_count }}</span>
+    </button>
+    <div class="media-section-content">
+      {% for sub in section.subsections %}
+      <div class="media-subsection">
+        <div class="media-subsection-header">{{ sub.name }}</div>
+        <div class="media-grid">
+          {% for group in sub.groups %}
+          <div class="media-card">
+            {% with img=group.primary %}
+            {% if img.filename|lower|slice:"-4:" == ".svg" %}
+            <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light);">SVG</div>
+            {% else %}
+            <img src="/repo-images{{ img.web_path }}" alt="{{ img.filename }}" class="media-thumb" loading="lazy"
+                 onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light)>No preview</div>');">
+            {% endif %}
+            <div class="media-info">
+              <div class="media-filename">
+                {{ group.base_filename }}
+                {% if group.variant_count > 0 %}
+                <span class="variant-pill" title="Has {{ group.variant_count }} responsive variant{{ group.variant_count|pluralize }}">{{ group.variant_count }} size{{ group.variant_count|pluralize }}</span>
+                {% endif %}
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;margin-top:2px;">
+                {% with ext=img.filename|lower|slice:"-5:" %}
+                {% if ".avif" in ext %}
+                <span class="type-pill type-pill-avif">AVIF</span>
+                {% elif ".png" in ext %}
+                <span class="type-pill type-pill-png">PNG</span>
+                {% elif ".svg" in ext %}
+                <span class="type-pill type-pill-svg">SVG</span>
+                {% elif ".jpg" in ext or ".jpeg" in ext %}
+                <span class="type-pill type-pill-jpg">JPG</span>
+                {% elif ".webp" in ext %}
+                <span class="type-pill type-pill-webp">WEBP</span>
+                {% else %}
+                <span class="type-pill">IMG</span>
+                {% endif %}
+                {% endwith %}
+                <span class="media-size">{{ group.total_size|filesizeformat }}</span>
+              </div>
+              <div class="media-path" title="Click to copy" onclick="navigator.clipboard.writeText('{{ img.web_path }}');this.textContent='Copied!';var el=this;setTimeout(function(){el.textContent='{{ img.web_path }}'},1500);">{{ img.web_path }}</div>
+              {% if group.variant_count > 0 %}
+              <details class="variant-details">
+                <summary>Show {{ group.variant_count }} variant{{ group.variant_count|pluralize }}</summary>
+                <ul class="variant-list">
+                  {% for v in group.variants %}
+                  <li>
+                    <span class="variant-name">{{ v.filename }}</span>
+                    <span class="variant-size">{{ v.size|filesizeformat }}</span>
+                    <span class="media-path" title="Click to copy" onclick="event.stopPropagation();navigator.clipboard.writeText('{{ v.web_path }}');this.textContent='Copied!';var el=this;setTimeout(function(){el.textContent='{{ v.web_path }}'},1500);">{{ v.web_path }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </details>
+              {% endif %}
+            </div>
+            {% endwith %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state-large">
+    <p>No images found.</p>
+  </div>
+  {% endfor %}
+  {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+  // Section collapse/expand
+  function toggleSection(btn) {
+    var content = btn.nextElementSibling;
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', !expanded);
+    content.style.display = expanded ? 'none' : 'block';
+    btn.querySelector('.media-section-toggle').textContent = expanded ? '\u25B8' : '\u25BE';
+  }
+
+  // Upload functionality
   var uploadBtn = document.getElementById('uploadImageBtn');
   var fileInput = document.getElementById('imageFileInput');
   var dirInput = document.getElementById('uploadDir');
