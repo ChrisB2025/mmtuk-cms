@@ -1,0 +1,117 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Chat — MMTUK CMS{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+  {% if notifications %}
+  <div class="notifications">
+    {% for note in notifications %}
+    <div class="alert alert-info">{{ note }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if current_conversation %}
+  <div class="chat-header">
+    <h2 class="chat-title">{{ current_conversation.title|truncatechars:60 }}</h2>
+  </div>
+
+  <div class="messages" id="messages">
+    {% for msg in messages %}
+    <div class="message message-{{ msg.role }}">
+      <div class="message-bubble">
+        {% if msg.role == 'assistant' %}
+        <div class="message-content markdown-body"></div>
+        <script>
+          (function() {
+            const el = document.currentScript.previousElementSibling;
+            el.innerHTML = marked.parse({{ msg.content|escapejs|safe }});
+          })();
+        </script>
+        {% else %}
+        <div class="message-content">{{ msg.content }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-chat">
+      {% if suggested_actions %}
+      <div class="suggested-actions">
+        <p class="suggested-actions-label">What would you like to do?</p>
+        <div class="suggested-actions-grid">
+          {% for action in suggested_actions %}
+          <button class="btn btn-action"
+                  data-action-type="{{ action.action_type }}"
+                  data-message="{{ action.message }}">
+            {{ action.label }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      {% else %}
+      <p>Start a conversation to create content for the MMTUK site.</p>
+      <p class="hint">Try: "I want to add a new article" or paste a Substack URL to import a briefing.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="typing-indicator" id="typingIndicator" style="display:none;">
+    <div class="message message-assistant">
+      <div class="message-bubble">
+        <div class="dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-area">
+    <input type="file" id="pdfFileInput" accept=".pdf" style="display:none;">
+    <form id="chatForm" class="chat-form">
+      <button type="button" class="btn btn-upload" id="uploadBtn" title="Upload PDF">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+        </svg>
+      </button>
+      <textarea
+        id="messageInput"
+        class="chat-textarea"
+        placeholder="Type your message..."
+        rows="1"
+      ></textarea>
+      <button type="submit" class="btn btn-send" id="sendBtn">Send</button>
+    </form>
+  </div>
+
+  {% else %}
+  <div class="welcome-screen">
+    <h2>Welcome to MMTUK CMS</h2>
+    <p>Create and manage content for the MMTUK website through a conversational interface.</p>
+    <a href="{% url 'new_conversation' %}" class="btn btn-primary">Start a New Conversation</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if current_conversation %}
+<div class="action-alert" id="actionAlert" style="display:none;"></div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if current_conversation %}
+<script>
+  window.CONVERSATION_ID = "{{ current_conversation.id }}";
+  window.SEND_URL = "{% url 'send_message' current_conversation.id %}";
+  window.UPLOAD_PDF_URL = "{% url 'upload_pdf' current_conversation.id %}";
+  window.CSRF_TOKEN = "{{ csrf_token }}";
+</script>
+<script src="{% static 'chat/chat.js' %}"></script>
+{% endif %}
+{% endblock %}

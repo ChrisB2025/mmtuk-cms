@@ -1,0 +1,40 @@
+{% extends "chat/base.html" %}
+
+{% block title %}Pending Approvals — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="pending-container">
+  <h2 class="page-title">Pending Approvals</h2>
+
+  {% if drafts %}
+  <table class="drafts-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Author</th>
+        <th>Created</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for draft in drafts %}
+      <tr>
+        <td>{{ draft.title }}</td>
+        <td><span class="badge badge-{{ draft.content_type }}">{{ draft.content_type }}</span></td>
+        <td>{{ draft.created_by.get_full_name|default:draft.created_by.username }}</td>
+        <td>{{ draft.created_at|date:"d M Y H:i" }}</td>
+        <td><a href="{% url 'pending_detail' draft.id %}" class="btn btn-small">Review</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state-large">
+    <p>No pending drafts to review.</p>
+  </div>
+  {% endif %}
+
+  <a href="{% url 'index' %}" class="btn btn-secondary back-link">Back to Chat</a>
+</div>
+{% endblock %}

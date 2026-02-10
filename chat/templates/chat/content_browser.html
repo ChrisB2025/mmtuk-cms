@@ -1,0 +1,77 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Content Browser — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="browser-container">
+  <div class="browser-header">
+    <h2 class="page-title">Content Browser</h2>
+    <div class="stats-bar">
+      <a href="{% url 'content_browser' %}" class="stat-chip {% if not content_type_filter %}active{% endif %}">
+        All <span class="stat-count">{{ stats.total }}</span>
+      </a>
+      {% for key, info in stats.by_type.items %}
+      <a href="{% url 'content_browser' %}?type={{ key }}" class="stat-chip {% if content_type_filter == key %}active{% endif %}">
+        {{ info.name }} <span class="stat-count">{{ info.count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="browser-controls">
+    <div class="search-box">
+      <input type="text" id="searchInput" class="form-input" placeholder="Search content..."
+             value="{{ query }}" autocomplete="off">
+    </div>
+    <div class="sort-controls">
+      <label class="sort-label">Sort:</label>
+      <select id="sortSelect" class="form-select">
+        <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Newest first</option>
+        <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest first</option>
+        <option value="title_asc" {% if sort_by == 'title_asc' %}selected{% endif %}>A — Z</option>
+        <option value="title_desc" {% if sort_by == 'title_desc' %}selected{% endif %}>Z — A</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content-grid" id="contentGrid">
+    {% for item in items %}
+    <a href="{% url 'content_detail' item.content_type item.slug %}" class="content-card">
+      <div class="card-header">
+        <span class="type-badge type-{{ item.content_type }}">{{ item.content_type }}</span>
+        {% if item.is_draft %}
+        <span class="draft-badge">Draft</span>
+        {% endif %}
+        {% if item.is_featured %}
+        <span class="featured-badge">Featured</span>
+        {% endif %}
+      </div>
+      <h3 class="card-title">{{ item.title }}</h3>
+      <div class="card-meta">
+        {% if item.author %}
+        <span class="card-author">{{ item.author }}</span>
+        {% endif %}
+        {% if item.date %}
+        <span class="card-date">{{ item.date }}</span>
+        {% endif %}
+      </div>
+      {% if item.summary %}
+      <p class="card-summary">{{ item.summary|truncatechars:100 }}</p>
+      {% endif %}
+    </a>
+    {% empty %}
+    <div class="empty-state-large">
+      <p>No content found{% if query %} matching "{{ query }}"{% endif %}{% if content_type_filter %} of type "{{ content_type_filter }}"{% endif %}.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'chat/content_browser.js' %}"></script>
+<script>
+  window.CONTENT_API_URL = "{% url 'content_api' %}";
+</script>
+{% endblock %}

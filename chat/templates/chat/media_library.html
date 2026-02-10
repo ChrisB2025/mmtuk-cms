@@ -1,0 +1,90 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Media Library — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="media-container">
+  <div class="browser-header">
+    <h2 class="page-title">Media Library</h2>
+    <p style="color: var(--text-light); font-size: 0.85rem;">{{ images|length }} images in public/images/</p>
+  </div>
+
+  {% if can_upload %}
+  <div class="upload-area">
+    <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
+    <button class="btn btn-primary btn-small" id="uploadImageBtn">Upload Image</button>
+    <input type="text" id="uploadDir" class="form-input form-input-sm" placeholder="Directory (e.g. images/bios)" value="images" style="width: 220px;">
+    <span id="uploadStatus" style="font-size: 0.85rem; color: var(--text-light);"></span>
+  </div>
+  {% endif %}
+
+  <div class="media-grid">
+    {% for img in images %}
+    <div class="media-card">
+      {% if img.filename|lower|slice:"-4:" == ".svg" %}
+      <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light);">SVG</div>
+      {% else %}
+      <img src="/repo-images{{ img.web_path }}" alt="{{ img.filename }}" class="media-thumb" loading="lazy"
+           onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light)>No preview</div>');">
+      {% endif %}
+      <div class="media-info">
+        <div class="media-filename">{{ img.filename }}</div>
+        <div class="media-path" title="Click to copy" onclick="navigator.clipboard.writeText('{{ img.web_path }}');this.textContent='Copied!';">{{ img.web_path }}</div>
+        <div class="media-size">{{ img.size|filesizeformat }}</div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state-large">
+      <p>No images found.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  var uploadBtn = document.getElementById('uploadImageBtn');
+  var fileInput = document.getElementById('imageFileInput');
+  var dirInput = document.getElementById('uploadDir');
+  var statusEl = document.getElementById('uploadStatus');
+
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', function() { fileInput.click(); });
+    fileInput.addEventListener('change', function() {
+      if (!this.files || !this.files[0]) return;
+      var file = this.files[0];
+      var formData = new FormData();
+      formData.append('image', file);
+      formData.append('directory', dirInput ? dirInput.value : 'images');
+      formData.append('filename', file.name);
+
+      statusEl.textContent = 'Uploading...';
+      uploadBtn.disabled = true;
+
+      fetch('/api/upload-image/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        body: formData,
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          statusEl.textContent = 'Uploaded! Path: ' + data.web_path;
+          setTimeout(function() { window.location.reload(); }, 1500);
+        } else {
+          statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
+        }
+      })
+      .catch(function() {
+        statusEl.textContent = 'Network error';
+      })
+      .finally(function() {
+        uploadBtn.disabled = false;
+        fileInput.value = '';
+      });
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} — MMTUK CMS{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+  <div class="detail-top-bar">
+    <a href="{% url 'content_browser' %}?type={{ content_type }}" class="back-link">&larr; Back to {{ content_type }}</a>
+    <div class="detail-actions">
+      {% if site_url %}
+      <a href="{{ site_url }}" target="_blank" class="btn btn-secondary btn-small">View on Site</a>
+      {% endif %}
+      {% if profile.can_edit %}
+      <a href="{% url 'edit_in_chat' content_type slug %}" class="btn btn-primary btn-small">Edit in Chat</a>
+      {% endif %}
+      {% if profile.can_delete %}
+      <button class="btn btn-reject btn-small" id="deleteBtn"
+              data-content-type="{{ content_type }}" data-slug="{{ slug }}"
+              data-title="{{ title }}">Delete</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="detail-split">
+    <div class="detail-meta">
+      <h2>{{ title }}</h2>
+      <dl class="meta-list">
+        <dt>Type</dt>
+        <dd><span class="type-badge type-{{ content_type }}">{{ content_type }}</span></dd>
+        <dt>Slug</dt>
+        <dd><code>{{ slug }}</code></dd>
+        {% for key, value in item.frontmatter.items %}
+        {% if key != 'slug' and key != 'title' and key != 'heading' and key != 'name' %}
+        <dt>{{ key }}</dt>
+        <dd>{{ value }}</dd>
+        {% endif %}
+        {% endfor %}
+      </dl>
+
+      <h3>Frontmatter (raw)</h3>
+      <pre class="frontmatter-preview">{% for key, value in item.frontmatter.items %}{{ key }}: {{ value }}
+{% endfor %}</pre>
+
+      {% if profile.can_edit %}
+      <h3>Quick Edit</h3>
+      <form method="post" action="{% url 'quick_edit' content_type slug %}" class="quick-edit-form" id="quickEditForm">
+        {% csrf_token %}
+        {% for key, value in item.frontmatter.items %}
+        <div class="form-group-sm">
+          <label>{{ key }}</label>
+          <input type="text" name="fm_{{ key }}" value="{{ value }}" class="form-input form-input-sm">
+        </div>
+        {% endfor %}
+        <div class="form-group-sm">
+          <label>Body (Markdown)</label>
+          <textarea name="body" class="form-input form-textarea-sm" rows="8">{{ item.body }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-small">Save Changes</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="detail-preview">
+      <h3>Content Preview</h3>
+      <div class="markdown-preview markdown-body" id="markdownPreview"></div>
+      <script>
+        (function() {
+          var body = "{{ item.body|escapejs }}";
+          document.getElementById('markdownPreview').innerHTML = marked.parse(body || '(No body content)');
+        })();
+      </script>
+
+      {% if audit_entries %}
+      <h3 style="margin-top: 24px;">Audit History</h3>
+      <div class="audit-timeline">
+        {% for entry in audit_entries %}
+        <div class="audit-entry">
+          <span class="audit-action audit-{{ entry.action }}">{{ entry.action }}</span>
+          <span class="audit-user">{{ entry.user.username }}</span>
+          <span class="audit-date">{{ entry.created_at|date:"d M Y H:i" }}</span>
+          {% if entry.git_commit_sha %}
+          <code class="audit-sha">{{ entry.git_commit_sha|truncatechars:10 }}</code>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-overlay" id="deleteModal" style="display:none;">
+  <div class="modal-card">
+    <h3>Delete Content</h3>
+    <p>Are you sure you want to delete <strong id="deleteTitle"></strong>?</p>
+    <p class="text-danger">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cancelDelete">Cancel</button>
+      <form method="post" id="deleteForm" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-reject">Delete permanently</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Delete button handler
+  var deleteBtn = document.getElementById('deleteBtn');
+  var deleteModal = document.getElementById('deleteModal');
+  var cancelDelete = document.getElementById('cancelDelete');
+  var deleteForm = document.getElementById('deleteForm');
+  var deleteTitle = document.getElementById('deleteTitle');
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', function() {
+      deleteTitle.textContent = this.getAttribute('data-title');
+      deleteForm.action = '/content/' + this.getAttribute('data-content-type') + '/' + this.getAttribute('data-slug') + '/delete/';
+      deleteModal.style.display = 'flex';
+    });
+  }
+  if (cancelDelete) {
+    cancelDelete.addEventListener('click', function() {
+      deleteModal.style.display = 'none';
+    });
+  }
+</script>
+{% endblock %}

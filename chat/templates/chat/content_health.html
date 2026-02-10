@@ -1,0 +1,76 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Content Health — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="health-container">
+  <div class="browser-header">
+    <h2 class="page-title">Content Health Check</h2>
+    <p style="color: var(--text-light); font-size: 0.85rem;">{{ total_content }} content items, {{ total_images }} images</p>
+  </div>
+
+  <div class="health-section">
+    <h3>Missing Thumbnails</h3>
+    {% if issues.missing_thumbnails %}
+    <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:8px;">
+      Content that references images not found in the repo:
+    </p>
+    {% for item in issues.missing_thumbnails %}
+    <div class="health-item">
+      <span class="health-icon health-error">!</span>
+      <a href="{% url 'content_detail' item.content_type item.slug %}">{{ item.title }}</a>
+      <span style="color:var(--text-light);font-size:0.8rem;">— references {{ item.path }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="health-item">
+      <span class="health-icon health-ok">OK</span>
+      <span>All thumbnails reference existing images.</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="health-section">
+    <h3>Placeholder Images</h3>
+    {% if issues.placeholder_images %}
+    <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:8px;">
+      Content still using placeholder images:
+    </p>
+    {% for item in issues.placeholder_images %}
+    <div class="health-item">
+      <span class="health-icon health-warn">!</span>
+      <a href="{% url 'content_detail' item.content_type item.slug %}">{{ item.title }}</a>
+      <span style="color:var(--text-light);font-size:0.8rem;">— {{ item.path }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="health-item">
+      <span class="health-icon health-ok">OK</span>
+      <span>No content using placeholder images.</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="health-section">
+    <h3>Stale Drafts</h3>
+    {% if issues.stale_drafts %}
+    <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:8px;">
+      Content items with draft: true:
+    </p>
+    {% for item in issues.stale_drafts %}
+    <div class="health-item">
+      <span class="health-icon health-warn">!</span>
+      <a href="{% url 'content_detail' item.content_type item.slug %}">{{ item.title }}</a>
+      <span class="type-badge type-{{ item.content_type }}" style="font-size:0.65rem;">{{ item.content_type }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="health-item">
+      <span class="health-icon health-ok">OK</span>
+      <span>No stale drafts found.</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

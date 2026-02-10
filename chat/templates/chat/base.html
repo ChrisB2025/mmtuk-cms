@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MMTUK CMS{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-layout">
+    {% if user.is_authenticated %}
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="logo">MMTUK <span class="logo-sub">CMS</span></h1>
+      </div>
+      <div class="sidebar-tabs">
+        <a href="{% url 'index' %}" class="sidebar-tab {% if active_tab != 'content' %}active{% endif %}">Chat</a>
+        <a href="{% url 'content_browser' %}" class="sidebar-tab {% if active_tab == 'content' %}active{% endif %}">Content</a>
+      </div>
+      <div class="sidebar-actions">
+        <a href="{% url 'new_conversation' %}" class="btn btn-new">+ New Chat</a>
+      </div>
+      <div class="publish-bar" id="publishBar" style="display:none;">
+        <div class="publish-bar-inner">
+          <span class="publish-count" id="publishCount">0</span>
+          <span class="publish-label">unpublished changes</span>
+        </div>
+        <form method="post" action="{% url 'publish_changes' %}" class="publish-form">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-publish">Publish to Site</button>
+        </form>
+      </div>
+      <nav class="sidebar-nav">
+        <ul class="conversation-list">
+          {% for c in conversations %}
+          <li>
+            <a href="{% url 'conversation' c.id %}"
+               class="conv-link {% if current_conversation and current_conversation.id == c.id %}active{% endif %}">
+              {{ c.title|truncatechars:40 }}
+            </a>
+          </li>
+          {% empty %}
+          <li class="empty-state">No conversations yet</li>
+          {% endfor %}
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="{% url 'media_library' %}" class="sidebar-link">Media Library</a>
+        {% if profile.can_approve %}
+        <a href="{% url 'pending_list' %}" class="sidebar-link">Pending Approvals</a>
+        <a href="{% url 'content_health' %}" class="sidebar-link">Health Check</a>
+        {% endif %}
+        <div class="user-info">
+          <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+          <span class="user-role">{{ profile.get_role_display }}</span>
+        </div>
+        <a href="{% url 'logout' %}" class="sidebar-link logout-link">Log out</a>
+      </div>
+    </aside>
+    {% endif %}
+
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% block extra_scripts %}{% endblock %}
+  {% if user.is_authenticated %}
+  <script>
+  (function() {
+    var bar = document.getElementById('publishBar');
+    var countEl = document.getElementById('publishCount');
+    if (!bar || !countEl) return;
+
+    function updatePublishCount() {
+      fetch('{% url "pending_publish" %}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var n = data.count || 0;
+          countEl.textContent = n;
+          bar.style.display = n > 0 ? '' : 'none';
+        })
+        .catch(function() {});
+    }
+
+    // Poll every 30 seconds
+    updatePublishCount();
+    setInterval(updatePublishCount, 30000);
+
+    // Also update after any fetch that might mutate content
+    var origFetch = window.fetch;
+    window.fetch = function(url) {
+      var args = arguments;
+      return origFetch.apply(this, args).then(function(response) {
+        if (typeof url === 'string' && (
+          url.indexOf('/send/') !== -1 ||
+          url.indexOf('/quick-edit/') !== -1 ||
+          url.indexOf('/delete/') !== -1 ||
+          url.indexOf('/toggle-featured/') !== -1 ||
+          url.indexOf('/upload-image/') !== -1 ||
+          url.indexOf('/bulk/') !== -1
+        )) {
+          setTimeout(updatePublishCount, 1000);
+        }
+        return response;
+      });
+    };
+
+    // Expose for manual refresh
+    window.updatePublishCount = updatePublishCount;
+  })();
+  </script>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,63 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Review: {{ draft.title }} — MMTUK CMS{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="pending-detail-container">
+  <a href="{% url 'pending_list' %}" class="back-link">&larr; Back to Pending</a>
+
+  <div class="detail-split">
+    <div class="detail-meta">
+      <h2>{{ draft.title }}</h2>
+      <dl class="meta-list">
+        <dt>Content Type</dt>
+        <dd><span class="badge badge-{{ draft.content_type }}">{{ draft.content_type }}</span></dd>
+        <dt>Author</dt>
+        <dd>{{ draft.created_by.get_full_name|default:draft.created_by.username }}</dd>
+        <dt>Slug</dt>
+        <dd><code>{{ draft.slug }}</code></dd>
+        <dt>Created</dt>
+        <dd>{{ draft.created_at|date:"d M Y H:i" }}</dd>
+      </dl>
+
+      <h3>Frontmatter</h3>
+      <pre class="frontmatter-preview">{{ draft.frontmatter_json|pprint }}</pre>
+
+      <div class="action-buttons">
+        <form method="post" action="{% url 'approve_draft' draft.id %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-approve"
+                  onclick="return confirm('Approve and publish this content?')">
+            Approve &amp; Publish
+          </button>
+        </form>
+
+        <form method="post" action="{% url 'reject_draft' draft.id %}" class="inline-form reject-form">
+          {% csrf_token %}
+          <div class="reject-group">
+            <input type="text" name="feedback" placeholder="Feedback (optional)" class="form-input feedback-input">
+            <button type="submit" class="btn btn-reject"
+                    onclick="return confirm('Reject this draft?')">
+              Reject
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="detail-preview">
+      <h3>Markdown Preview</h3>
+      <div class="markdown-preview markdown-body" id="markdownPreview"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('markdownPreview').innerHTML = marked.parse({{ markdown_preview|escapejs|safe }});
+</script>
+{% endblock %}
