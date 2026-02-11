@@ -35,6 +35,7 @@ python manage.py collectstatic    # Collect static files
 - **`scraper_service.py`** — URL scraping for briefing imports
 - **`image_service.py`** — Image processing and conversion
 - **`pdf_service.py`** — PDF text/image extraction
+- **`image_catalog.py`** — Categorises images by site section/subsection for hierarchical media library browsing; groups Webflow responsive variants (`-p-500`, `-p-800`, etc.) under base images
 
 ### Batched Publishing
 
@@ -83,8 +84,18 @@ Defined in `content_schema/schemas.py`. Each type has a name, directory, file pa
 - `chat/content_browser.html` — Card grid with filters, search, bulk ops
 - `chat/content_detail.html` — Single content view with quick edit
 - `chat/pending.html` / `chat/pending_detail.html` — Draft approval workflow
-- `chat/media_library.html` — Image browser with upload
+- `chat/media_library.html` — Image browser with hierarchical section view (default) and flat view toggle
 - `chat/content_health.html` — Health check dashboard
+
+### Media Library — Hierarchical Browsing
+
+The media library (`/media/`) displays images organised by site section rather than a flat grid. This is powered by `chat/services/image_catalog.py`.
+
+**Section view** (default): Images are categorised into collapsible sections (Research, Education, Community, About Us, Join, Donate, Homepage, Shared) with subsections (Hero, Cards, Team Photos, etc.). Categorisation uses directory paths (`bios/` → About Us, `local-groups/` → Community) and filename pattern matching. Webflow responsive variants (`-p-500`, `-p-800`, `-p-1080`, etc.) are grouped under their base image with an expandable "N sizes" indicator.
+
+**Flat view** (`?view=flat`): The original flat grid, accessible via a toggle button in the header.
+
+**Adding new image categories**: Edit `SITE_SECTIONS` in `image_catalog.py`. Each section has subsections with either `'directory'` (matches images in that subdirectory) or `'patterns'` (case-insensitive substring matches against the base filename). Unmatched images fall through to "Shared / Site Assets / Other".
 
 ## Configuration
 
