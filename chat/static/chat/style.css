@@ -1166,26 +1166,147 @@ body {
   font-size: 0.8rem;
   color: rgba(255,255,255,0.8);
 }
-.publish-form {
+.publish-bar-link {
   display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+  border-radius: 6px;
+  padding: 4px;
+  margin: -4px;
 }
-.btn-publish {
+.publish-bar-link:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+.publish-bar-link .publish-bar-inner {
+  margin-bottom: 4px;
+}
+.publish-bar-cta {
   display: block;
-  width: 100%;
-  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--success);
+  transition: color 0.15s;
+}
+.publish-bar-link:hover .publish-bar-cta {
+  color: #059669;
+}
+
+/* ---- Review & Publish ---- */
+.review-container {
+  padding: 32px;
+  overflow-y: auto;
+  height: 100%;
+}
+.review-section {
+  margin-bottom: 32px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+.section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: var(--success);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.section-count-amber {
+  background: var(--warning);
+}
+.section-actions {
+  margin-bottom: 16px;
+}
+.section-actions-bottom {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+.publish-form-inline {
+  display: inline-block;
+}
+.btn-publish-large {
+  display: inline-block;
+  padding: 10px 24px;
   background: var(--success);
   color: #fff;
   border: none;
   border-radius: 6px;
   font-family: var(--font);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  text-align: center;
 }
-.btn-publish:hover {
+.btn-publish-large:hover {
   background: #059669;
+}
+.commits-table,
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.commits-table th, .commits-table td,
+.audit-table th, .audit-table td {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.83rem;
+}
+.commits-table th,
+.audit-table th {
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+}
+.commits-table tr:nth-child(even),
+.audit-table tr:nth-child(even) { background: #fafafa; }
+.commits-table tr:hover,
+.audit-table tr:hover { background: #f0f7ff; }
+.commit-sha {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--navy-light);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+.action-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.action-create { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.action-edit { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+.action-delete { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+.action-publish { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.empty-state-section {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-light);
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 /* ---- Responsive ---- */

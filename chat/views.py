@@ -1723,6 +1723,37 @@ def bulk_action(request):
     return JsonResponse(results)
 
 
+# --- Review & Publish ---
+
+@login_required
+def review_changes(request):
+    """Review all pending changes before publishing."""
+    profile = request.user.profile
+    conversations = Conversation.objects.filter(user=request.user)[:20]
+
+    unpushed = get_unpushed_changes()
+    pending_drafts = ContentDraft.objects.filter(status='pending')
+
+    # Scope for group leads
+    if profile.role == 'group_lead' and profile.local_group:
+        pending_drafts = pending_drafts.filter(
+            frontmatter_json__localGroup=profile.local_group
+        )
+
+    recent_audit = ContentAuditLog.objects.select_related('user')[:20]
+
+    return render(request, 'chat/review_changes.html', {
+        'unpushed': unpushed,
+        'unpushed_count': len(unpushed),
+        'pending_drafts': pending_drafts,
+        'pending_count': pending_drafts.count(),
+        'recent_audit': recent_audit,
+        'can_publish': profile.role in ('admin', 'editor'),
+        'conversations': conversations,
+        'profile': profile,
+    })
+
+
 # --- Publish (batched push) ---
 
 @login_required

@@ -49,9 +49,10 @@ Content mutations (create, edit, delete, toggle featured, image upload, bulk ops
 - `ensure_repo()` — Fetches latest; rebases (preserving local commits) or hard-resets
 - `commit_and_push()` — Legacy wrapper, calls commit_locally + push_to_remote
 
-**UI:** Green publish bar in sidebar shows count of unpushed changes. JS polls `/api/pending-publish/` every 30 seconds and after any content-mutating fetch.
+**UI:** Green publish bar in sidebar links to the Review & Publish page (`/review/`). JS polls `/api/pending-publish/` every 30 seconds and after any content-mutating fetch.
 
 **Routes:**
+- `GET /review/` — Review & Publish dashboard: shows unpushed commits, pending drafts, recent audit log
 - `POST /publish/` — Push all local commits (admin/editor only)
 - `GET /api/pending-publish/` — JSON `{count, commits: [...]}`
 
@@ -83,6 +84,7 @@ Defined in `content_schema/schemas.py`. Each type has a name, directory, file pa
 - `chat/index.html` — Chat interface with suggested actions
 - `chat/content_browser.html` — Card grid with filters, search, bulk ops
 - `chat/content_detail.html` — Single content view with quick edit
+- `chat/review_changes.html` — Review & Publish dashboard (unpushed commits, pending drafts, audit log)
 - `chat/pending.html` / `chat/pending_detail.html` — Draft approval workflow
 - `chat/media_library.html` — Image browser with hierarchical section view (default) and flat view toggle
 - `chat/content_health.html` — Health check dashboard

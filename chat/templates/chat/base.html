@@ -27,14 +27,13 @@
         <a href="{% url 'new_conversation' %}" class="btn btn-new">+ New Chat</a>
       </div>
       <div class="publish-bar" id="publishBar" style="display:none;">
-        <div class="publish-bar-inner">
-          <span class="publish-count" id="publishCount">0</span>
-          <span class="publish-label">unpublished changes</span>
-        </div>
-        <form method="post" action="{% url 'publish_changes' %}" class="publish-form">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-publish">Publish to Site</button>
-        </form>
+        <a href="{% url 'review_changes' %}" class="publish-bar-link">
+          <div class="publish-bar-inner">
+            <span class="publish-count" id="publishCount">0</span>
+            <span class="publish-label">unpublished changes</span>
+          </div>
+          <span class="publish-bar-cta">Review &amp; Publish &rarr;</span>
+        </a>
       </div>
       <nav class="sidebar-nav">
         <ul class="conversation-list">
@@ -53,6 +52,7 @@
       <div class="sidebar-footer">
         <a href="{% url 'media_library' %}" class="sidebar-link">Media Library</a>
         {% if profile.can_approve %}
+        <a href="{% url 'review_changes' %}" class="sidebar-link">Review &amp; Publish</a>
         <a href="{% url 'pending_list' %}" class="sidebar-link">Pending Approvals</a>
         <a href="{% url 'content_health' %}" class="sidebar-link">Health Check</a>
         {% endif %}

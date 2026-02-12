@@ -1,0 +1,146 @@
+{% extends "chat/base.html" %}
+
+{% block title %}Review &amp; Publish — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="review-container">
+  <h2 class="page-title">Review &amp; Publish</h2>
+
+  {# --- Section 1: Unpushed Changes --- #}
+  <section class="review-section">
+    <div class="section-header">
+      <h3 class="section-title">Unpublished Changes</h3>
+      {% if unpushed_count > 0 %}
+      <span class="section-count">{{ unpushed_count }}</span>
+      {% endif %}
+    </div>
+
+    {% if unpushed %}
+    <div class="section-actions">
+      {% if can_publish %}
+      <form method="post" action="{% url 'publish_changes' %}" class="publish-form-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-publish-large"
+                onclick="return confirm('Publish all {{ unpushed_count }} change{{ unpushed_count|pluralize }} to the live site?')">
+          Publish All to Site
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <table class="commits-table">
+      <thead>
+        <tr>
+          <th>SHA</th>
+          <th>Change</th>
+          <th>Author</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for commit in unpushed %}
+        <tr>
+          <td><code class="commit-sha">{{ commit.sha }}</code></td>
+          <td>{{ commit.message }}</td>
+          <td>{{ commit.author }}</td>
+          <td>{{ commit.date|truncatechars:16 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if can_publish and unpushed_count > 3 %}
+    <div class="section-actions section-actions-bottom">
+      <form method="post" action="{% url 'publish_changes' %}" class="publish-form-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-publish-large"
+                onclick="return confirm('Publish all {{ unpushed_count }} change{{ unpushed_count|pluralize }} to the live site?')">
+          Publish All to Site
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state-section">
+      <p>No unpublished changes. All content is live.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  {# --- Section 2: Pending Approvals --- #}
+  <section class="review-section">
+    <div class="section-header">
+      <h3 class="section-title">Pending Approvals</h3>
+      {% if pending_count > 0 %}
+      <span class="section-count section-count-amber">{{ pending_count }}</span>
+      {% endif %}
+    </div>
+
+    {% if pending_drafts %}
+    <table class="drafts-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Author</th>
+          <th>Created</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for draft in pending_drafts %}
+        <tr>
+          <td>{{ draft.title }}</td>
+          <td><span class="badge badge-{{ draft.content_type }}">{{ draft.content_type }}</span></td>
+          <td>{{ draft.created_by.get_full_name|default:draft.created_by.username }}</td>
+          <td>{{ draft.created_at|date:"d M Y H:i" }}</td>
+          <td><a href="{% url 'pending_detail' draft.id %}" class="btn btn-small">Review</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state-section">
+      <p>No drafts awaiting approval.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  {# --- Section 3: Recent Activity --- #}
+  <section class="review-section">
+    <div class="section-header">
+      <h3 class="section-title">Recent Activity</h3>
+    </div>
+
+    {% if recent_audit %}
+    <table class="audit-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Type</th>
+          <th>Slug</th>
+          <th>User</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in recent_audit %}
+        <tr>
+          <td><span class="action-badge action-{{ entry.action }}">{{ entry.action }}</span></td>
+          <td>{{ entry.content_type }}</td>
+          <td><code>{{ entry.slug|truncatechars:30 }}</code></td>
+          <td>{{ entry.user.get_full_name|default:entry.user.username|default:"system" }}</td>
+          <td>{{ entry.created_at|date:"d M Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state-section">
+      <p>No recent activity.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
