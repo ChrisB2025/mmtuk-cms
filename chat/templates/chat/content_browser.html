@@ -33,10 +33,24 @@
         <option value="title_desc" {% if sort_by == 'title_desc' %}selected{% endif %}>Z — A</option>
       </select>
     </div>
+    <div class="view-toggle">
+      <button class="view-btn {% if view_mode != 'list' %}active{% endif %}" data-view="cards" title="Card view">&#9638;</button>
+      <button class="view-btn {% if view_mode == 'list' %}active{% endif %}" data-view="list" title="List view">&#9776;</button>
+    </div>
   </div>
 
-  <div class="content-grid" id="contentGrid">
+  <div class="{% if view_mode == 'list' %}content-list{% else %}content-grid{% endif %}" id="contentGrid">
     {% for item in items %}
+    {% if view_mode == 'list' %}
+    <a href="{% url 'content_detail' item.content_type item.slug %}" class="content-row">
+      <span class="type-badge type-{{ item.content_type }}">{{ item.content_type }}</span>
+      {% if item.is_draft %}<span class="draft-badge">Draft</span>{% endif %}
+      {% if item.is_featured %}<span class="featured-badge">Featured</span>{% endif %}
+      <span class="row-title">{{ item.title }}</span>
+      {% if item.date %}<span class="row-meta">{{ item.date }}</span>{% endif %}
+      {% if item.author %}<span class="row-meta">{{ item.author }}</span>{% endif %}
+    </a>
+    {% else %}
     <a href="{% url 'content_detail' item.content_type item.slug %}" class="content-card">
       <div class="card-header">
         <span class="type-badge type-{{ item.content_type }}">{{ item.content_type }}</span>
@@ -60,6 +74,7 @@
       <p class="card-summary">{{ item.summary|truncatechars:100 }}</p>
       {% endif %}
     </a>
+    {% endif %}
     {% empty %}
     <div class="empty-state-large">
       <p>No content found{% if query %} matching "{{ query }}"{% endif %}{% if content_type_filter %} of type "{{ content_type_filter }}"{% endif %}.</p>

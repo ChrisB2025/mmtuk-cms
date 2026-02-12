@@ -47,6 +47,14 @@
     });
   }
 
+  // View toggle
+  var viewBtns = document.querySelectorAll('.view-btn');
+  viewBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      navigateWithParams({ view: this.getAttribute('data-view') });
+    });
+  });
+
   // Bulk selection (Phase 7)
   var checkboxes = document.querySelectorAll('.bulk-checkbox');
   var bulkToolbar = document.getElementById('bulkToolbar');

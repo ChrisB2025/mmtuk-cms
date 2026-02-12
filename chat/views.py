@@ -1077,6 +1077,7 @@ def content_browser(request):
     content_type_filter = request.GET.get('type', '')
     sort_by = request.GET.get('sort', 'date_desc')
     query = request.GET.get('q', '')
+    view_mode = request.GET.get('view', 'cards')
 
     if query:
         items = search_content(query, content_type_filter or None)
@@ -1116,6 +1117,7 @@ def content_browser(request):
         'sort_by': sort_by,
         'query': query,
         'type_choices': type_choices,
+        'view_mode': view_mode,
         'profile': profile,
         'active_tab': 'content',
     })
