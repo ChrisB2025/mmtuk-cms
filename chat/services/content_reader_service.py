@@ -69,6 +69,9 @@ def _parse_frontmatter(raw_text):
         frontmatter = yaml.safe_load(yaml_str)
         if not isinstance(frontmatter, dict):
             return None, raw_text
+        # Strip keys with None values (bare "key:" in YAML) to prevent
+        # stale nulls from round-tripping through the CMS
+        frontmatter = {k: v for k, v in frontmatter.items() if v is not None}
         return frontmatter, body
     except yaml.YAMLError:
         logger.warning('Failed to parse YAML frontmatter')

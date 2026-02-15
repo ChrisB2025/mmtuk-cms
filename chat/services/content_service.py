@@ -35,6 +35,8 @@ def get_image_path(content_type, slug, extension='png'):
 
 def _yaml_value(value):
     """Format a Python value for YAML frontmatter."""
+    if value is None:
+        return '""'
     if isinstance(value, bool):
         return 'true' if value else 'false'
     if isinstance(value, (int, float)):
@@ -44,14 +46,45 @@ def _yaml_value(value):
         items = ', '.join(f'"{v}"' for v in value)
         return f'[{items}]'
     if isinstance(value, str):
+        if value == '':
+            return '""'
         # Quote strings that contain special YAML characters
         if any(c in value for c in (':', '#', '{', '}', '[', ']', ',', '&', '*', '?', '|', '-', '<', '>', '=', '!', '%', '@', '`')):
             escaped = value.replace('"', '\\"')
             return f'"{escaped}"'
-        if value.lower() in ('true', 'false', 'yes', 'no', 'null', 'on', 'off'):
+        if value.lower() in ('true', 'false', 'yes', 'no', 'null', 'none', 'on', 'off'):
             return f'"{value}"'
         return value
     return str(value)
+
+
+def sanitize_frontmatter(content_type, frontmatter):
+    """
+    Clean frontmatter before validation:
+    - Strip whitespace from string values
+    - Remove optional fields that are empty, None, or literal "None"
+    - Keep required fields intact so validate_frontmatter() catches errors
+    """
+    schema = CONTENT_TYPES.get(content_type)
+    if not schema:
+        return frontmatter
+
+    required = set(schema['required_fields'])
+    result = {}
+
+    for key, value in frontmatter.items():
+        # Strip whitespace from strings
+        if isinstance(value, str):
+            value = value.strip()
+
+        # For optional fields, discard empty/None/literal "None"
+        if key not in required:
+            if value is None or value == '' or value == 'None':
+                continue
+
+        result[key] = value
+
+    return result
 
 
 def generate_markdown(content_type, frontmatter, body=''):
@@ -63,8 +96,9 @@ def generate_markdown(content_type, frontmatter, body=''):
     if not schema:
         return None, [f'Unknown content type: {content_type}']
 
-    # Apply defaults
+    # Apply defaults, sanitize, then validate
     frontmatter = apply_defaults(content_type, frontmatter)
+    frontmatter = sanitize_frontmatter(content_type, frontmatter)
 
     # Validate
     is_valid, errors = validate_frontmatter(content_type, frontmatter)

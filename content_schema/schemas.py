@@ -44,9 +44,9 @@ CONTENT_TYPES = {
             "authorTitle": {"type": "string", "optional": True},
             "pubDate": {"type": "date", "description": "Publication date YYYY-MM-DD"},
             "readTime": {"type": "number", "default": 5, "description": "Estimated read time in minutes"},
-            "summary": {"type": "string", "description": "Used in cards and meta descriptions"},
-            "thumbnail": {"type": "string", "description": "Path in public/images/, e.g. /images/my-article.png"},
-            "mainImage": {"type": "string", "description": "Larger hero image path"},
+            "summary": {"type": "string", "optional": True, "description": "Used in cards and meta descriptions"},
+            "thumbnail": {"type": "string", "optional": True, "description": "Path in public/images/, e.g. /images/my-article.png"},
+            "mainImage": {"type": "string", "optional": True, "description": "Larger hero image path"},
             "featured": {"type": "boolean", "default": False, "description": "Featured items appear first/larger"},
             "color": {"type": "string", "optional": True, "description": "Card accent color"},
         },
@@ -103,6 +103,7 @@ CONTENT_TYPES = {
             "summary": {"type": "string"},
             "thumbnail": {"type": "string", "optional": True},
             "mainImage": {"type": "string", "optional": True},
+            "registrationLink": {"type": "string", "optional": True, "description": "External registration URL"},
         },
         "appears_on": ["/about-us"],
         "route": "/news/{slug}",
@@ -128,6 +129,7 @@ CONTENT_TYPES = {
             "description": {"type": "string", "description": "Short description for card display"},
             "link": {"type": "string", "optional": True, "description": "URL, internal or external"},
             "image": {"type": "string", "optional": True, "description": "Event card image path"},
+            "partnerEvent": {"type": "boolean", "optional": True, "description": "Whether this is a partner event"},
         },
         "appears_on": ["/community", "/local-group/{localGroup}"],
         "route": "No individual pages",
@@ -171,7 +173,7 @@ CONTENT_TYPES = {
                     "Other roles go to Steering Committee."
                 ),
             },
-            "photo": {"type": "string", "description": "Path like /images/bios/Name.avif"},
+            "photo": {"type": "string", "optional": True, "description": "Path like /images/bios/Name.avif"},
             "linkedin": {"type": "string", "optional": True},
             "twitter": {"type": "string", "optional": True},
             "website": {"type": "string", "optional": True},
@@ -265,6 +267,8 @@ def validate_frontmatter(content_type, frontmatter):
     for field_name, value in frontmatter.items():
         if field_name not in fields:
             continue
+        if value is None:
+            continue  # Optional field sanitized away
         field_def = fields[field_name]
 
         if field_def['type'] == 'enum' and 'options' in field_def:
@@ -273,6 +277,14 @@ def validate_frontmatter(content_type, frontmatter):
                     f'{field_name}: "{value}" is not a valid option. '
                     f'Must be one of: {field_def["options"]}'
                 )
+
+        # Type checks
+        if field_def['type'] in ('string', 'date', 'datetime') and not isinstance(value, str):
+            errors.append(f'{field_name}: expected string, got {type(value).__name__}')
+        if field_def['type'] == 'boolean' and not isinstance(value, bool):
+            errors.append(f'{field_name}: expected boolean, got {type(value).__name__}')
+        if field_def['type'] == 'number' and not isinstance(value, (int, float)):
+            errors.append(f'{field_name}: expected number, got {type(value).__name__}')
 
     return len(errors) == 0, errors
 

@@ -1270,6 +1270,10 @@ def quick_edit(request, content_type, slug):
         raise Http404(f'Content not found: {content_type}/{slug}')
 
     # Collect frontmatter from form fields (prefixed with fm_)
+    from content_schema.schemas import CONTENT_TYPES as CT_SCHEMAS
+    schema = CT_SCHEMAS.get(content_type, {})
+    required_fields = set(schema.get('required_fields', []))
+
     merged_fm = dict(existing['frontmatter'])
     for key in list(existing['frontmatter'].keys()):
         form_key = f'fm_{key}'
@@ -1280,6 +1284,9 @@ def quick_edit(request, content_type, slug):
                 value = True
             elif value.lower() == 'false':
                 value = False
+            # Convert empty optional fields to None (sanitize_frontmatter will strip them)
+            elif value == '' and key not in required_fields:
+                value = None
             merged_fm[key] = value
 
     # Get body
