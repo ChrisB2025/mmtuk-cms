@@ -18,3 +18,8 @@ venv/
 *.swp
 *.swo
 media/
+
+# Test artifacts
+screenshot*.png
+screenshots/
+fix_profile.py

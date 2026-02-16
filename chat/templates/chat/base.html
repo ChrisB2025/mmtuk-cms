@@ -38,11 +38,20 @@
       <nav class="sidebar-nav">
         <ul class="conversation-list">
           {% for c in conversations %}
-          <li>
+          <li class="conversation-item">
             <a href="{% url 'conversation' c.id %}"
                class="conv-link {% if current_conversation and current_conversation.id == c.id %}active{% endif %}">
               {{ c.title|truncatechars:40 }}
             </a>
+            <form method="post" action="{% url 'delete_conversation' c.id %}" class="delete-conversation-form" onsubmit="return confirm('Delete this conversation? This action cannot be undone.');">
+              {% csrf_token %}
+              <button type="submit" class="delete-conversation-btn" title="Delete conversation">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </form>
           </li>
           {% empty %}
           <li class="empty-state">No conversations yet</li>

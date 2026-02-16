@@ -85,6 +85,40 @@ body {
 .conv-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .conv-link.active { background: rgba(0,180,216,0.2); color: #fff; }
 
+.conversation-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.conversation-item .conv-link {
+  flex: 1;
+}
+.delete-conversation-form {
+  margin: 0;
+  padding: 0;
+}
+.delete-conversation-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+}
+.delete-conversation-btn svg {
+  stroke: rgba(255,255,255,0.5);
+  transition: stroke 0.2s;
+}
+.conversation-item:hover .delete-conversation-btn {
+  opacity: 1;
+}
+.delete-conversation-btn:hover svg {
+  stroke: var(--danger);
+}
+
 .sidebar-footer {
   padding: 16px 20px;
   border-top: 1px solid rgba(255,255,255,0.1);
@@ -137,10 +171,15 @@ body {
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .chat-title {
   font-size: 1rem;
   font-weight: 600;
+  flex: 1;
 }
 
 .notifications {
@@ -347,6 +386,9 @@ body {
 .btn-approve:hover { background: #059669; }
 .btn-reject { background: var(--danger); color: #fff; }
 .btn-reject:hover { background: #dc2626; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
 .btn-full { width: 100%; }
 
 /* ---- Alerts ---- */
@@ -1369,6 +1411,76 @@ body {
   background: var(--white);
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* ---- Deployment Status Widget ---- */
+.deployment-status {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.deployment-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.deployment-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.deployment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deployment-info strong {
+  font-weight: 600;
+}
+
+.deployment-info small {
+  color: inherit;
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.deployment-time {
+  color: inherit;
+  opacity: 0.7;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.deployment-pending {
+  background-color: #fef3c7;
+  border-color: var(--warning);
+  color: #92400e;
+}
+
+.deployment-success {
+  background-color: #d1fae5;
+  border-color: var(--success);
+  color: #065f46;
+}
+
+.deployment-failed {
+  background-color: #fee2e2;
+  border-color: var(--danger);
+  color: #991b1b;
+}
+
+.deployment-timeout {
+  background-color: #e0e7ff;
+  border-color: var(--info);
+  color: #3730a3;
 }
 
 /* ---- Responsive ---- */

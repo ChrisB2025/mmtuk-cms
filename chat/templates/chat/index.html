@@ -20,6 +20,20 @@
   {% if current_conversation %}
   <div class="chat-header">
     <h2 class="chat-title">{{ current_conversation.title|truncatechars:60 }}</h2>
+    {% if has_pending_drafts %}
+    <form method="post" action="{% url 'discard_conversation' current_conversation.id %}"
+          onsubmit="return confirm('Discard this conversation? This will delete all pending drafts and reset unpublished changes. This action cannot be undone.');"
+          style="display: inline-block; margin-left: auto;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm" title="Discard pending changes">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Discard Edit
+      </button>
+    </form>
+    {% endif %}
   </div>
 
   <div class="messages" id="messages">

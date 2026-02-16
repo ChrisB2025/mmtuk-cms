@@ -12,3 +12,5 @@ PyMuPDF>=1.24.0
 PyYAML>=6.0
 dj-database-url>=2.1.0
 psycopg2-binary>=2.9.0
+jsonschema>=4.20.0
+requests>=2.31.0

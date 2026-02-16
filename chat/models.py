@@ -10,6 +10,7 @@ class Conversation(models.Model):
     title = models.CharField(max_length=200, default='New conversation')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    discarded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-updated_at']
@@ -95,3 +96,32 @@ class ContentDraft(models.Model):
 
     def __str__(self):
         return f'{self.content_type}: {self.title} ({self.get_status_display()})'
+
+
+class DeploymentLog(models.Model):
+    """Track Railway deployment status for published changes."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('timeout', 'Timeout'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    deployment_id = models.CharField(max_length=100, unique=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True, default='')
+    commit_sha = models.CharField(max_length=40, blank=True, default='')
+    triggered_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='deployments')
+
+    class Meta:
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['-started_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f'Deployment {self.deployment_id[:8]} - {self.get_status_display()}'

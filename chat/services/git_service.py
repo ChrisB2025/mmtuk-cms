@@ -307,6 +307,78 @@ def get_unpushed_changes():
         return []
 
 
+def reset_unpushed_commits(commit_shas):
+    """
+    Reset unpushed commits by their SHAs while preserving file changes.
+    Uses git reset --soft HEAD~N to uncommit without losing work.
+
+    Args:
+        commit_shas: List of commit SHA strings (short or full) to reset
+
+    Returns:
+        int: Number of commits that were reset, or 0 on failure/DEBUG mode
+
+    Raises:
+        ValueError: If any of the commit SHAs are already pushed to remote
+    """
+    with _git_lock:
+        if settings.DEBUG:
+            logger.info('DEBUG mode: skipping commit reset for SHAs: %s', commit_shas)
+            return 0
+
+        if not commit_shas:
+            return 0
+
+        clone_dir = Path(settings.REPO_CLONE_DIR)
+        if not clone_dir.exists():
+            logger.warning('Clone directory does not exist, cannot reset commits')
+            return 0
+
+        try:
+            repo = git.Repo(str(clone_dir))
+            branch = settings.GITHUB_BRANCH
+
+            # Fetch to ensure we have latest remote state
+            repo.remotes.origin.fetch()
+
+            # Get all unpushed commits
+            unpushed = list(repo.iter_commits(f'origin/{branch}..{branch}'))
+            unpushed_shas = {c.hexsha for c in unpushed}
+            unpushed_shas_short = {c.hexsha[:8] for c in unpushed}
+
+            # Validate that all requested SHAs are unpushed
+            for sha in commit_shas:
+                # Handle both short and full SHAs
+                if sha not in unpushed_shas and sha not in unpushed_shas_short:
+                    raise ValueError(
+                        f'Commit {sha} is either already pushed or not found. '
+                        'Cannot reset pushed commits.'
+                    )
+
+            # Count how many commits to reset
+            reset_count = len(commit_shas)
+
+            if reset_count > len(unpushed):
+                logger.warning(
+                    'Requested to reset %d commits but only %d unpushed commits exist',
+                    reset_count, len(unpushed)
+                )
+                reset_count = len(unpushed)
+
+            # Reset commits (soft reset preserves working directory changes)
+            repo.git.reset('--soft', f'HEAD~{reset_count}')
+
+            logger.info('Reset %d unpushed commit(s), preserved file changes', reset_count)
+            return reset_count
+
+        except ValueError:
+            # Re-raise validation errors
+            raise
+        except Exception:
+            logger.exception('Failed to reset commits')
+            return 0
+
+
 def commit_and_push(files, commit_message, author_name='MMTUK CMS', author_email='cms@mmtuk.org'):
     """
     Stage, commit, and push files to the remote repo.

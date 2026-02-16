@@ -19,6 +19,30 @@
     </div>
   </div>
 
+  {% if latest_deployment %}
+  <div class="deployment-status deployment-{{ latest_deployment.status }}">
+    <div class="deployment-content">
+      <span class="deployment-icon">
+        {% if latest_deployment.status == 'success' %}✓{% elif latest_deployment.status == 'failed' %}✗{% elif latest_deployment.status == 'timeout' %}⏱{% else %}⏳{% endif %}
+      </span>
+      <div class="deployment-info">
+        <strong>Latest Deployment:</strong>
+        {% if latest_deployment.status == 'pending' %}
+          Deployment {{ latest_deployment.deployment_id|slice:":8" }}... is in progress
+        {% elif latest_deployment.status == 'success' %}
+          Deployment {{ latest_deployment.deployment_id|slice:":8" }}... succeeded
+        {% elif latest_deployment.status == 'failed' %}
+          Deployment {{ latest_deployment.deployment_id|slice:":8" }}... failed
+          {% if latest_deployment.error_message %}<br><small>{{ latest_deployment.error_message }}</small>{% endif %}
+        {% elif latest_deployment.status == 'timeout' %}
+          Deployment {{ latest_deployment.deployment_id|slice:":8" }}... timed out
+        {% endif %}
+        <span class="deployment-time">{{ latest_deployment.started_at|timesince }} ago</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="browser-controls">
     <div class="search-box">
       <input type="text" id="searchInput" class="form-input" placeholder="Search content..."

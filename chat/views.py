@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import Conversation, Message, ContentDraft, ContentAuditLog
+from .models import Conversation, Message, ContentDraft, ContentAuditLog, DeploymentLog
 from .services.anthropic_service import (
     build_system_prompt,
     get_conversation_messages,
@@ -30,11 +30,13 @@ from .services.image_catalog import categorise_images
 from .services.git_service import (
     ensure_repo, write_file_to_repo, write_file_to_output,
     commit_locally, push_to_remote, get_unpushed_changes,
-    read_file_from_repo, delete_file_from_repo,
+    read_file_from_repo, delete_file_from_repo, reset_unpushed_commits,
 )
 from .services.scraper_service import scrape_url
 from .services.image_service import process_image
 from .services.pdf_service import extract_pdf, save_pdf_images, get_pdf_image
+from .services.astro_validator import validate_against_astro_schema
+from .services.railway_service import get_latest_deployment, is_railway_configured
 
 logger = logging.getLogger(__name__)
 
@@ -207,6 +209,12 @@ def conversation(request, conversation_id):
     if not messages.exists():
         suggested_actions = _get_suggested_actions(profile)
 
+    # Check if conversation has pending drafts (for showing discard button)
+    has_pending_drafts = ContentDraft.objects.filter(
+        conversation=conv,
+        status='pending'
+    ).exists()
+
     return render(request, 'chat/index.html', {
         'conversations': conversations,
         'current_conversation': conv,
@@ -214,6 +222,7 @@ def conversation(request, conversation_id):
         'profile': profile,
         'notifications': [],
         'suggested_actions': suggested_actions,
+        'has_pending_drafts': has_pending_drafts,
     })
 
 
@@ -299,6 +308,12 @@ def _handle_content_action(action_data, profile, conv, user):
             f'Sorry, your role ({profile.get_role_display()}) doesn\'t have permission to create {content_type} content.',
             {'type': 'error', 'message': 'Permission denied'},
         )
+
+    # Validate against Astro schema (pre-commit validation)
+    is_valid, astro_error = validate_against_astro_schema(content_type, frontmatter)
+    if not is_valid:
+        error_msg = f'Content does not match Astro schema:\n{astro_error}'
+        return error_msg, {'type': 'error', 'message': error_msg}
 
     # Generate markdown
     markdown, errors = generate_markdown(content_type, frontmatter, body)
@@ -502,6 +517,12 @@ def _handle_edit_action(action_data, profile, conv, user):
     body = new_body if new_body is not None else existing['body']
 
     title = merged_fm.get('title') or merged_fm.get('heading') or merged_fm.get('name', 'Untitled')
+
+    # Validate against Astro schema (pre-commit validation)
+    is_valid, astro_error = validate_against_astro_schema(content_type, merged_fm)
+    if not is_valid:
+        error_msg = f'Content does not match Astro schema:\n{astro_error}'
+        return error_msg, {'type': 'error', 'message': error_msg}
 
     # Generate markdown
     markdown, errors = generate_markdown(content_type, merged_fm, body)
@@ -1109,6 +1130,9 @@ def content_browser(request):
     from content_schema.schemas import CONTENT_TYPES
     type_choices = [(k, v['name']) for k, v in CONTENT_TYPES.items()]
 
+    # Get latest deployment status for dashboard widget
+    latest_deployment = DeploymentLog.objects.order_by('-started_at').first()
+
     return render(request, 'chat/content_browser.html', {
         'conversations': conversations,
         'items': items,
@@ -1120,6 +1144,7 @@ def content_browser(request):
         'view_mode': view_mode,
         'profile': profile,
         'active_tab': 'content',
+        'latest_deployment': latest_deployment,
     })
 
 
@@ -1294,10 +1319,20 @@ def quick_edit(request, content_type, slug):
 
     title = merged_fm.get('title') or merged_fm.get('heading') or merged_fm.get('name', 'Untitled')
 
+    # Validate against Astro schema (pre-commit validation)
+    is_valid, astro_error = validate_against_astro_schema(content_type, merged_fm)
+    if not is_valid:
+        # Show error via Django messages
+        from django.contrib import messages
+        messages.error(request, f'Validation error: {astro_error}')
+        return redirect('content_detail', content_type=content_type, slug=slug)
+
     # Generate markdown
     markdown, errors = generate_markdown(content_type, merged_fm, new_body)
     if errors:
         # Redirect back with error (simple approach)
+        from django.contrib import messages
+        messages.error(request, f'Validation errors: {"; ".join(errors)}')
         return redirect('content_detail', content_type=content_type, slug=slug)
 
     file_path = get_file_path(content_type, slug)
@@ -1769,13 +1804,51 @@ def review_changes(request):
 @require_POST
 def publish_changes(request):
     """Push all unpushed local commits to the remote (triggers site deploy)."""
+    from django.contrib import messages
+
     profile = request.user.profile
     if profile.role not in ('admin', 'editor'):
         return HttpResponseForbidden('You do not have permission to publish changes.')
 
+    # Get unpushed commits before push (for Railway tracking)
+    unpushed = get_unpushed_changes()
+    latest_commit_sha = unpushed[0]['sha'] if unpushed else ''
+
     count = push_to_remote()
     _log_audit('site', 'publish', 'publish', request.user, changes_summary=f'{count} commit(s) pushed')
     logger.info('User %s published %d commit(s) to remote', request.user.username, count)
+
+    # Track Railway deployment if configured
+    if is_railway_configured() and count > 0:
+        try:
+            # Wait a moment for Railway to detect the push and create deployment
+            import time
+            time.sleep(2)
+
+            deployment_id = get_latest_deployment()
+            if deployment_id:
+                DeploymentLog.objects.create(
+                    deployment_id=deployment_id,
+                    commit_sha=latest_commit_sha,
+                    triggered_by=request.user,
+                    status='pending',
+                )
+                messages.success(
+                    request,
+                    f'{count} commit(s) published. Railway deployment {deployment_id[:8]}... is being monitored.'
+                )
+                logger.info('Created deployment log for %s', deployment_id[:8])
+            else:
+                messages.warning(
+                    request,
+                    f'{count} commit(s) published, but could not fetch Railway deployment ID.'
+                )
+        except Exception as e:
+            # Fail open - don't block publish if Railway tracking fails
+            logger.exception('Failed to create deployment log: %s', e)
+            messages.success(request, f'{count} commit(s) published successfully.')
+    else:
+        messages.success(request, f'{count} commit(s) published successfully.')
 
     # Redirect back to referring page, or content browser
     referer = request.META.get('HTTP_REFERER', '')
@@ -1792,3 +1865,131 @@ def pending_publish(request):
         'count': len(changes),
         'commits': changes,
     })
+
+
+# --- Discard conversation ---
+
+@login_required
+@require_POST
+def discard_conversation(request, conversation_id):
+    """
+    Discard an in-progress conversation and clean up unpublished work.
+
+    This view:
+    1. Deletes all pending ContentDraft records linked to the conversation
+    2. Resets unpushed commits associated with those drafts (using git reset --soft)
+    3. Marks the conversation as discarded
+    4. Redirects to content browser with a success message
+
+    Edge cases handled:
+    - Only allows discarding if user owns the conversation or is admin
+    - Prevents discarding if commits are already pushed
+    - Preserves file changes when resetting commits (soft reset)
+    """
+    from django.contrib import messages
+
+    conversation = get_object_or_404(Conversation, id=conversation_id)
+
+    # Permission check: user must own conversation or be admin
+    if conversation.user != request.user and request.user.profile.role != 'admin':
+        return HttpResponseForbidden('You do not have permission to discard this conversation.')
+
+    # Check if conversation is already discarded
+    if conversation.discarded_at:
+        messages.warning(request, 'This conversation was already discarded.')
+        return redirect('content_browser')
+
+    try:
+        # Find all pending drafts linked to this conversation
+        pending_drafts = ContentDraft.objects.filter(
+            conversation=conversation,
+            status='pending'
+        )
+
+        # Collect commit SHAs from drafts that have them
+        commit_shas = [
+            draft.git_commit_sha
+            for draft in pending_drafts
+            if draft.git_commit_sha and draft.git_commit_sha != 'debug-no-push'
+        ]
+
+        # Reset unpushed commits (preserves file changes via soft reset)
+        reset_count = 0
+        if commit_shas:
+            try:
+                reset_count = reset_unpushed_commits(commit_shas)
+            except ValueError as e:
+                # Commits are already pushed - can't discard
+                messages.error(
+                    request,
+                    f'Cannot discard: some changes have already been published. {str(e)}'
+                )
+                return redirect('chat_index', conversation_id=conversation_id)
+
+        # Delete pending drafts
+        draft_count = pending_drafts.count()
+        pending_drafts.delete()
+
+        # Mark conversation as discarded
+        conversation.discarded_at = timezone.now()
+        conversation.save()
+
+        # Log the action
+        logger.info(
+            'User %s discarded conversation %s: deleted %d draft(s), reset %d commit(s)',
+            request.user.username, conversation_id, draft_count, reset_count
+        )
+
+        # Success message
+        messages.success(
+            request,
+            f'Conversation discarded. Removed {draft_count} draft(s) and reset {reset_count} unpublished commit(s).'
+        )
+
+        invalidate_cache()
+        return redirect('content_browser')
+
+    except Exception:
+        logger.exception('Failed to discard conversation %s', conversation_id)
+        messages.error(request, 'Failed to discard conversation. Please try again or contact support.')
+        return redirect('chat_index', conversation_id=conversation_id)
+
+
+@login_required
+@require_POST
+def delete_conversation(request, conversation_id):
+    """
+    Delete a conversation permanently.
+
+    This is a simpler action than discard - it just deletes the conversation
+    and all its messages. Use this for cleaning up old/test conversations
+    from the sidebar.
+
+    Safety: Does NOT delete any ContentDraft objects or reset git commits.
+    If the conversation has pending drafts, those remain in the database
+    (they'll be orphaned but still accessible via pending approvals).
+    """
+    from django.contrib import messages
+
+    conversation = get_object_or_404(Conversation, id=conversation_id)
+
+    # Permission check: user must own conversation or be admin
+    if conversation.user != request.user and request.user.profile.role != 'admin':
+        return HttpResponseForbidden('You do not have permission to delete this conversation.')
+
+    try:
+        # Get title for message before deleting
+        title = conversation.title
+
+        # Delete the conversation (CASCADE will delete related Message objects)
+        conversation.delete()
+
+        messages.success(request, f'Conversation "{title}" deleted successfully.')
+        logger.info('User %s deleted conversation %s', request.user.username, conversation_id)
+
+    except Exception:
+        logger.exception('Failed to delete conversation %s', conversation_id)
+        messages.error(request, 'Failed to delete conversation. Please try again.')
+
+    # Redirect to index (will show next conversation or empty state)
+    return redirect('index')
