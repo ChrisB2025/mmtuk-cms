@@ -7,12 +7,12 @@ import logging
 from datetime import datetime
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.cache import cache
 from django.http import FileResponse, Http404, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import Conversation, Message, ContentDraft, ContentAuditLog, DeploymentLog
 from .services.anthropic_service import (
@@ -1155,6 +1155,123 @@ def _sort_date(item):
     if isinstance(d, datetime):
         return d.isoformat()
     return str(d) if d else '0000'
+
+
+@login_required
+@permission_required('accounts.can_view_content', raise_exception=True)
+def event_archive(request):
+    """View archived events (ended more than 7 days ago)."""
+    profile = request.user.profile
+    conversations = Conversation.objects.filter(user=request.user)[:20]
+    sort_by = request.GET.get('sort', 'date_desc')
+    query = request.GET.get('q', '')
+
+    # Get all local events
+    if query:
+        items = search_content(query, 'local_event')
+    else:
+        items = list_content('local_event')
+
+    # Filter for archived events only
+    archived_items = [item for item in items if item.get('frontmatter', {}).get('archived', False)]
+
+    # Sort items
+    if sort_by == 'date_asc':
+        archived_items = sorted(archived_items, key=lambda x: _sort_date(x))
+    elif sort_by == 'title_asc':
+        archived_items = sorted(archived_items, key=lambda x: x.get('title', '').lower())
+    elif sort_by == 'title_desc':
+        archived_items = sorted(archived_items, key=lambda x: x.get('title', '').lower(), reverse=True)
+    else:  # date_desc (default)
+        archived_items = sorted(archived_items, key=lambda x: _sort_date(x), reverse=True)
+
+    # Enrich items with computed fields
+    for item in archived_items:
+        fm = item.get('frontmatter', {})
+        item['summary'] = fm.get('description') or ''
+        item['date'] = fm.get('date') or ''
+        item['end_date'] = fm.get('endDate') or fm.get('date') or ''
+        item['local_group'] = fm.get('localGroup') or ''
+        item['location'] = fm.get('location') or ''
+        item['tag'] = fm.get('tag') or ''
+
+    return render(request, 'chat/event_archive.html', {
+        'conversations': conversations,
+        'archived_events': archived_items,
+        'sort_by': sort_by,
+        'query': query,
+        'profile': profile,
+        'active_tab': 'content',
+    })
+
+
+@login_required
+@permission_required('accounts.can_approve_content', raise_exception=True)
+@require_http_methods(["POST"])
+def unarchive_event(request, content_type, slug):
+    """Unarchive an event (admin/editor only)."""
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    # Only allow for local_event content type
+    if content_type != 'local_event':
+        messages.error(request, 'Only events can be unarchived.')
+        return redirect('content_detail', content_type=content_type, slug=slug)
+
+    # Read the event
+    item = read_content(content_type, slug)
+    if not item:
+        messages.error(request, 'Event not found.')
+        return redirect('event_archive')
+
+    # Check if already unarchived
+    if not item.get('frontmatter', {}).get('archived', False):
+        messages.info(request, 'Event is already active (not archived).')
+        return redirect('content_detail', content_type=content_type, slug=slug)
+
+    # Update frontmatter
+    frontmatter = item['frontmatter']
+    frontmatter['archived'] = False
+
+    # Generate markdown
+    from chat.services.content_service import generate_markdown
+    markdown_content = generate_markdown(frontmatter, item['body'])
+
+    # Get file path
+    from content_schema.schemas import CONTENT_TYPES
+    schema = CONTENT_TYPES[content_type]
+    directory = schema['directory']
+    filename_pattern = schema['filename_pattern']
+    filename = filename_pattern.format(slug=slug)
+    file_path = f'{directory}{filename}'
+
+    # Write to repo
+    from chat.services.git_service import write_file_to_repo, commit_locally
+    write_file_to_repo(file_path, markdown_content)
+
+    # Commit
+    commit_locally(
+        files=[file_path],
+        message=f'chore: Unarchive event "{frontmatter.get("title", slug)}"',
+        author_name=f'{request.user.username} (via CMS)'
+    )
+
+    # Invalidate cache
+    from chat.services.content_reader_service import invalidate_cache
+    invalidate_cache()
+
+    # Log audit
+    from chat.models import ContentAuditLog
+    ContentAuditLog.objects.create(
+        user=request.user,
+        action='unarchive',
+        content_type=content_type,
+        slug=slug,
+        details=f'Unarchived event: {frontmatter.get("title", slug)}'
+    )
+
+    messages.success(request, f'✓ Event unarchived: {frontmatter.get("title", slug)}')
+    return redirect('content_detail', content_type=content_type, slug=slug)
 
 
 @login_required

@@ -1,0 +1,140 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Event Archive - MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="content-browser">
+    <div class="browser-header">
+        <h1>📅 Event Archive</h1>
+        <p class="text-muted">Past events that have been archived (ended more than 7 days ago)</p>
+    </div>
+
+    <!-- Search and sort controls -->
+    <div class="browser-controls">
+        <form method="get" class="search-form">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search archived events..." class="form-control" style="flex: 1;">
+            <select name="sort" class="form-control" style="width: 200px;" onchange="this.form.submit()">
+                <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Latest first</option>
+                <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest first</option>
+                <option value="title_asc" {% if sort_by == 'title_asc' %}selected{% endif %}>A-Z</option>
+                <option value="title_desc" {% if sort_by == 'title_desc' %}selected{% endif %}>Z-A</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if query %}
+                <a href="{% url 'event_archive' %}" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Events count -->
+    <div class="events-count">
+        <strong>{{ archived_events|length }}</strong> archived event{{ archived_events|length|pluralize }}
+    </div>
+
+    <!-- Events grid -->
+    {% if archived_events %}
+    <div class="events-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-top: 20px;">
+        {% for event in archived_events %}
+        <div class="event-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: white;">
+            <div class="event-header" style="margin-bottom: 15px;">
+                <h3 style="margin: 0 0 8px 0;">{{ event.title }}</h3>
+                <span class="badge badge-secondary">{{ event.tag }}</span>
+                <span class="badge badge-info">{{ event.local_group }}</span>
+                <span class="badge badge-warning">Archived</span>
+            </div>
+
+            <div class="event-details" style="font-size: 0.9em; color: #666;">
+                <p style="margin: 5px 0;">
+                    <strong>📅 Date:</strong> {{ event.date|date:"M d, Y g:i A" }}
+                </p>
+                {% if event.end_date and event.end_date != event.date %}
+                <p style="margin: 5px 0;">
+                    <strong>🏁 Ended:</strong> {{ event.end_date|date:"M d, Y g:i A" }}
+                </p>
+                {% endif %}
+                <p style="margin: 5px 0;">
+                    <strong>📍 Location:</strong> {{ event.location }}
+                </p>
+                {% if event.summary %}
+                <p style="margin: 10px 0 0 0;">{{ event.summary }}</p>
+                {% endif %}
+            </div>
+
+            <div class="event-actions" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+                <a href="{% url 'content_detail' event.content_type event.slug %}" class="btn btn-sm btn-primary">View</a>
+
+                {% if profile.role == 'admin' or profile.role == 'editor' %}
+                <form method="post" action="{% url 'unarchive_event' event.content_type event.slug %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Unarchive this event?')">
+                        ♻️ Unarchive
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-events" style="text-align: center; padding: 60px 20px; color: #999;">
+        {% if query %}
+            <p>No archived events found matching "{{ query }}"</p>
+            <a href="{% url 'event_archive' %}" class="btn btn-secondary">Show all archived events</a>
+        {% else %}
+            <p>No archived events yet!</p>
+            <p class="text-muted">Events are automatically archived 7 days after they end.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.browser-controls {
+    margin: 20px 0;
+}
+
+.search-form {
+    display: flex;
+    gap: 10px;
+}
+
+.events-count {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.event-card {
+    transition: box-shadow 0.2s;
+}
+
+.event-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.badge-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.badge-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.badge-warning {
+    background: #ffc107;
+    color: #212529;
+}
+</style>
+{% endblock %}

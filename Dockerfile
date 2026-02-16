@@ -13,4 +13,4 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py setup_roles && python manage.py setup_deployment_monitoring && gunicorn mmtuk_cms.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --timeout 120"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py setup_roles && python manage.py setup_deployment_monitoring && python manage.py setup_event_archival && gunicorn mmtuk_cms.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 2 --timeout 120"]

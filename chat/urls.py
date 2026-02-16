@@ -22,6 +22,9 @@ urlpatterns = [
     path('content/<str:content_type>/<str:slug>/quick-edit/', views.quick_edit, name='quick_edit'),
     path('content/<str:content_type>/<str:slug>/delete/', views.delete_content, name='delete_content'),
     path('content/<str:content_type>/<str:slug>/toggle-featured/', views.toggle_featured, name='toggle_featured'),
+    # Event archive
+    path('events/archive/', views.event_archive, name='event_archive'),
+    path('content/<str:content_type>/<str:slug>/unarchive/', views.unarchive_event, name='unarchive_event'),
     # Media library
     path('media/', views.media_library, name='media_library'),
     path('repo-images/<path:image_path>', views.repo_image, name='repo_image'),
