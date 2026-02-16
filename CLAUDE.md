@@ -146,3 +146,57 @@ When `DEBUG=True`:
 2. `delete_file_from_repo(file_path)` to remove the file
 3. `commit_locally([file_path], message, author)` — handles staging the removal automatically
 4. Log + invalidate cache
+
+## Phase 2: Reliability & Validation
+
+### Schema Audit (Task #3) ✅ Complete
+
+**Problem:** CMS schemas were out of sync with Astro Zod schemas, causing validation failures for valid content.
+
+**Solution:**
+- Audited all 8 content types against canonical Astro schemas
+- Fixed 6 field optionality mismatches (briefing, news, ecosystem)
+- Added missing `local_group` content type
+- Created test suite with 27 tests (100% passing)
+
+**Files:**
+- `content_schema/schemas.py` — Fixed optionality, added local_group
+- `SCHEMA_AUDIT_REPORT.md` — Comprehensive audit documentation
+- `test_schema_validation.py` — 27 tests for schema validation
+
+### Validation Hardening (Task #6) ✅ Complete
+
+**Problem:** Validation errors were generic and unhelpful, making debugging difficult.
+
+**Solution:**
+- Created field-level validation helpers with detailed error messages
+- Enhanced error formatting with fix suggestions
+- Added validation metrics tracking
+- Created comprehensive test suite (40 tests, 100% passing)
+
+**New Services:**
+- `chat/services/validation_helpers.py` — Field validators (date, slug, URL, enum, length)
+- `chat/management/commands/validation_metrics.py` — View validation health
+
+**Enhanced Services:**
+- `chat/services/astro_validator.py` — Enhanced error messages, metrics tracking
+
+**Error Message Example:**
+```
+❌ Validation Error:
+
+**slug**: Invalid slug: contains uppercase letters, contains spaces
+  Actual value: 'My Article Title'
+  Expected format: lowercase-with-hyphens (e.g., 'my-article-slug')
+  💡 Convert to lowercase, replace spaces with hyphens (e.g., 'my-article-title')
+```
+
+**Validation Metrics:**
+```bash
+python manage.py validation_metrics  # View success rates per content type
+```
+
+**Documentation:**
+- `VALIDATION_HARDENING.md` — Complete API reference and usage guide
+- `VALIDATION_FLOW.md` — Architecture diagrams and flow documentation
+- `PHASE2_TASK6_SUMMARY.md` — Executive summary
