@@ -9,14 +9,22 @@ Schemas are fetched from the deployed MMTUK site or local repo and cached in mem
 
 import logging
 import json
-from datetime import datetime, timedelta
+import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 
 import requests
 from jsonschema import validate, ValidationError, Draft7Validator
 from django.conf import settings
 from django.core.cache import cache
+
+from .validation_helpers import (
+    validate_date_format,
+    validate_slug_format,
+    validate_url_format,
+    validate_enum_value,
+    ValidationResult
+)
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +138,96 @@ def fetch_schemas() -> Dict[str, dict]:
     return schemas
 
 
+def _format_validation_error(error: ValidationError, frontmatter: dict, content_type: str) -> str:
+    """
+    Format a JSON Schema validation error with helpful context and fix suggestions.
+
+    Args:
+        error: ValidationError from jsonschema
+        frontmatter: The frontmatter being validated
+        content_type: Content type being validated
+
+    Returns:
+        Formatted error message with field path, actual vs expected, and fix suggestions
+    """
+    field_path = '.'.join(str(p) for p in error.path) if error.path else 'root'
+
+    # Get actual value if possible
+    actual_value = frontmatter
+    for part in error.path:
+        if isinstance(actual_value, dict):
+            actual_value = actual_value.get(part, '<missing>')
+        else:
+            actual_value = '<not accessible>'
+            break
+
+    # Base error message
+    parts = [f"**{field_path}**: {error.message}"]
+
+    # Add actual value (truncate if too long)
+    if actual_value != '<missing>':
+        value_str = repr(actual_value)
+        if len(value_str) > 100:
+            value_str = value_str[:97] + '...'
+        parts.append(f"  Actual value: {value_str}")
+
+    # Add expected format/value from schema
+    if error.validator == 'type':
+        expected_type = error.validator_value
+        parts.append(f"  Expected type: {expected_type}")
+
+    elif error.validator == 'enum':
+        allowed_values = error.validator_value
+        parts.append(f"  Allowed values: {', '.join(repr(v) for v in allowed_values)}")
+
+        # Suggest close match
+        if isinstance(actual_value, str):
+            for allowed in allowed_values:
+                if isinstance(allowed, str) and allowed.lower() == actual_value.lower():
+                    parts.append(f"  💡 Did you mean '{allowed}'? (check capitalization)")
+                    break
+
+    elif error.validator == 'required':
+        parts.append(f"  💡 This field is required and cannot be empty")
+
+    elif error.validator == 'format':
+        parts.append(f"  Expected format: {error.validator_value}")
+
+    # Add fix suggestions based on field name
+    field_name = error.path[-1] if error.path else None
+    if field_name:
+        if 'date' in field_name.lower() or field_name in ('pubDate', 'sourceDate'):
+            parts.append("  💡 Use ISO 8601 format: '2026-02-16' or '2026-02-16T10:00:00.000Z'")
+
+        elif field_name == 'slug':
+            parts.append("  💡 Use lowercase-with-hyphens format (e.g., 'my-article-slug')")
+
+        elif 'url' in field_name.lower() or 'link' in field_name.lower():
+            parts.append("  💡 Use full URL (https://example.com) or relative path (/path)")
+
+    return '\n'.join(parts)
+
+
+def _get_schema_info(schema: dict, field_path: List[str]) -> dict:
+    """
+    Extract schema information for a specific field path.
+
+    Args:
+        schema: JSON Schema dict
+        field_path: Path to field (e.g., ['properties', 'title'])
+
+    Returns:
+        Dict with type, enum, format, etc. for the field
+    """
+    current = schema
+    for part in field_path:
+        if isinstance(current, dict):
+            current = current.get(part, {})
+        else:
+            return {}
+    return current if isinstance(current, dict) else {}
+
+
 def validate_against_astro_schema(content_type: str, frontmatter: dict) -> Tuple[bool, Optional[str]]:
     """
     Validate frontmatter against the Astro Zod schema (as JSON Schema).
@@ -173,20 +271,42 @@ def validate_against_astro_schema(content_type: str, frontmatter: dict) -> Tuple
         errors = list(validator.iter_errors(prepared))
 
         if errors:
-            # Format validation errors for user
+            # Format validation errors for user with detailed context
             error_messages = []
-            for error in errors:
-                field_path = '.'.join(str(p) for p in error.path) if error.path else 'root'
-                error_messages.append(f"Field '{field_path}': {error.message}")
+            for i, error in enumerate(errors[:5]):  # Show first 5 errors
+                formatted = _format_validation_error(error, prepared, content_type)
+                error_messages.append(formatted)
 
-            error_summary = '; '.join(error_messages[:3])  # Show first 3 errors
-            if len(error_messages) > 3:
-                error_summary += f' (and {len(error_messages) - 3} more errors)'
+            # Build comprehensive error message
+            error_count = len(errors)
+            if error_count == 1:
+                error_header = "❌ Validation Error:\n"
+            else:
+                error_header = f"❌ {error_count} Validation Errors:\n"
 
+            error_body = '\n\n'.join(error_messages)
+
+            if error_count > 5:
+                error_body += f"\n\n... and {error_count - 5} more errors"
+
+            full_error = error_header + error_body
+
+            # Log summary for debugging
+            error_summary = '; '.join(str(e.message) for e in errors[:3])
+            if error_count > 3:
+                error_summary += f' (and {error_count - 3} more)'
             logger.warning('Astro schema validation failed for %s: %s', content_type, error_summary)
-            return (False, f'Content does not match Astro schema: {error_summary}')
+
+            # Track metrics
+            track_validation_result(content_type, is_valid=False, error_count=error_count)
+
+            return (False, full_error)
 
         logger.debug('Astro schema validation passed for %s', content_type)
+
+        # Track metrics
+        track_validation_result(content_type, is_valid=True)
+
         return (True, None)
 
     except Exception as e:
@@ -200,6 +320,75 @@ def invalidate_schema_cache():
     """Force re-fetch of schemas on next validation."""
     cache.delete(SCHEMA_CACHE_KEY)
     logger.info('Invalidated Astro schema cache')
+
+
+# Validation metrics tracking
+METRICS_CACHE_KEY = 'astro_validation_metrics'
+METRICS_CACHE_TTL = 3600  # 1 hour
+
+
+def track_validation_result(content_type: str, is_valid: bool, error_count: int = 0):
+    """
+    Track validation metrics for monitoring and debugging.
+
+    Args:
+        content_type: Type of content validated
+        is_valid: Whether validation passed
+        error_count: Number of validation errors (if any)
+    """
+    try:
+        metrics = cache.get(METRICS_CACHE_KEY, {})
+
+        # Initialize metrics for content type if needed
+        if content_type not in metrics:
+            metrics[content_type] = {
+                'total': 0,
+                'passed': 0,
+                'failed': 0,
+                'total_errors': 0,
+            }
+
+        # Update metrics
+        metrics[content_type]['total'] += 1
+        if is_valid:
+            metrics[content_type]['passed'] += 1
+        else:
+            metrics[content_type]['failed'] += 1
+            metrics[content_type]['total_errors'] += error_count
+
+        # Save back to cache
+        cache.set(METRICS_CACHE_KEY, metrics, METRICS_CACHE_TTL)
+
+        # Log periodically (every 10th validation)
+        if metrics[content_type]['total'] % 10 == 0:
+            logger.info(
+                'Validation metrics for %s: %d total, %d passed (%.1f%%), %d failed',
+                content_type,
+                metrics[content_type]['total'],
+                metrics[content_type]['passed'],
+                100.0 * metrics[content_type]['passed'] / metrics[content_type]['total'],
+                metrics[content_type]['failed']
+            )
+
+    except Exception as e:
+        # Don't let metrics tracking break validation
+        logger.debug('Failed to track validation metrics: %s', e)
+
+
+def get_validation_metrics() -> Dict[str, dict]:
+    """
+    Get current validation metrics.
+
+    Returns:
+        Dict mapping content type to metrics (total, passed, failed, total_errors)
+    """
+    return cache.get(METRICS_CACHE_KEY, {})
+
+
+def reset_validation_metrics():
+    """Reset validation metrics."""
+    cache.delete(METRICS_CACHE_KEY)
+    logger.info('Reset validation metrics')
 
 
 # Convenience function for use in management commands
