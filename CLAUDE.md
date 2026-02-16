@@ -200,3 +200,44 @@ python manage.py validation_metrics  # View success rates per content type
 - `VALIDATION_HARDENING.md` — Complete API reference and usage guide
 - `VALIDATION_FLOW.md` — Architecture diagrams and flow documentation
 - `PHASE2_TASK6_SUMMARY.md` — Executive summary
+
+### Event Lifecycle (Task #4) ✅ Complete
+
+**Problem:** Past events remained in "Upcoming Events" list indefinitely.
+
+**Solution:**
+- Added `endDate` and `archived` fields to event schema
+- Created management command to auto-archive events 7+ days after end date
+- Set up Django-Q daily schedule for automatic archival
+- Built Event Archive page (/events/archive/) to view archived events
+- Added unarchive action for admins/editors
+
+**New Management Commands:**
+- `chat/management/commands/archive_past_events.py` — Archive past events
+- `chat/management/commands/setup_event_archival.py` — Set up daily schedule
+
+**New Pages:**
+- `/events/archive/` — View and manage archived events
+
+**Usage:**
+```bash
+# Archive past events (runs daily via Django-Q)
+python manage.py archive_past_events
+
+# Preview what would be archived
+python manage.py archive_past_events --dry-run
+
+# Set up daily archival schedule
+python manage.py setup_event_archival
+```
+
+**Event Lifecycle:**
+1. Event created (archived: false)
+2. Event ends (endDate passes)
+3. Wait 7 days grace period
+4. Daily job auto-archives event (archived: true)
+5. Event hidden from upcoming list, visible in archive
+6. Admin/editor can unarchive if needed
+
+**Documentation:**
+- `PHASE2_TASK4_SUMMARY.md` — Complete implementation guide
