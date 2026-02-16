@@ -36,4 +36,8 @@ urlpatterns = [
     # Review & Publish
     path('review/', views.review_changes, name='review_changes'),
     path('publish/', views.publish_changes, name='publish_changes'),
+    # Redirect Management (SEO)
+    path('redirects/', views.redirect_management, name='redirect_management'),
+    path('redirects/edit/', views.edit_redirect, name='edit_redirect'),
+    path('redirects/remove/', views.remove_redirect, name='remove_redirect'),
 ]

@@ -241,3 +241,70 @@ python manage.py setup_event_archival
 
 **Documentation:**
 - `PHASE2_TASK4_SUMMARY.md` — Complete implementation guide
+
+### Removed Content SEO (Task #5) ✅ Complete
+
+**Problem:** Deleted content returns 404, harming SEO and user experience.
+
+**Solution:**
+- Track deleted content in ContentAuditLog with redirect_target field
+- Generate Astro redirects config (301 redirects) for deleted content
+- Integrate redirect generation into publish flow
+- Provide redirect suggestions in delete confirmation
+- Build redirect management UI for viewing/editing redirects
+
+**New Services:**
+- `chat/services/redirect_service.py` — Redirect generation and validation
+
+**New Pages:**
+- `/redirects/` — View and manage redirects (admin/editor only)
+
+**Enhanced Models:**
+- `ContentAuditLog` — Added `deleted_at` and `redirect_target` fields
+
+**Enhanced Views:**
+- `delete_content` — Prompts for redirect target before deletion
+- `publish_changes` — Auto-generates redirects.config.mjs before push
+
+**Usage:**
+```bash
+# View all redirects
+Navigate to: /redirects/
+
+# Generate redirects manually (via Django shell)
+python manage.py shell
+>>> from chat.services.redirect_service import write_redirects_to_repo
+>>> write_redirects_to_repo()
+
+# Run tests
+python -m pytest chat/tests/test_redirects.py -v
+```
+
+**Redirect Workflow:**
+1. User deletes content via CMS
+2. Delete modal prompts for redirect target (or intentional 404)
+3. ContentAuditLog entry created with deleted_at and redirect_target
+4. On publish, redirects.config.mjs generated and committed
+5. Astro site deployed with 301 redirects active
+6. Old URLs redirect to specified targets (SEO preserved)
+
+**Astro Integration:**
+```javascript
+// astro.config.mjs
+import autoRedirects from './redirects.config.mjs';
+
+export default defineConfig({
+  redirects: {
+    ...autoRedirects,  // Auto-generated from CMS
+    // Manual redirects below (take precedence)
+  }
+});
+```
+
+**Test Suite:**
+- 19 tests covering redirect tracking, generation, validation, and management
+- All tests passing (100%)
+
+**Documentation:**
+- `PHASE2_TASK5_SUMMARY.md` — Complete implementation guide
+- `pytest.ini` — Pytest configuration for Django tests

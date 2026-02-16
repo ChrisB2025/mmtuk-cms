@@ -96,17 +96,46 @@
 
 <!-- Delete confirmation modal -->
 <div class="modal-overlay" id="deleteModal" style="display:none;">
-  <div class="modal-card">
+  <div class="modal-card" style="max-width: 600px;">
     <h3>Delete Content</h3>
     <p>Are you sure you want to delete <strong id="deleteTitle"></strong>?</p>
     <p class="text-danger">This action cannot be undone.</p>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" id="cancelDelete">Cancel</button>
-      <form method="post" id="deleteForm" style="display:inline;">
-        {% csrf_token %}
+
+    <form method="post" id="deleteForm">
+      {% csrf_token %}
+
+      <div class="form-group" style="margin: 20px 0;">
+        <label for="redirectTarget" style="display: block; margin-bottom: 8px; font-weight: 600;">
+          🔗 Redirect deleted content to:
+        </label>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 12px;">
+          To preserve SEO, visitors to the old URL will be redirected to this page. Leave empty for 404.
+        </p>
+
+        <select id="redirectTarget" name="redirect_target" class="form-input" style="width: 100%; margin-bottom: 8px;">
+          <option value="">❌ No redirect (show 404)</option>
+          <optgroup label="Common destinations">
+            <option value="/articles">📚 Articles index</option>
+            <option value="/news">📰 News index</option>
+            <option value="/briefings">📋 Briefings index</option>
+            <option value="/local-events">📅 Local events index</option>
+            <option value="/local-news">📍 Local news index</option>
+            <option value="/about">👥 About page</option>
+            <option value="/ecosystem">🌐 Ecosystem page</option>
+            <option value="/local-groups">🏘️ Local groups</option>
+          </optgroup>
+          <option value="custom">✏️ Custom URL...</option>
+        </select>
+
+        <input type="text" id="customRedirect" name="custom_redirect" class="form-input"
+               placeholder="/custom/path" style="width: 100%; display: none;">
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="cancelDelete">Cancel</button>
         <button type="submit" class="btn btn-reject">Delete permanently</button>
-      </form>
-    </div>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}
@@ -119,17 +148,65 @@
   var cancelDelete = document.getElementById('cancelDelete');
   var deleteForm = document.getElementById('deleteForm');
   var deleteTitle = document.getElementById('deleteTitle');
+  var redirectTarget = document.getElementById('redirectTarget');
+  var customRedirect = document.getElementById('customRedirect');
 
   if (deleteBtn) {
     deleteBtn.addEventListener('click', function() {
+      var contentType = this.getAttribute('data-content-type');
       deleteTitle.textContent = this.getAttribute('data-title');
-      deleteForm.action = '/content/' + this.getAttribute('data-content-type') + '/' + this.getAttribute('data-slug') + '/delete/';
+      deleteForm.action = '/content/' + contentType + '/' + this.getAttribute('data-slug') + '/delete/';
+
+      // Pre-select default redirect based on content type
+      var defaultRedirects = {
+        'article': '/articles',
+        'news': '/news',
+        'briefing': '/briefings',
+        'local_event': '/local-events',
+        'local_news': '/local-news',
+        'bio': '/about',
+        'ecosystem': '/ecosystem',
+        'local_group': '/local-groups'
+      };
+      if (defaultRedirects[contentType]) {
+        redirectTarget.value = defaultRedirects[contentType];
+      }
+
       deleteModal.style.display = 'flex';
     });
   }
+
   if (cancelDelete) {
     cancelDelete.addEventListener('click', function() {
       deleteModal.style.display = 'none';
+    });
+  }
+
+  // Show/hide custom redirect input
+  if (redirectTarget) {
+    redirectTarget.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customRedirect.style.display = 'block';
+        customRedirect.focus();
+      } else {
+        customRedirect.style.display = 'none';
+      }
+    });
+  }
+
+  // Use custom value if "custom" is selected
+  if (deleteForm) {
+    deleteForm.addEventListener('submit', function(e) {
+      if (redirectTarget.value === 'custom') {
+        // Create hidden input with custom value
+        var hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'redirect_target';
+        hiddenInput.value = customRedirect.value;
+        this.appendChild(hiddenInput);
+        // Remove the select so it doesn't send 'custom'
+        redirectTarget.disabled = true;
+      }
     });
   }
 </script>

@@ -39,7 +39,7 @@ class Message(models.Model):
 
 
 class ContentAuditLog(models.Model):
-    """Audit trail for content create/edit/delete actions."""
+    """Audit trail for content create/edit/delete actions with redirect tracking."""
     ACTION_CHOICES = [
         ('create', 'Create'),
         ('edit', 'Edit'),
@@ -55,11 +55,37 @@ class ContentAuditLog(models.Model):
     changes_summary = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Redirect tracking for deleted content (SEO preservation)
+    deleted_at = models.DateTimeField(null=True, blank=True, help_text='When content was deleted')
+    redirect_target = models.CharField(
+        max_length=500, blank=True, default='',
+        help_text='URL path to redirect deleted content (e.g., /articles or /articles/category). Empty for intentional 404.'
+    )
+
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['action', 'deleted_at']),  # For finding deleted content with redirects
+        ]
 
     def __str__(self):
         return f'{self.action} {self.content_type}/{self.slug} by {self.user}'
+
+    def get_source_path(self):
+        """Get the original URL path for deleted content."""
+        # Map content types to URL paths
+        content_type_paths = {
+            'article': '/articles',
+            'news': '/news',
+            'briefing': '/briefings',
+            'local_event': '/local-events',
+            'local_news': '/local-news',
+            'bio': '/about',
+            'ecosystem': '/ecosystem',
+            'local_group': '/local-groups',
+        }
+        base_path = content_type_paths.get(self.content_type, f'/{self.content_type}')
+        return f'{base_path}/{self.slug}'
 
 
 class ContentDraft(models.Model):

@@ -37,6 +37,7 @@ from .services.image_service import process_image
 from .services.pdf_service import extract_pdf, save_pdf_images, get_pdf_image
 from .services.astro_validator import validate_against_astro_schema
 from .services.railway_service import get_latest_deployment, is_railway_configured
+from .services.redirect_service import write_redirects_to_repo, get_redirect_summary
 
 logger = logging.getLogger(__name__)
 
@@ -1480,7 +1481,7 @@ def quick_edit(request, content_type, slug):
 @login_required
 @require_POST
 def delete_content(request, content_type, slug):
-    """Delete content from the content browser."""
+    """Delete content from the content browser with redirect tracking."""
     profile = request.user.profile
 
     if not profile.can_delete(content_type):
@@ -1498,6 +1499,9 @@ def delete_content(request, content_type, slug):
         or 'Untitled'
     )
 
+    # Get redirect target from form (empty string means intentional 404)
+    redirect_target = request.POST.get('redirect_target', '').strip()
+
     file_path = get_file_path(content_type, slug)
 
     try:
@@ -1512,8 +1516,32 @@ def delete_content(request, content_type, slug):
             commit_msg = f'Delete {content_type}: {title} — via MMTUK CMS ({request.user.username})'
             sha = commit_locally([file_path], commit_msg, request.user.get_full_name() or request.user.username)
 
-        _log_audit(content_type, slug, 'delete', request.user, sha)
+        # Log deletion with redirect tracking
+        audit_log = ContentAuditLog.objects.create(
+            content_type=content_type,
+            slug=slug,
+            action='delete',
+            user=request.user,
+            git_commit_sha=sha,
+            changes_summary=f'Deleted: {title}',
+            deleted_at=timezone.now(),
+            redirect_target=redirect_target,
+        )
+
         invalidate_cache()
+
+        # Show success message with redirect info
+        from django.contrib import messages
+        if redirect_target:
+            messages.success(
+                request,
+                f'Content deleted. Visitors will be redirected to: {redirect_target}'
+            )
+        else:
+            messages.success(
+                request,
+                f'Content deleted. Old URL will return 404 (no redirect).'
+            )
 
     except Exception:
         logger.exception('Delete content failed')
@@ -1927,6 +1955,24 @@ def publish_changes(request):
     if profile.role not in ('admin', 'editor'):
         return HttpResponseForbidden('You do not have permission to publish changes.')
 
+    # Generate redirects config for deleted content (SEO preservation)
+    try:
+        redirect_summary = get_redirect_summary()
+        if redirect_summary['total_count'] > 0:
+            logger.info(f'Generating {redirect_summary["total_count"]} redirect(s) before publish')
+            write_redirects_to_repo()
+            # Commit the redirects file
+            from .services.git_service import commit_locally
+            commit_locally(
+                ['redirects.config.mjs'],
+                f'Update redirects: {redirect_summary["total_count"]} redirect(s) — via MMTUK CMS',
+                'MMTUK CMS'
+            )
+    except Exception as e:
+        # Fail open - don't block publish if redirect generation fails
+        logger.exception(f'Failed to generate redirects: {e}')
+        messages.warning(request, 'Warning: Could not generate redirects config.')
+
     # Get unpushed commits before push (for Railway tracking)
     unpushed = get_unpushed_changes()
     latest_commit_sha = unpushed[0]['sha'] if unpushed else ''
@@ -1982,6 +2028,175 @@ def pending_publish(request):
         'count': len(changes),
         'commits': changes,
     })
+
+
+# --- Redirect Management (SEO) ---
+
+@login_required
+@permission_required('accounts.can_approve_content', raise_exception=True)
+def redirect_management(request):
+    """View and manage redirects for deleted content (admin/editor only)."""
+    profile = request.user.profile
+    conversations = Conversation.objects.filter(user=request.user)[:20]
+
+    # Get redirect summary
+    summary = get_redirect_summary()
+
+    # Count grouped targets
+    grouped_count = len(summary['grouped'])
+
+    # Get deleted content with no redirect (intentional 404s)
+    intentional_404s = ContentAuditLog.objects.filter(
+        action='delete',
+        deleted_at__isnull=False,
+        redirect_target='',
+    ).select_related('user').order_by('-deleted_at')[:50]
+
+    return render(request, 'chat/redirect_management.html', {
+        'summary': summary,
+        'grouped_count': grouped_count,
+        'deleted_no_redirect': intentional_404s.count(),
+        'intentional_404s': intentional_404s,
+        'conversations': conversations,
+        'profile': profile,
+    })
+
+
+@login_required
+@permission_required('accounts.can_approve_content', raise_exception=True)
+@require_POST
+def edit_redirect(request):
+    """Edit a redirect target for deleted content."""
+    from django.contrib import messages
+    from .services.redirect_service import validate_redirect_target
+
+    source_path = request.POST.get('source_path', '').strip()
+    redirect_target = request.POST.get('redirect_target', '').strip()
+
+    if not source_path:
+        messages.error(request, 'Invalid source path.')
+        return redirect('redirect_management')
+
+    # Validate redirect target
+    is_valid, error_message = validate_redirect_target(redirect_target)
+    if not is_valid:
+        messages.error(request, f'Invalid redirect target: {error_message}')
+        return redirect('redirect_management')
+
+    # Find the ContentAuditLog entry
+    # Parse source_path to extract content_type and slug
+    # Format: /articles/slug or /news/slug
+    parts = source_path.strip('/').split('/')
+    if len(parts) != 2:
+        messages.error(request, 'Invalid source path format.')
+        return redirect('redirect_management')
+
+    # Map URL paths back to content types
+    path_to_type = {
+        'articles': 'article',
+        'news': 'news',
+        'briefings': 'briefing',
+        'local-events': 'local_event',
+        'local-news': 'local_news',
+        'about': 'bio',
+        'ecosystem': 'ecosystem',
+        'local-groups': 'local_group',
+    }
+
+    content_type = path_to_type.get(parts[0])
+    slug = parts[1]
+
+    if not content_type:
+        messages.error(request, f'Unknown content type: {parts[0]}')
+        return redirect('redirect_management')
+
+    # Update the most recent delete log for this content
+    audit_log = ContentAuditLog.objects.filter(
+        action='delete',
+        content_type=content_type,
+        slug=slug,
+        deleted_at__isnull=False,
+    ).order_by('-deleted_at').first()
+
+    if not audit_log:
+        messages.error(request, 'Could not find deleted content record.')
+        return redirect('redirect_management')
+
+    audit_log.redirect_target = redirect_target
+    audit_log.save()
+
+    if redirect_target:
+        messages.success(
+            request,
+            f'Updated redirect: {source_path} → {redirect_target}'
+        )
+    else:
+        messages.success(
+            request,
+            f'Removed redirect for {source_path} (will return 404)'
+        )
+
+    return redirect('redirect_management')
+
+
+@login_required
+@permission_required('accounts.can_approve_content', raise_exception=True)
+@require_POST
+def remove_redirect(request):
+    """Remove a redirect (set target to empty, content will 404)."""
+    from django.contrib import messages
+
+    source_path = request.POST.get('source_path', '').strip()
+
+    if not source_path:
+        messages.error(request, 'Invalid source path.')
+        return redirect('redirect_management')
+
+    # Parse source_path to extract content_type and slug
+    parts = source_path.strip('/').split('/')
+    if len(parts) != 2:
+        messages.error(request, 'Invalid source path format.')
+        return redirect('redirect_management')
+
+    path_to_type = {
+        'articles': 'article',
+        'news': 'news',
+        'briefings': 'briefing',
+        'local-events': 'local_event',
+        'local-news': 'local_news',
+        'about': 'bio',
+        'ecosystem': 'ecosystem',
+        'local-groups': 'local_group',
+    }
+
+    content_type = path_to_type.get(parts[0])
+    slug = parts[1]
+
+    if not content_type:
+        messages.error(request, f'Unknown content type: {parts[0]}')
+        return redirect('redirect_management')
+
+    # Update audit log to remove redirect
+    audit_log = ContentAuditLog.objects.filter(
+        action='delete',
+        content_type=content_type,
+        slug=slug,
+        deleted_at__isnull=False,
+    ).order_by('-deleted_at').first()
+
+    if not audit_log:
+        messages.error(request, 'Could not find deleted content record.')
+        return redirect('redirect_management')
+
+    audit_log.redirect_target = ''
+    audit_log.save()
+
+    messages.success(
+        request,
+        f'Removed redirect for {source_path} (will return 404)'
+    )
+
+    return redirect('redirect_management')
 
 
 # --- Discard conversation ---
