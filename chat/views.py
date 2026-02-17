@@ -1155,6 +1155,13 @@ def content_browser(request):
         item['summary'] = fm.get('summary') or fm.get('description') or fm.get('text') or ''
         item['author'] = fm.get('author') or fm.get('sourceAuthor') or fm.get('name') or ''
         item['date'] = fm.get('pubDate') or fm.get('date') or ''
+        # Normalise: if YAML left an ISO datetime string unparsed, convert it now
+        if isinstance(item['date'], str) and item['date']:
+            try:
+                from datetime import datetime as _dt
+                item['date'] = _dt.fromisoformat(item['date'].replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                pass
         item['is_draft'] = fm.get('draft', False)
         item['is_featured'] = fm.get('featured', False)
         item['thumbnail'] = fm.get('thumbnail') or fm.get('image') or ''
