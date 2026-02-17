@@ -96,11 +96,12 @@ def extract_pdf(file_bytes, filename):
                 logger.debug('Failed to extract image xref=%s from %s', xref, filename)
                 continue
 
+    page_count = doc.page_count
     doc.close()
 
     return {
         'filename': filename,
-        'page_count': doc.page_count if hasattr(doc, 'page_count') else len(text_parts),
+        'page_count': page_count,
         'text': full_text,
         'images': images,
         'metadata': metadata,
