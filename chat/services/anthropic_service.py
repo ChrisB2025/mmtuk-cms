@@ -5,6 +5,7 @@ Anthropic API integration for the MMTUK CMS chatbot.
 import json
 import re
 import logging
+from datetime import date
 
 import anthropic
 from django.conf import settings
@@ -91,6 +92,9 @@ When a user asks to delete content:
 
 **IMPORTANT:** Always ask for explicit confirmation before emitting a delete action. Deletion is irreversible.
 
+## Current date
+Today's date is: {today}
+
 ## Current user context
 The user's name is: {user_name}
 The user's role is: {role}
@@ -167,6 +171,7 @@ def _build_content_inventory():
 def build_system_prompt(profile):
     """Build the full system prompt with user context and schema details."""
     return SYSTEM_PROMPT_TEMPLATE.format(
+        today=date.today().strftime('%A, %d %B %Y'),
         user_name=profile.user.get_full_name() or profile.user.username,
         role=profile.get_role_display(),
         local_group=profile.local_group or 'N/A',
