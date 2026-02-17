@@ -126,16 +126,18 @@
 
 /* ===== Dark Mode Overrides ===== */
 [data-theme="dark"] {
-  --bg-primary: #030912;
-  --bg-secondary: #040c19;
-  --bg-tertiary: #081832;
+  --bg-primary: #061624;
+  --bg-secondary: #0a1e3f;
+  --bg-tertiary: #0d2545;
   --text-primary: #f5f5f7;
   --text-secondary: #a0aec0;
   --text-tertiary: #718096;
-  --border-primary: #0e2236;
-  --border-secondary: #1a3158;
-  --teal-pale: rgba(0, 69, 55, 0.2);
-  --assistant-bubble: #081832;
+  --border-primary: #1a3158;
+  --border-secondary: #254570;
+  --teal-pale: rgba(0, 69, 55, 0.25);
+  --assistant-bubble: #0d2545;
+  /* navy used for text must be light in dark mode */
+  --navy: #c8d8eb;
 
   /* Status color backgrounds — darker in dark mode */
   --success-bg: rgba(16, 185, 129, 0.15);
@@ -837,8 +839,8 @@ body {
 }
 .sidebar-tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
 .sidebar-tab.active {
-  color: var(--teal);
-  border-bottom: 2px solid var(--teal);
+  color: #fff;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.7);
 }
 
 /* ---- Content Browser ---- */
