@@ -43,7 +43,34 @@
   </div>
   {% endif %}
 
+  {% if query or content_type_filter %}
+  <div class="active-filters">
+    <span class="active-filters-label">Active filters:</span>
+    {% if content_type_filter %}
+    <span class="filter-chip">
+      <span class="filter-chip-label">Type: {{ content_type_filter }}</span>
+      <a href="{% url 'content_browser' %}{% if query %}?q={{ query }}{% endif %}" class="filter-chip-remove" title="Remove type filter">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </a>
+    </span>
+    {% endif %}
+    {% if query %}
+    <span class="filter-chip">
+      <span class="filter-chip-label">"{{ query }}"</span>
+      <a href="{% url 'content_browser' %}{% if content_type_filter %}?type={{ content_type_filter }}{% endif %}" class="filter-chip-remove" title="Clear search">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </a>
+    </span>
+    {% endif %}
+    <a href="{% url 'content_browser' %}" class="filter-chip-clear">Clear all</a>
+  </div>
+  {% endif %}
+
   <div class="browser-controls">
+    <label class="select-all-label" title="Select all visible items">
+      <input type="checkbox" id="selectAll">
+      <span class="select-all-text">Select all</span>
+    </label>
     <div class="search-box">
       <input type="text" id="searchInput" class="form-input" placeholder="Search content..."
              value="{{ query }}" autocomplete="off">
@@ -58,59 +85,106 @@
       </select>
     </div>
     <div class="view-toggle">
-      <button class="view-btn {% if view_mode != 'list' %}active{% endif %}" data-view="cards" title="Card view">&#9638;</button>
-      <button class="view-btn {% if view_mode == 'list' %}active{% endif %}" data-view="list" title="List view">&#9776;</button>
+      <button class="view-btn {% if view_mode != 'list' %}active{% endif %}" data-view="cards" title="Card view">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="view-btn {% if view_mode == 'list' %}active{% endif %}" data-view="list" title="List view">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
     </div>
   </div>
 
   <div class="{% if view_mode == 'list' %}content-list{% else %}content-grid{% endif %}" id="contentGrid">
     {% for item in items %}
+
     {% if view_mode == 'list' %}
-    <a href="{% url 'content_detail' item.content_type item.slug %}" class="content-row">
-      <span class="type-badge type-{{ item.content_type }}">{{ item.content_type }}</span>
-      {% if item.is_draft %}<span class="draft-badge">Draft</span>{% endif %}
-      {% if item.is_featured %}<span class="featured-badge">Featured</span>{% endif %}
-      <span class="row-title">{{ item.title }}</span>
-      {% if item.date %}<span class="row-meta">{{ item.date }}</span>{% endif %}
-      {% if item.author %}<span class="row-meta">{{ item.author }}</span>{% endif %}
-    </a>
-    {% else %}
-    <a href="{% url 'content_detail' item.content_type item.slug %}" class="content-card">
-      <div class="card-header">
+    <div class="content-row">
+      <label class="row-checkbox">
+        <input type="checkbox" class="bulk-checkbox" value="{{ item.slug }}" data-type="{{ item.content_type }}">
+        <span class="row-checkbox-mark"></span>
+      </label>
+      <a href="{% url 'content_detail' item.content_type item.slug %}" class="row-link">
         <span class="type-badge type-{{ item.content_type }}">{{ item.content_type }}</span>
-        {% if item.is_draft %}
-        <span class="draft-badge">Draft</span>
+        {% if item.is_draft %}<span class="draft-badge">Draft</span>{% endif %}
+        {% if item.is_featured %}<span class="featured-badge">Featured</span>{% endif %}
+        <span class="row-title">{{ item.title }}</span>
+        {% if item.date %}<span class="row-meta">{{ item.date }}</span>{% endif %}
+        {% if item.author %}<span class="row-meta">{{ item.author }}</span>{% endif %}
+      </a>
+    </div>
+
+    {% else %}
+    <div class="card-wrapper">
+      <label class="card-checkbox">
+        <input type="checkbox" class="bulk-checkbox" value="{{ item.slug }}" data-type="{{ item.content_type }}">
+        <span class="card-checkbox-mark">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </label>
+      <a href="{% url 'content_detail' item.content_type item.slug %}" class="content-card">
+        <div class="card-header">
+          <span class="type-badge type-{{ item.content_type }}">{{ item.content_type }}</span>
+          {% if item.is_draft %}<span class="draft-badge">Draft</span>{% endif %}
+          {% if item.is_featured %}<span class="featured-badge">Featured</span>{% endif %}
+        </div>
+        <h3 class="card-title">{{ item.title }}</h3>
+        <div class="card-meta">
+          {% if item.author %}<span class="card-author">{{ item.author }}</span>{% endif %}
+          {% if item.date %}<span class="card-date">{{ item.date }}</span>{% endif %}
+        </div>
+        {% if item.summary %}
+        <p class="card-summary">{{ item.summary|truncatechars:100 }}</p>
         {% endif %}
-        {% if item.is_featured %}
-        <span class="featured-badge">Featured</span>
-        {% endif %}
-      </div>
-      <h3 class="card-title">{{ item.title }}</h3>
-      <div class="card-meta">
-        {% if item.author %}
-        <span class="card-author">{{ item.author }}</span>
-        {% endif %}
-        {% if item.date %}
-        <span class="card-date">{{ item.date }}</span>
-        {% endif %}
-      </div>
-      {% if item.summary %}
-      <p class="card-summary">{{ item.summary|truncatechars:100 }}</p>
-      {% endif %}
-    </a>
+      </a>
+    </div>
     {% endif %}
+
     {% empty %}
     <div class="empty-state-large">
-      <p>No content found{% if query %} matching "{{ query }}"{% endif %}{% if content_type_filter %} of type "{{ content_type_filter }}"{% endif %}.</p>
+      <svg class="empty-state-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <p class="empty-state-title">
+        {% if query %}No results for "{{ query }}"
+        {% elif content_type_filter %}No {{ content_type_filter }} content yet
+        {% else %}No content yet{% endif %}
+      </p>
+      <p class="empty-state-sub">
+        {% if query or content_type_filter %}Try adjusting your filters or search terms.
+        {% else %}Get started by asking the AI assistant to create some content.{% endif %}
+      </p>
+      {% if query or content_type_filter %}
+      <a href="{% url 'content_browser' %}" class="btn btn-secondary">Clear filters</a>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
 </div>
+
+<!-- Bulk action toolbar -->
+<div class="bulk-toolbar" id="bulkToolbar">
+  <span class="bulk-count" id="bulkCount">0 selected</span>
+  <div class="bulk-actions">
+    <button class="btn btn-sm btn-ghost-white" id="bulkSetDraft">Set as draft</button>
+    <button class="btn btn-sm btn-ghost-white" id="bulkUnsetDraft">Publish</button>
+    <button class="btn btn-sm btn-danger-sm" id="bulkDelete">Delete</button>
+  </div>
+  <button class="bulk-deselect" id="deselectAll" title="Deselect all">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script src="{% static 'chat/content_browser.js' %}"></script>
 <script>
   window.CONTENT_API_URL = "{% url 'content_api' %}";
+  window.BULK_API_URL = "{% url 'bulk_action' %}";
+  window.CSRF_TOKEN = "{{ csrf_token }}";
 </script>
 {% endblock %}
