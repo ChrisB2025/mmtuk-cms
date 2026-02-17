@@ -17,7 +17,7 @@
     {% if user.is_authenticated %}
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1 class="logo">MMTUK <span class="logo-sub">CMS</span></h1>
+        <h1 class="logo"><a href="{% url 'index' %}" class="logo-link">MMTUK <span class="logo-sub">CMS</span></a></h1>
       </div>
       <div class="sidebar-tabs">
         <a href="{% url 'index' %}" class="sidebar-tab {% if active_tab != 'content' %}active{% endif %}">Chat</a>

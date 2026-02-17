@@ -167,6 +167,12 @@ body {
   color: var(--teal);
   font-weight: var(--font-normal);
 }
+.logo-link {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+.logo-link:hover { opacity: 0.85; }
 
 .sidebar-actions {
   padding: var(--space-4) var(--space-5) var(--space-2);
