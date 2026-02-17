@@ -837,6 +837,8 @@ def upload_pdf(request, conversation_id):
 
     try:
         response_text = call_claude(system_prompt, all_msgs)
+        action_check = 'CREATE' if '```json' in response_text and '"action": "create"' in response_text else 'questions'
+        logger.info('upload_pdf Claude response: conv=%s, action=%s', conv.id, action_check)
     except Exception:
         logger.exception('Claude API call failed after PDF upload')
         error_msg = 'Sorry, I encountered an error processing the PDF. Please try again.'
