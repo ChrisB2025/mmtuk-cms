@@ -1691,6 +1691,44 @@ def upload_image(request):
         return JsonResponse({'error': 'Failed to upload image.'}, status=500)
 
 
+@login_required
+@require_POST
+def delete_image(request):
+    """Delete an image from the repo's public/images/ directory."""
+    profile = request.user.profile
+
+    if profile.role not in ('admin', 'editor', 'group_lead'):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    web_path = request.POST.get('web_path', '').strip()
+    if not web_path.startswith('/images/') or '..' in web_path:
+        return JsonResponse({'error': 'Invalid path'}, status=400)
+
+    rel_path = 'public' + web_path  # e.g. public/images/news/foo.png
+    filename = rel_path.rsplit('/', 1)[-1]
+
+    try:
+        if settings.DEBUG:
+            from .services.git_service import write_file_to_output
+            import pathlib
+            full = pathlib.Path(settings.OUTPUT_DIR) / rel_path
+            if full.exists():
+                full.unlink()
+        else:
+            from .services.git_service import delete_file_from_repo, commit_locally
+            if not delete_file_from_repo(rel_path):
+                return JsonResponse({'error': 'Image not found'}, status=404)
+            commit_msg = f'Delete image: {filename} — via MMTUK CMS ({request.user.username})'
+            commit_locally([rel_path], commit_msg, request.user.get_full_name() or request.user.username)
+
+        invalidate_cache()
+        return JsonResponse({'success': True})
+
+    except Exception:
+        logger.exception('Image delete failed for %s', web_path)
+        return JsonResponse({'error': 'Failed to delete image.'}, status=500)
+
+
 # --- Repo image serving ---
 
 @login_required

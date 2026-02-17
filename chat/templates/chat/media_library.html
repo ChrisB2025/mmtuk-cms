@@ -9,7 +9,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div>
         <h2 class="page-title" style="margin-bottom:4px;">Media Library</h2>
-        <p style="color: var(--text-light); font-size: 0.85rem;">{{ images|length }} images in public/images/</p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ images|length }} images in public/images/</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         {% if view_mode == 'flat' %}
@@ -25,26 +25,43 @@
   <div class="upload-area">
     <input type="file" id="imageFileInput" accept="image/*" style="display:none;">
     <button class="btn btn-primary btn-small" id="uploadImageBtn">Upload Image</button>
-    <input type="text" id="uploadDir" class="form-input form-input-sm" placeholder="Directory (e.g. images/bios)" value="images" style="width: 220px;">
-    <span id="uploadStatus" style="font-size: 0.85rem; color: var(--text-light);"></span>
+    <select id="uploadDirSelect" class="form-input form-input-sm" style="width:230px;">
+      <option value="images">images/ — General</option>
+      <option value="images/news">images/news/ — News &amp; press</option>
+      <option value="images/briefings">images/briefings/ — Briefing thumbnails</option>
+      <option value="images/events">images/events/ — Events</option>
+      <option value="images/bios">images/bios/ — Team photos</option>
+      <option value="images/local-groups">images/local-groups/ — Local groups</option>
+      <option value="__custom__">Custom path…</option>
+    </select>
+    <input type="text" id="uploadDirCustom" class="form-input form-input-sm"
+           placeholder="e.g. images/podcast" style="display:none;width:200px;">
+    <span id="uploadStatus" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
   </div>
   {% endif %}
 
   {% if view_mode == 'flat' %}
-  {# ---- Flat View (original) ---- #}
+  {# ---- Flat View ---- #}
   <div class="media-grid" style="margin-top:20px;">
     {% for img in images %}
     <div class="media-card">
       {% if img.filename|lower|slice:"-4:" == ".svg" %}
-      <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light);">SVG</div>
+      <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-secondary);">SVG</div>
       {% else %}
       <img src="/repo-images{{ img.web_path }}" alt="{{ img.filename }}" class="media-thumb" loading="lazy"
-           onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light)>No preview</div>');">
+           onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-secondary)>No preview</div>');">
       {% endif %}
       <div class="media-info">
         <div class="media-filename">{{ img.filename }}</div>
-        <div class="media-path" title="Click to copy" onclick="navigator.clipboard.writeText('{{ img.web_path }}');this.textContent='Copied!';">{{ img.web_path }}</div>
+        <div class="media-path" title="Click to copy" onclick="copyPath('{{ img.web_path }}', this)">{{ img.web_path }}</div>
         <div class="media-size">{{ img.size|filesizeformat }}</div>
+        {% if can_upload %}
+        <div class="media-card-actions">
+          <button class="btn-icon btn-delete-img" title="Delete image"
+                  data-path="{{ img.web_path }}"
+                  onclick="confirmDeleteImage(this)">&#x2715; Delete</button>
+        </div>
+        {% endif %}
       </div>
     </div>
     {% empty %}
@@ -72,10 +89,10 @@
           <div class="media-card">
             {% with img=group.primary %}
             {% if img.filename|lower|slice:"-4:" == ".svg" %}
-            <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light);">SVG</div>
+            <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-secondary);">SVG</div>
             {% else %}
             <img src="/repo-images{{ img.web_path }}" alt="{{ img.filename }}" class="media-thumb" loading="lazy"
-                 onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-light)>No preview</div>');">
+                 onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-secondary)>No preview</div>');">
             {% endif %}
             <div class="media-info">
               <div class="media-filename">
@@ -102,7 +119,7 @@
                 {% endwith %}
                 <span class="media-size">{{ group.total_size|filesizeformat }}</span>
               </div>
-              <div class="media-path" title="Click to copy" onclick="navigator.clipboard.writeText('{{ img.web_path }}');this.textContent='Copied!';var el=this;setTimeout(function(){el.textContent='{{ img.web_path }}'},1500);">{{ img.web_path }}</div>
+              <div class="media-path" title="Click to copy" onclick="copyPath('{{ img.web_path }}', this)">{{ img.web_path }}</div>
               {% if group.variant_count > 0 %}
               <details class="variant-details">
                 <summary>Show {{ group.variant_count }} variant{{ group.variant_count|pluralize }}</summary>
@@ -111,11 +128,18 @@
                   <li>
                     <span class="variant-name">{{ v.filename }}</span>
                     <span class="variant-size">{{ v.size|filesizeformat }}</span>
-                    <span class="media-path" title="Click to copy" onclick="event.stopPropagation();navigator.clipboard.writeText('{{ v.web_path }}');this.textContent='Copied!';var el=this;setTimeout(function(){el.textContent='{{ v.web_path }}'},1500);">{{ v.web_path }}</span>
+                    <span class="media-path" title="Click to copy" onclick="event.stopPropagation();copyPath('{{ v.web_path }}', this)">{{ v.web_path }}</span>
                   </li>
                   {% endfor %}
                 </ul>
               </details>
+              {% endif %}
+              {% if can_upload %}
+              <div class="media-card-actions">
+                <button class="btn-icon btn-delete-img" title="Delete image"
+                        data-path="{{ img.web_path }}"
+                        onclick="confirmDeleteImage(this)">&#x2715; Delete</button>
+              </div>
               {% endif %}
             </div>
             {% endwith %}
@@ -137,6 +161,8 @@
 
 {% block extra_scripts %}
 <script>
+  var CSRF_TOKEN = '{{ csrf_token }}';
+
   // Section collapse/expand
   function toggleSection(btn) {
     var content = btn.nextElementSibling;
@@ -146,11 +172,36 @@
     btn.querySelector('.media-section-toggle').textContent = expanded ? '\u25B8' : '\u25BE';
   }
 
+  // Copy path to clipboard
+  function copyPath(path, el) {
+    navigator.clipboard.writeText(path).then(function() {
+      var orig = el.textContent;
+      el.textContent = 'Copied!';
+      setTimeout(function() { el.textContent = orig; }, 1500);
+    }).catch(function() {
+      el.textContent = 'Copy failed';
+    });
+  }
+
+  // Directory dropdown: show/hide custom input
+  var dirSelect = document.getElementById('uploadDirSelect');
+  var dirCustom = document.getElementById('uploadDirCustom');
+  if (dirSelect) {
+    dirSelect.addEventListener('change', function() {
+      dirCustom.style.display = this.value === '__custom__' ? '' : 'none';
+    });
+  }
+
+  function getUploadDir() {
+    if (!dirSelect) return 'images';
+    if (dirSelect.value === '__custom__') return dirCustom.value.trim() || 'images';
+    return dirSelect.value;
+  }
+
   // Upload functionality
   var uploadBtn = document.getElementById('uploadImageBtn');
   var fileInput = document.getElementById('imageFileInput');
-  var dirInput = document.getElementById('uploadDir');
-  var statusEl = document.getElementById('uploadStatus');
+  var statusEl  = document.getElementById('uploadStatus');
 
   if (uploadBtn && fileInput) {
     uploadBtn.addEventListener('click', function() { fileInput.click(); });
@@ -159,22 +210,31 @@
       var file = this.files[0];
       var formData = new FormData();
       formData.append('image', file);
-      formData.append('directory', dirInput ? dirInput.value : 'images');
+      formData.append('directory', getUploadDir());
       formData.append('filename', file.name);
 
-      statusEl.textContent = 'Uploading...';
+      statusEl.textContent = 'Uploading…';
       uploadBtn.disabled = true;
 
       fetch('/api/upload-image/', {
         method: 'POST',
-        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
         body: formData,
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.success) {
-          statusEl.textContent = 'Uploaded! Path: ' + data.web_path;
-          setTimeout(function() { window.location.reload(); }, 1500);
+          // Auto-copy path to clipboard
+          navigator.clipboard.writeText(data.web_path).catch(function(){});
+          statusEl.textContent = '';
+          if (window.showToast) {
+            window.showToast(
+              '\u2713 Uploaded \u2014 path copied to clipboard: <strong>' + data.web_path + '</strong>' +
+              '<br><small>Paste this into the <code>thumbnail:</code> or <code>image:</code> field of your content item.</small>',
+              'success'
+            );
+          }
+          setTimeout(function() { window.location.reload(); }, 4000);
         } else {
           statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
         }
@@ -186,6 +246,32 @@
         uploadBtn.disabled = false;
         fileInput.value = '';
       });
+    });
+  }
+
+  // Delete image
+  function confirmDeleteImage(btn) {
+    var path = btn.getAttribute('data-path');
+    if (!confirm('Delete ' + path + '?\n\nThis will stage a deletion commit — it will go live when you next Publish.')) return;
+    btn.disabled = true;
+    fetch('/api/delete-image/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'web_path=' + encodeURIComponent(path),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        if (window.showToast) { window.showToast('Image deleted. Go to Review &amp; Publish when ready to go live.', 'success'); }
+        setTimeout(function() { window.location.reload(); }, 1500);
+      } else {
+        alert('Delete failed: ' + (data.error || 'Unknown error'));
+        btn.disabled = false;
+      }
+    })
+    .catch(function() {
+      alert('Network error — delete failed.');
+      btn.disabled = false;
     });
   }
 </script>

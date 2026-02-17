@@ -31,6 +31,7 @@ urlpatterns = [
     # APIs
     path('api/content/', views.content_api, name='content_api'),
     path('api/upload-image/', views.upload_image, name='upload_image'),
+    path('api/delete-image/', views.delete_image, name='delete_image'),
     path('api/content/bulk/', views.bulk_action, name='bulk_action'),
     path('api/pending-publish/', views.pending_publish, name='pending_publish'),
     # Review & Publish

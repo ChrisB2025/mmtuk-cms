@@ -1314,6 +1314,25 @@ body {
   overflow: hidden;
   transition: box-shadow 0.15s;
 }
+.media-card-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+}
+.btn-delete-img {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.btn-delete-img:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: rgba(220,38,38,0.06);
+}
 .media-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
@@ -1848,6 +1867,11 @@ body {
 }
 .btn-publish-large:hover {
   background: #059669;
+}
+.publish-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 .commits-table,
 .audit-table {
