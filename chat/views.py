@@ -35,6 +35,7 @@ from .services.git_service import (
 from .services.scraper_service import scrape_url
 from .services.image_service import process_image
 from .services.pdf_service import extract_pdf, save_pdf_images, get_pdf_image
+from .services.docx_service import extract_docx
 from .services.astro_validator import validate_against_astro_schema
 from .services.railway_service import get_latest_deployment, is_railway_configured
 from .services.redirect_service import write_redirects_to_repo, get_redirect_summary
@@ -754,8 +755,9 @@ def upload_pdf(request, conversation_id):
     if not uploaded:
         return JsonResponse({'error': 'No file uploaded.'}, status=400)
 
-    if not uploaded.name.lower().endswith('.pdf'):
-        return JsonResponse({'error': 'Only PDF files are accepted.'}, status=400)
+    filename_lower = uploaded.name.lower()
+    if not (filename_lower.endswith('.pdf') or filename_lower.endswith('.docx')):
+        return JsonResponse({'error': 'Only PDF and Word (.docx) files are accepted.'}, status=400)
 
     if uploaded.size > 20 * 1024 * 1024:
         return JsonResponse({'error': 'File exceeds the 20MB size limit.'}, status=400)
@@ -765,17 +767,20 @@ def upload_pdf(request, conversation_id):
     # Save a user message for the upload
     Message.objects.create(
         conversation=conv, role='user',
-        content=f'[Uploaded PDF: {uploaded.name}]',
+        content=f'[Uploaded document: {uploaded.name}]',
     )
 
     # Update conversation title from first message
     if conv.messages.count() <= 1:
-        conv.title = f'PDF: {uploaded.name[:70]}'
+        conv.title = f'Document: {uploaded.name[:70]}'
         conv.save(update_fields=['title'])
 
     # Extract text and images
     try:
-        result = extract_pdf(file_bytes, uploaded.name)
+        if filename_lower.endswith('.docx'):
+            result = extract_docx(file_bytes, uploaded.name)
+        else:
+            result = extract_pdf(file_bytes, uploaded.name)
     except ValueError as exc:
         error_msg = f'Could not process the PDF: {exc}'
         Message.objects.create(conversation=conv, role='assistant', content=error_msg)
@@ -1921,6 +1926,16 @@ def review_changes(request):
     conversations = Conversation.objects.filter(user=request.user)[:20]
 
     unpushed = get_unpushed_changes()
+
+    # Enrich each commit with content_type + slug from audit log so we can link to the item
+    for commit in unpushed:
+        log = ContentAuditLog.objects.filter(
+            git_commit_sha__startswith=commit['sha']
+        ).first()
+        if log:
+            commit['content_type'] = log.content_type
+            commit['slug'] = log.slug
+
     pending_drafts = ContentDraft.objects.filter(status='pending')
 
     # Scope for group leads

@@ -41,7 +41,13 @@
         {% for commit in unpushed %}
         <tr>
           <td><code class="commit-sha">{{ commit.sha }}</code></td>
-          <td>{{ commit.message }}</td>
+          <td>
+            {% if commit.content_type and commit.slug %}
+              <a href="{% url 'content_detail' commit.content_type commit.slug %}" class="commit-link">{{ commit.message }}</a>
+            {% else %}
+              {{ commit.message }}
+            {% endif %}
+          </td>
           <td>{{ commit.author }}</td>
           <td>{{ commit.date|truncatechars:16 }}</td>
         </tr>

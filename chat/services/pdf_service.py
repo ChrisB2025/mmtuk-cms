@@ -55,49 +55,50 @@ def extract_pdf(file_bytes, filename):
         'subject': meta.get('subject', '') or '',
     }
 
-    # Extract text from all pages
-    text_parts = []
-    for page_num in range(doc.page_count):
-        page = doc.load_page(page_num)
-        page_text = page.get_text('text')
-        if page_text.strip():
-            text_parts.append(page_text)
+    try:
+        # Extract text from all pages
+        text_parts = []
+        for page_num in range(doc.page_count):
+            page = doc.load_page(page_num)
+            page_text = page.get_text('text')
+            if page_text.strip():
+                text_parts.append(page_text)
 
-    full_text = '\n\n'.join(text_parts)
+        full_text = '\n\n'.join(text_parts)
 
-    # Extract images (up to MAX_IMAGES)
-    images = []
-    for page_num in range(doc.page_count):
-        if len(images) >= MAX_IMAGES:
-            break
-        page = doc.load_page(page_num)
-        image_list = page.get_images(full=True)
-        for img_info in image_list:
+        # Extract images (up to MAX_IMAGES)
+        images = []
+        for page_num in range(doc.page_count):
             if len(images) >= MAX_IMAGES:
                 break
-            xref = img_info[0]
-            try:
-                base_image = doc.extract_image(xref)
-                if not base_image or not base_image.get('image'):
+            page = doc.load_page(page_num)
+            image_list = page.get_images(full=True)
+            for img_info in image_list:
+                if len(images) >= MAX_IMAGES:
+                    break
+                xref = img_info[0]
+                try:
+                    base_image = doc.extract_image(xref)
+                    if not base_image or not base_image.get('image'):
+                        continue
+                    # Skip tiny images (likely icons/bullets)
+                    w = base_image.get('width', 0)
+                    h = base_image.get('height', 0)
+                    if w < 50 or h < 50:
+                        continue
+                    images.append({
+                        'page': page_num + 1,
+                        'data': base_image['image'],
+                        'ext': base_image.get('ext', 'png'),
+                        'width': w,
+                        'height': h,
+                    })
+                except Exception:
+                    logger.debug('Failed to extract image xref=%s from %s', xref, filename)
                     continue
-                # Skip tiny images (likely icons/bullets)
-                w = base_image.get('width', 0)
-                h = base_image.get('height', 0)
-                if w < 50 or h < 50:
-                    continue
-                images.append({
-                    'page': page_num + 1,
-                    'data': base_image['image'],
-                    'ext': base_image.get('ext', 'png'),
-                    'width': w,
-                    'height': h,
-                })
-            except Exception:
-                logger.debug('Failed to extract image xref=%s from %s', xref, filename)
-                continue
-
-    page_count = doc.page_count
-    doc.close()
+    finally:
+        page_count = doc.page_count
+        doc.close()
 
     return {
         'filename': filename,

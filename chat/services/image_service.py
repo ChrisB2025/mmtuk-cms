@@ -65,8 +65,8 @@ def get_image_dimensions(image_path):
     Returns (width, height) or (None, None) if unable to read.
     """
     try:
-        img = Image.open(image_path)
-        return img.size
+        with Image.open(image_path) as img:
+            return img.size
     except Exception:
         return None, None
 
