@@ -58,6 +58,23 @@
         {% endfor %}
         <div class="form-group-sm">
           <label>Body (Markdown)</label>
+          <details class="md-guide">
+            <summary class="md-guide-toggle">Markdown Quick Reference</summary>
+            <div class="md-guide-body">
+              <div class="md-guide-grid">
+                <code>**bold**</code><span>bold</span>
+                <code>_italic_</code><span>italic</span>
+                <code>## Heading</code><span>heading (H2)</span>
+                <code>### Sub</code><span>sub-heading (H3)</span>
+                <code>- item</code><span>bullet point</span>
+                <code>1. item</code><span>numbered list</span>
+                <code>&gt; text</code><span>blockquote</span>
+                <code>[text](url)</code><span>hyperlink</span>
+                <code>`code`</code><span>inline code</span>
+                <code>---</code><span>horizontal rule</span>
+              </div>
+            </div>
+          </details>
           <div class="md-toolbar">
             <button type="button" class="md-btn" data-action="bold" title="Bold">B</button>
             <button type="button" class="md-btn md-btn-italic" data-action="italic" title="Italic">I</button>
@@ -167,6 +184,72 @@
 
 {% block extra_scripts %}
 <script>
+  // Field help text + blur validation
+  (function() {
+    var hints = {
+      title:    'The main heading displayed on the page',
+      slug:     'URL path — lowercase letters, numbers and hyphens only (e.g. my-article-title)',
+      date:     'Publication date in YYYY-MM-DD format',
+      summary:  'Short description shown in listing cards and social previews (1–2 sentences)',
+      category: 'Content category (e.g. Press Release, Analysis)',
+      author:   'Author display name shown on the page',
+      featured: 'Set to "true" to pin this item at the top of listings',
+      image:    'Header image path — usually set automatically when creating via chat',
+    };
+
+    document.querySelectorAll('[name^="fm_"]').forEach(function(input) {
+      var key = input.name.slice(3); // strip "fm_"
+      if (hints[key]) {
+        var hint = document.createElement('span');
+        hint.className = 'form-hint';
+        hint.textContent = hints[key];
+        input.parentNode.appendChild(hint);
+      }
+    });
+
+    // Blur validation: slug
+    var slugInput = document.querySelector('[name="fm_slug"]');
+    if (slugInput) {
+      slugInput.addEventListener('blur', function() {
+        var existing = this.parentNode.querySelector('.form-hint-error');
+        if (existing) existing.remove();
+        if (this.value && !/^[a-z0-9-]+$/.test(this.value)) {
+          var err = document.createElement('span');
+          err.className = 'form-hint form-hint-error';
+          err.textContent = 'Try using lowercase letters, numbers and hyphens only';
+          this.parentNode.appendChild(err);
+        }
+      });
+    }
+
+    // Blur validation: date
+    var dateInput = document.querySelector('[name="fm_date"]');
+    if (dateInput) {
+      dateInput.addEventListener('blur', function() {
+        var existing = this.parentNode.querySelector('.form-hint-error');
+        if (existing) existing.remove();
+        var val = this.value;
+        if (val && !/^\d{4}-\d{2}-\d{2}/.test(val)) {
+          var err = document.createElement('span');
+          err.className = 'form-hint form-hint-error';
+          err.textContent = 'Use YYYY-MM-DD format — e.g. 2026-02-17';
+          this.parentNode.appendChild(err);
+        }
+      });
+    }
+
+    // Ctrl+S → save the quick-edit form
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        var form = document.getElementById('quickEditForm');
+        if (form) {
+          e.preventDefault();
+          form.submit();
+        }
+      }
+    });
+  })();
+
   // Markdown toolbar
   (function() {
     var textarea = document.getElementById('bodyTextarea');

@@ -46,6 +46,11 @@
       </div>
       <div class="sidebar-actions">
         <a href="{% url 'new_conversation' %}" class="btn btn-new">+ New Chat</a>
+        <button type="button" id="cmdPaletteBtn" class="cmd-palette-trigger" title="Quick navigation (Ctrl+K)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Quick nav</span>
+          <kbd>Ctrl K</kbd>
+        </button>
       </div>
       <div class="publish-bar" id="publishBar" style="display:none;">
         <a href="{% url 'review_changes' %}" class="publish-bar-link">
@@ -99,6 +104,166 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <!-- Command palette -->
+  {% if user.is_authenticated %}
+  <div id="cmdPalette" class="cmd-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="cmd-modal">
+      <div class="cmd-input-wrap">
+        <svg class="cmd-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="cmdInput" class="cmd-input" placeholder="Go to page or action…" autocomplete="off" spellcheck="false">
+      </div>
+      <div id="cmdResults" class="cmd-results"></div>
+      <div class="cmd-footer">
+        <span class="cmd-key-hint"><kbd>↑↓</kbd> Navigate</span>
+        <span class="cmd-key-hint"><kbd>↵</kbd> Open</span>
+        <span class="cmd-key-hint"><kbd>Esc</kbd> Close</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var commands = [
+      { label: 'New Chat',          icon: '+',   url: '{% url "new_conversation" %}',  section: 'Actions' },
+      { label: 'Content Browser',   icon: '📄',  url: '{% url "content_browser" %}',   section: 'Navigate' },
+      { label: 'Media Library',     icon: '🖼',  url: '{% url "media_library" %}',     section: 'Navigate' },
+      {% if profile.can_approve %}
+      { label: 'Review & Publish',  icon: '🚀',  url: '{% url "review_changes" %}',    section: 'Navigate' },
+      { label: 'Pending Approvals', icon: '⏳',  url: '{% url "pending_list" %}',      section: 'Navigate' },
+      { label: 'Health Check',      icon: '❤',   url: '{% url "content_health" %}',    section: 'Navigate' },
+      {% endif %}
+    ];
+
+    var palette  = document.getElementById('cmdPalette');
+    var input    = document.getElementById('cmdInput');
+    var results  = document.getElementById('cmdResults');
+    var activeIdx = -1;
+
+    function openPalette() {
+      palette.style.display = '';
+      input.value = '';
+      renderResults('');
+      input.focus();
+    }
+
+    function closePalette() {
+      palette.style.display = 'none';
+      activeIdx = -1;
+    }
+
+    function renderResults(query) {
+      var q = query.toLowerCase().trim();
+      var filtered = q
+        ? commands.filter(function(c) { return c.label.toLowerCase().indexOf(q) !== -1; })
+        : commands;
+
+      if (!filtered.length) {
+        results.innerHTML = '<div class="cmd-empty">No results</div>';
+        activeIdx = -1;
+        return;
+      }
+
+      // Group by section
+      var sections = {};
+      filtered.forEach(function(c) {
+        if (!sections[c.section]) sections[c.section] = [];
+        sections[c.section].push(c);
+      });
+
+      var html = '';
+      Object.keys(sections).forEach(function(sec) {
+        html += '<div class="cmd-section-label">' + sec + '</div>';
+        sections[sec].forEach(function(c, i) {
+          html += '<div class="cmd-item" data-url="' + c.url + '">' +
+            '<span class="cmd-item-icon">' + c.icon + '</span>' +
+            '<span class="cmd-item-label">' + c.label + '</span>' +
+            '</div>';
+        });
+      });
+      results.innerHTML = html;
+      activeIdx = -1;
+
+      results.querySelectorAll('.cmd-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          window.location.href = this.getAttribute('data-url');
+        });
+        item.addEventListener('mouseenter', function() {
+          setActive(Array.from(results.querySelectorAll('.cmd-item')).indexOf(this));
+        });
+      });
+    }
+
+    function setActive(idx) {
+      var items = results.querySelectorAll('.cmd-item');
+      items.forEach(function(el) { el.classList.remove('cmd-item-active'); });
+      if (idx >= 0 && idx < items.length) {
+        items[idx].classList.add('cmd-item-active');
+        items[idx].scrollIntoView({ block: 'nearest' });
+        activeIdx = idx;
+      } else {
+        activeIdx = -1;
+      }
+    }
+
+    // Keyboard navigation inside palette
+    input.addEventListener('keydown', function(e) {
+      var items = results.querySelectorAll('.cmd-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActive(Math.min(activeIdx + 1, items.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActive(Math.max(activeIdx - 1, 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIdx >= 0 && items[activeIdx]) {
+          window.location.href = items[activeIdx].getAttribute('data-url');
+        } else if (items.length === 1) {
+          window.location.href = items[0].getAttribute('data-url');
+        }
+      } else if (e.key === 'Escape') {
+        closePalette();
+      }
+    });
+
+    input.addEventListener('input', function() { renderResults(this.value); });
+
+    // Close on overlay click
+    palette.addEventListener('click', function(e) {
+      if (e.target === palette) closePalette();
+    });
+
+    // Global Ctrl+K / Cmd+K
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (palette.style.display === 'none') { openPalette(); } else { closePalette(); }
+      }
+      if (e.key === 'Escape' && palette.style.display !== 'none') {
+        closePalette();
+      }
+    });
+  })();
+
+  // Wire sidebar button
+  var paletteBtn = document.getElementById('cmdPaletteBtn');
+  if (paletteBtn) {
+    paletteBtn.addEventListener('click', function() {
+      var palette = document.getElementById('cmdPalette');
+      var input = document.getElementById('cmdInput');
+      if (palette && input) {
+        palette.style.display = '';
+        input.value = '';
+        document.getElementById('cmdResults') && (document.getElementById('cmdResults').innerHTML = '');
+        // Trigger a fresh render via input event
+        input.dispatchEvent(new Event('input'));
+        input.focus();
+      }
+    });
+  }
+  </script>
+  {% endif %}
 
   <!-- Toast container -->
   <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>

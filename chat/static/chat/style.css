@@ -2151,3 +2151,229 @@ body {
   width: 14px;
   height: 14px;
 }
+
+/* -------------------------------------------------- */
+/* Markdown guide (collapsible above toolbar)         */
+/* -------------------------------------------------- */
+.md-guide {
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: var(--bg-secondary, #f8f9fa);
+}
+.md-guide-toggle {
+  display: block;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-light);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.md-guide-toggle::marker,
+.md-guide-toggle::-webkit-details-marker { display: none; }
+.md-guide-toggle::before {
+  content: '▶ ';
+  font-size: 0.6rem;
+  vertical-align: 1px;
+  transition: transform 0.15s;
+}
+.md-guide[open] .md-guide-toggle::before { content: '▼ '; }
+.md-guide-body {
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--border);
+}
+.md-guide-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 4px 16px;
+  font-size: 0.75rem;
+}
+.md-guide-grid code {
+  font-family: monospace;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--teal);
+  white-space: nowrap;
+}
+.md-guide-grid span {
+  color: var(--text-light);
+  align-self: center;
+}
+/* When guide is present, remove its bottom border-radius and top radius from toolbar */
+.md-guide + .md-toolbar {
+  border-radius: 0;
+  border-top: none;
+}
+
+/* -------------------------------------------------- */
+/* Form hints and inline validation                   */
+/* -------------------------------------------------- */
+.form-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-light);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.form-hint-error {
+  color: var(--danger, #c0392b);
+  font-weight: 500;
+}
+.form-hint-ok {
+  color: var(--success, #27ae60);
+}
+
+/* -------------------------------------------------- */
+/* Command palette                                    */
+/* -------------------------------------------------- */
+.cmd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 500;
+  padding-top: 15vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.cmd-modal {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 580px;
+  overflow: hidden;
+  animation: cmd-slide-in 0.15s ease;
+}
+@keyframes cmd-slide-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cmd-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-input-icon { color: var(--text-light); flex-shrink: 0; }
+.cmd-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text);
+}
+.cmd-input::placeholder { color: var(--text-light); }
+.cmd-results {
+  max-height: 340px;
+  overflow-y: auto;
+}
+.cmd-section-label {
+  padding: 8px 16px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+.cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.cmd-item:hover,
+.cmd-item.cmd-item-active {
+  background: var(--teal-pale, rgba(0,180,216,0.1));
+  color: var(--teal);
+}
+.cmd-item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-secondary, #f0f4f8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+.cmd-item-label { flex: 1; font-weight: 500; }
+.cmd-item-hint { font-size: 0.75rem; color: var(--text-light); }
+.cmd-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+.cmd-footer {
+  display: flex;
+  gap: 16px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary, #f8f9fa);
+}
+.cmd-key-hint {
+  font-size: 0.72rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  background: var(--bg-primary, #fff);
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .cmd-modal { background: var(--bg-secondary, #232342); }
+[data-theme="dark"] .cmd-input { color: var(--text); }
+[data-theme="dark"] .cmd-item-icon { background: var(--bg-primary, #1a1a2e); }
+[data-theme="dark"] kbd { background: var(--bg-primary, #1a1a2e); }
+
+/* Quick-nav trigger button in sidebar */
+.cmd-palette-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cmd-palette-trigger:hover {
+  border-color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.9);
+}
+.cmd-palette-trigger span { flex: 1; }
+.cmd-palette-trigger kbd {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.6);
+  font-size: 0.65rem;
+}
