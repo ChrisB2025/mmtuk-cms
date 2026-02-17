@@ -203,12 +203,15 @@ def conversation(request, conversation_id):
     """View a specific conversation."""
     conv = get_object_or_404(Conversation, id=conversation_id, user=request.user)
     conversations = Conversation.objects.filter(user=request.user)[:20]
-    messages = conv.messages.all()
+    # Exclude internal/injected messages — kept in DB for Claude context but not shown in UI.
+    # [SYSTEM:  — injected document text (huge, confusing as a user bubble)
+    # [Uploaded — upload marker placeholder
+    messages = conv.messages.exclude(content__startswith='[SYSTEM:').exclude(content__startswith='[Uploaded')
     profile = request.user.profile
 
     # Show suggested actions for empty conversations
     suggested_actions = []
-    if not messages.exists():
+    if not conv.messages.exists():
         suggested_actions = _get_suggested_actions(profile)
 
     # Check if conversation has pending drafts (for showing discard button)
