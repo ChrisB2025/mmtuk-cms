@@ -20,6 +20,7 @@ from .services.anthropic_service import (
     get_conversation_messages,
     call_claude,
     extract_action_block,
+    strip_action_block,
 )
 from .services.content_service import generate_markdown, get_file_path, get_image_path
 from .services.content_reader_service import (
@@ -860,10 +861,10 @@ def upload_pdf(request, conversation_id):
                 action_data, profile, conv, request.user,
             )
             if action_result and action_result.get('type') != 'error':
-                response_text = response_text + '\n\n' + response_text_extra
+                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
 
-    # Save assistant response
-    Message.objects.create(conversation=conv, role='assistant', content=response_text)
+    # Save assistant response (strip any action JSON so it doesn't clutter the chat)
+    Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
 
     return JsonResponse({
         'response': response_text,
@@ -928,14 +929,14 @@ def send_message(request, conversation_id):
         action_type = action_data.get('action')
 
         if action_type == 'scrape':
-            # Save Claude's initial response
-            Message.objects.create(conversation=conv, role='assistant', content=response_text)
+            # Save Claude's initial response (stripped of action JSON)
+            Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
 
             # Handle scraping and re-call Claude
             response_text = _handle_scrape_action(action_data, profile, conv)
             action_data_2 = extract_action_block(response_text)
             if action_data_2 and action_data_2.get('action') == 'create':
-                Message.objects.create(conversation=conv, role='assistant', content=response_text)
+                Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
                 response_text, action_result = _handle_content_action(
                     action_data_2, profile, conv, request.user,
                 )
@@ -945,16 +946,16 @@ def send_message(request, conversation_id):
                 action_data, profile, conv, request.user,
             )
             if action_result and action_result.get('type') != 'error':
-                response_text = response_text + '\n\n' + response_text_extra
+                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
 
         elif action_type == 'read':
-            # Save Claude's initial response, then load content and re-call
-            Message.objects.create(conversation=conv, role='assistant', content=response_text)
+            # Save Claude's initial response (stripped of action JSON), then load content and re-call
+            Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
             response_text = _handle_read_action(action_data, profile, conv)
             # Check if the re-call produced an edit action
             action_data_2 = extract_action_block(response_text)
             if action_data_2 and action_data_2.get('action') == 'edit':
-                Message.objects.create(conversation=conv, role='assistant', content=response_text)
+                Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
                 response_text, action_result = _handle_edit_action(
                     action_data_2, profile, conv, request.user,
                 )
@@ -964,18 +965,18 @@ def send_message(request, conversation_id):
                 action_data, profile, conv, request.user,
             )
             if action_result and action_result.get('type') != 'error':
-                response_text = response_text + '\n\n' + response_text_extra
+                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
 
         elif action_type == 'delete':
             response_text_extra, action_result = _handle_delete_action(
                 action_data, profile, conv, request.user,
             )
             if action_result and action_result.get('type') != 'error':
-                response_text = response_text + '\n\n' + response_text_extra
+                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
 
         elif action_type == 'list':
-            # Save Claude's initial response, then list content and re-call
-            Message.objects.create(conversation=conv, role='assistant', content=response_text)
+            # Save Claude's initial response (stripped of action JSON), then list content and re-call
+            Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
             response_text = _handle_list_action(action_data, profile, conv)
 
     # Save assistant response

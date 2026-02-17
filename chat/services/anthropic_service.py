@@ -216,6 +216,12 @@ _ACTION_BLOCK_RE = re.compile(
     re.DOTALL,
 )
 
+# Regex to strip the entire ```json...``` action block from display text
+_ACTION_BLOCK_STRIP_RE = re.compile(
+    r'\n?```json\s*\n\{.*?\}\s*\n```\n?',
+    re.DOTALL,
+)
+
 
 def extract_action_block(text):
     """
@@ -236,3 +242,12 @@ def extract_action_block(text):
         return None
 
     return data
+
+
+def strip_action_block(text):
+    """
+    Remove the ```json action block from a response before storing it in the
+    conversation history. The action has already been parsed and executed; keeping
+    the raw JSON in saved messages makes the chat look cluttered.
+    """
+    return _ACTION_BLOCK_STRIP_RE.sub('', text).strip()
