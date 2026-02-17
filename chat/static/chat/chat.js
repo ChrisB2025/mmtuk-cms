@@ -110,7 +110,9 @@
       }
 
       const data = await resp.json();
-      appendMessage('assistant', data.response);
+      if (data.response && data.response.trim()) {
+        appendMessage('assistant', data.response);
+      }
 
       if (data.action_taken) {
         const action = data.action_taken;
@@ -187,7 +189,9 @@
       }
 
       const data = await resp.json();
-      appendMessage('assistant', data.response);
+      if (data.response && data.response.trim()) {
+        appendMessage('assistant', data.response);
+      }
 
       if (data.action_taken) {
         const action = data.action_taken;

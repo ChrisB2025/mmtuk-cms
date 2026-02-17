@@ -873,6 +873,13 @@ def upload_pdf(request, conversation_id):
     })
 
 
+def _save_stripped_message(conv, text):
+    """Strip action JSON then save as an assistant message; skip if content is empty."""
+    content = strip_action_block(text)
+    if content:
+        Message.objects.create(conversation=conv, role='assistant', content=content)
+
+
 @login_required
 @require_POST
 def send_message(request, conversation_id):
@@ -929,14 +936,14 @@ def send_message(request, conversation_id):
         action_type = action_data.get('action')
 
         if action_type == 'scrape':
-            # Save Claude's initial response (stripped of action JSON)
-            Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
+            # Save Claude's initial response (skip if empty after stripping)
+            _save_stripped_message(conv, response_text)
 
             # Handle scraping and re-call Claude
             response_text = _handle_scrape_action(action_data, profile, conv)
             action_data_2 = extract_action_block(response_text)
             if action_data_2 and action_data_2.get('action') == 'create':
-                Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
+                _save_stripped_message(conv, response_text)
                 response_text, action_result = _handle_content_action(
                     action_data_2, profile, conv, request.user,
                 )
@@ -949,13 +956,13 @@ def send_message(request, conversation_id):
                 response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
 
         elif action_type == 'read':
-            # Save Claude's initial response (stripped of action JSON), then load content and re-call
-            Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
+            # Save Claude's initial response (skip if empty after stripping), then load content and re-call
+            _save_stripped_message(conv, response_text)
             response_text = _handle_read_action(action_data, profile, conv)
             # Check if the re-call produced an edit action
             action_data_2 = extract_action_block(response_text)
             if action_data_2 and action_data_2.get('action') == 'edit':
-                Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
+                _save_stripped_message(conv, response_text)
                 response_text, action_result = _handle_edit_action(
                     action_data_2, profile, conv, request.user,
                 )
@@ -975,15 +982,16 @@ def send_message(request, conversation_id):
                 response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
 
         elif action_type == 'list':
-            # Save Claude's initial response (stripped of action JSON), then list content and re-call
-            Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
+            # Save Claude's initial response (skip if empty after stripping), then list content and re-call
+            _save_stripped_message(conv, response_text)
             response_text = _handle_list_action(action_data, profile, conv)
 
-    # Save assistant response
-    Message.objects.create(conversation=conv, role='assistant', content=response_text)
+    # Save final assistant response (strip action JSON; skip if empty)
+    _save_stripped_message(conv, response_text)
 
+    display_text = strip_action_block(response_text) or response_text
     return JsonResponse({
-        'response': response_text,
+        'response': display_text,
         'conversation_id': str(conv.id),
         'action_taken': action_result,
     })
