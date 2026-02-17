@@ -100,7 +100,60 @@
     </main>
   </div>
 
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
   {% block extra_scripts %}{% endblock %}
+
+  <!-- Toast API -->
+  <script>
+  window.showToast = (function() {
+    var container = document.getElementById('toastContainer');
+
+    return function showToast(message, type, duration) {
+      type = type || 'success';
+      duration = duration || 4000;
+
+      var toast = document.createElement('div');
+      toast.className = 'toast toast-' + type;
+      toast.setAttribute('role', 'status');
+
+      var icon = type === 'error'
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        : type === 'warning'
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+      toast.innerHTML =
+        '<span class="toast-icon">' + icon + '</span>' +
+        '<span class="toast-message">' + message + '</span>' +
+        '<button class="toast-close" aria-label="Dismiss">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+        '</button>';
+
+      container.appendChild(toast);
+
+      // Trigger enter animation
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { toast.classList.add('toast-visible'); });
+      });
+
+      function dismiss() {
+        toast.classList.remove('toast-visible');
+        toast.classList.add('toast-leaving');
+        setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+      }
+
+      toast.querySelector('.toast-close').addEventListener('click', dismiss);
+      var timer = setTimeout(dismiss, duration);
+
+      // Pause timer on hover
+      toast.addEventListener('mouseenter', function() { clearTimeout(timer); });
+      toast.addEventListener('mouseleave', function() { timer = setTimeout(dismiss, 2000); });
+    };
+  })();
+  </script>
+
   <!-- Theme management -->
   <script>
   (function() {

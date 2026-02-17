@@ -6,7 +6,6 @@
   const messageInput = document.getElementById('messageInput');
   const sendBtn = document.getElementById('sendBtn');
   const typingIndicator = document.getElementById('typingIndicator');
-  const actionAlert = document.getElementById('actionAlert');
   const uploadBtn = document.getElementById('uploadBtn');
   const pdfFileInput = document.getElementById('pdfFileInput');
 
@@ -65,15 +64,9 @@
     if (show) scrollToBottom();
   }
 
-  // Show action result alert
+  // Show action result as a toast notification
   function showActionAlert(message, type) {
-    if (!actionAlert) return;
-    actionAlert.textContent = message;
-    actionAlert.style.display = 'block';
-    actionAlert.style.background = type === 'error' ? '#ef4444' : '#10b981';
-    setTimeout(function () {
-      actionAlert.style.display = 'none';
-    }, 5000);
+    if (window.showToast) window.showToast(message, type === 'error' ? 'error' : 'success');
   }
 
   // Send message
@@ -83,6 +76,7 @@
     // Disable input while sending
     messageInput.disabled = true;
     sendBtn.disabled = true;
+    sendBtn.classList.add('btn-loading');
 
     // Remove empty-chat placeholder if present
     const emptyChat = messagesEl.querySelector('.empty-chat');
@@ -139,6 +133,7 @@
     } finally {
       messageInput.disabled = false;
       sendBtn.disabled = false;
+      sendBtn.classList.remove('btn-loading');
       messageInput.focus();
     }
   }
@@ -155,6 +150,7 @@
 
     messageInput.disabled = true;
     sendBtn.disabled = true;
+    sendBtn.classList.add('btn-loading');
 
     // Remove empty-chat/suggested-actions placeholder if present
     const emptyChat = messagesEl.querySelector('.empty-chat');
@@ -209,6 +205,7 @@
     } finally {
       messageInput.disabled = false;
       sendBtn.disabled = false;
+      sendBtn.classList.remove('btn-loading');
       messageInput.focus();
     }
   }
