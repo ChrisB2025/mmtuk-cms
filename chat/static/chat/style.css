@@ -2,21 +2,21 @@
 
 :root {
   /* ===== Brand Colors ===== */
-  --navy: #1a1a2e;
-  --navy-light: #232342;
-  --teal: #00b4d8;
-  --teal-dark: #0096b7;
-  --teal-pale: rgba(0, 180, 216, 0.1);
+  --navy: #0a1e3f;
+  --navy-light: #081832;
+  --teal: #004537;
+  --teal-dark: #003028;
+  --teal-pale: rgba(0, 69, 55, 0.1);
 
   /* ===== Semantic Colors (Light Mode) ===== */
-  --bg-primary: #f5f5f7;
+  --bg-primary: #fef9f1;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f0f0f5;
+  --bg-tertiary: #f2f2f2;
   --text-primary: #2f2c25;
-  --text-secondary: #6b7280;
+  --text-secondary: #54524c;
   --text-tertiary: #9ca3af;
-  --border-primary: #e5e7eb;
-  --border-secondary: #d1d5db;
+  --border-primary: #dad9d8;
+  --border-secondary: #ced2d8;
   --border-focus: var(--teal);
 
   /* ===== Status Colors ===== */
@@ -34,8 +34,8 @@
   --info-text: #1e40af;
 
   /* ===== Chat Bubbles ===== */
-  --user-bubble: #00b4d8;
-  --assistant-bubble: #f0f0f5;
+  --user-bubble: #00b4d8;    /* keep teal — distinctive from green UI */
+  --assistant-bubble: #f2f2f2;
 
   /* ===== Spacing Scale (8px baseline) ===== */
   --space-0: 0;
@@ -126,16 +126,16 @@
 
 /* ===== Dark Mode Overrides ===== */
 [data-theme="dark"] {
-  --bg-primary: #0f0f1a;
-  --bg-secondary: #1a1a2e;
-  --bg-tertiary: #232342;
+  --bg-primary: #030912;
+  --bg-secondary: #040c19;
+  --bg-tertiary: #081832;
   --text-primary: #f5f5f7;
   --text-secondary: #a0aec0;
   --text-tertiary: #718096;
-  --border-primary: #2d2d4e;
-  --border-secondary: #3f3f5f;
-  --teal-pale: rgba(0, 180, 216, 0.15);
-  --assistant-bubble: #232342;
+  --border-primary: #0e2236;
+  --border-secondary: #1a3158;
+  --teal-pale: rgba(0, 69, 55, 0.2);
+  --assistant-bubble: #081832;
 
   /* Status color backgrounds — darker in dark mode */
   --success-bg: rgba(16, 185, 129, 0.15);
@@ -2357,18 +2357,19 @@ kbd {
   width: 100%;
   margin-top: 6px;
   padding: 5px 10px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.22);
   border-radius: 6px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.75);
   font-size: 0.75rem;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .cmd-palette-trigger:hover {
-  border-color: rgba(255,255,255,0.35);
-  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.4);
+  color: #fff;
 }
 .cmd-palette-trigger span { flex: 1; }
 .cmd-palette-trigger kbd {
