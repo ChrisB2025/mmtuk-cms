@@ -156,7 +156,8 @@
     const emptyChat = messagesEl.querySelector('.empty-chat');
     if (emptyChat) emptyChat.remove();
 
-    appendMessage('user', '[Uploading PDF: ' + file.name + ']');
+    var docType = file.name.toLowerCase().endsWith('.docx') ? 'Word document' : 'PDF';
+    appendMessage('user', '[Uploading ' + docType + ': ' + file.name + ']');
     setTyping(true);
 
     var formData = new FormData();

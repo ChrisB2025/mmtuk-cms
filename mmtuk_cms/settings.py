@@ -120,6 +120,24 @@ OUTPUT_DIR = BASE_DIR / 'output'
 # Rate limiting
 CHAT_RATE_LIMIT = 50  # messages per hour per user
 
+# Logging — send chat app errors and info to stdout (visible in Railway logs)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'chat': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 # Production security
 if not DEBUG:
     # Railway terminates SSL at the edge — don't redirect internally

@@ -776,13 +776,20 @@ def upload_pdf(request, conversation_id):
         conv.save(update_fields=['title'])
 
     # Extract text and images
+    is_docx = filename_lower.endswith('.docx')
+    doc_label = 'Word document' if is_docx else 'PDF'
     try:
-        if filename_lower.endswith('.docx'):
+        if is_docx:
             result = extract_docx(file_bytes, uploaded.name)
         else:
             result = extract_pdf(file_bytes, uploaded.name)
-    except ValueError as exc:
-        error_msg = f'Could not process the PDF: {exc}'
+        logger.info(
+            'Document extracted: %s, type=%s, pages=%s, text_len=%s, images=%s',
+            uploaded.name, doc_label, result.get('page_count'), len(result.get('text', '')), len(result.get('images', [])),
+        )
+    except Exception as exc:
+        error_msg = f'Could not process the {doc_label}: {exc}'
+        logger.exception('Document extraction failed: %s', uploaded.name)
         Message.objects.create(conversation=conv, role='assistant', content=error_msg)
         return JsonResponse({
             'response': error_msg,
@@ -809,11 +816,11 @@ def upload_pdf(request, conversation_id):
     meta = result['metadata']
     meta_lines = ''
     if meta.get('title') or meta.get('author'):
-        meta_lines = f'\nPDF Title: {meta["title"]}\nPDF Author: {meta["author"]}\n'
+        meta_lines = f'\nDocument Title: {meta["title"]}\nDocument Author: {meta["author"]}\n'
 
     injected = (
-        f'[SYSTEM: PDF "{result["filename"]}" was uploaded and processed — '
-        f'{result["page_count"]} pages]\n'
+        f'[SYSTEM: {doc_label} "{result["filename"]}" was uploaded and processed — '
+        f'{result["page_count"]} page(s)]\n'
         f'{meta_lines}\n'
         f'Extracted text:\n\n{text_preview}{truncated_note}'
         f'{image_summary}'
@@ -894,6 +901,7 @@ def send_message(request, conversation_id):
     # Build messages and call Claude
     system_prompt = build_system_prompt(profile)
     all_msgs = get_conversation_messages(conv.messages.all())
+    logger.info('send_message: conv=%s, history_len=%s, msg_preview=%.80r', conv.id, len(all_msgs), user_message)
 
     try:
         response_text = call_claude(system_prompt, all_msgs)
