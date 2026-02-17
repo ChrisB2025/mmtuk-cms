@@ -207,7 +207,13 @@ def conversation(request, conversation_id):
     # Exclude internal/injected messages — kept in DB for Claude context but not shown in UI.
     # [SYSTEM:  — injected document text (huge, confusing as a user bubble)
     # [Uploaded — upload marker placeholder
-    messages = conv.messages.exclude(content__startswith='[SYSTEM:').exclude(content__startswith='[Uploaded')
+    # content='' — empty assistant messages (stripped action-only responses)
+    messages = (
+        conv.messages
+        .exclude(content__startswith='[SYSTEM:')
+        .exclude(content__startswith='[Uploaded')
+        .exclude(content='')
+    )
     profile = request.user.profile
 
     # Show suggested actions for empty conversations
