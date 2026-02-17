@@ -55,7 +55,7 @@ def convert_to_png(image_bytes, source_format=None):
         img = img.convert('RGB')
 
     output = io.BytesIO()
-    img.save(output, format='PNG')
+    img.save(output, format='PNG', optimize=True)
     return output.getvalue()
 
 

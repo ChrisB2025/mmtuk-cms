@@ -254,14 +254,27 @@
     var path = btn.getAttribute('data-path');
     if (!confirm('Delete ' + path + '?\n\nThis will stage a deletion commit — it will go live when you next Publish.')) return;
     btn.disabled = true;
+    doDeleteImage(path, btn, false);
+  }
+
+  function doDeleteImage(path, btn, force) {
     fetch('/api/delete-image/', {
       method: 'POST',
       headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'web_path=' + encodeURIComponent(path),
+      body: 'web_path=' + encodeURIComponent(path) + (force ? '&force=1' : ''),
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data.success) {
+      if (data.warning) {
+        // Image is referenced by content — show which items and ask to confirm deletion
+        var titles = data.references.map(function(r) { return '  \u2022 ' + r.title; }).join('\n');
+        var ok = confirm(
+          'Warning: this image is used by ' + data.references.length + ' content item(s):\n' +
+          titles + '\n\nDelete anyway? Those pages will show a broken image until updated.'
+        );
+        if (!ok) { btn.disabled = false; return; }
+        doDeleteImage(path, btn, true);
+      } else if (data.success) {
         if (window.showToast) { window.showToast('Image deleted. Go to Review &amp; Publish when ready to go live.', 'success'); }
         setTimeout(function() { window.location.reload(); }, 1500);
       } else {

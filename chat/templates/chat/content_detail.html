@@ -53,7 +53,15 @@
         {% for key, value in item.frontmatter.items %}
         <div class="form-group-sm">
           <label>{{ key }}</label>
+          {% if key == "thumbnail" or key == "image" or key == "photo" or key == "heroImage" %}
+          <div class="fm-image-row">
+            <input type="text" name="fm_{{ key }}" id="fm_{{ key }}" value="{{ value }}" class="form-input form-input-sm">
+            <button type="button" class="btn btn-small btn-secondary fm-browse-btn"
+                    data-field="fm_{{ key }}" onclick="openImagePicker(this)">Browse</button>
+          </div>
+          {% else %}
           <input type="text" name="fm_{{ key }}" value="{{ value }}" class="form-input form-input-sm">
+          {% endif %}
         </div>
         {% endfor %}
         <div class="form-group-sm">
@@ -373,5 +381,84 @@
       }
     });
   }
+</script>
+
+<!-- Image picker modal -->
+<div id="imgPickerModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Select image">
+  <div class="modal-box img-picker-box">
+    <div class="modal-header">
+      <strong>Select Image</strong>
+      <button type="button" class="modal-close" onclick="closeImagePicker()">&#x2715;</button>
+    </div>
+    <input type="text" id="imgPickerSearch" class="form-input form-input-sm"
+           placeholder="Filter by filename…" oninput="filterPickerImages(this.value)"
+           style="margin:12px 16px 8px;width:calc(100% - 32px);">
+    <div id="imgPickerGrid" class="img-picker-grid">
+      <p style="padding:16px;color:var(--text-secondary);">Loading images…</p>
+    </div>
+  </div>
+</div>
+<script>
+  var _pickerTarget = null;
+  var _pickerImages = null;
+
+  function openImagePicker(btn) {
+    _pickerTarget = document.getElementById(btn.getAttribute('data-field'));
+    document.getElementById('imgPickerSearch').value = '';
+    document.getElementById('imgPickerModal').style.display = '';
+    if (!_pickerImages) {
+      fetch('/api/images/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          _pickerImages = data.images;
+          renderPickerImages(_pickerImages);
+        })
+        .catch(function() {
+          document.getElementById('imgPickerGrid').innerHTML =
+            '<p style="padding:16px;color:var(--text-secondary);">Failed to load images.</p>';
+        });
+    } else {
+      renderPickerImages(_pickerImages);
+    }
+  }
+
+  function closeImagePicker() {
+    document.getElementById('imgPickerModal').style.display = 'none';
+  }
+
+  function filterPickerImages(q) {
+    if (!_pickerImages) return;
+    var lower = q.toLowerCase();
+    var filtered = lower
+      ? _pickerImages.filter(function(i) { return i.filename.toLowerCase().indexOf(lower) !== -1; })
+      : _pickerImages;
+    renderPickerImages(filtered);
+  }
+
+  function renderPickerImages(images) {
+    var grid = document.getElementById('imgPickerGrid');
+    if (!images.length) {
+      grid.innerHTML = '<p style="padding:16px;color:var(--text-secondary);">No images match.</p>';
+      return;
+    }
+    grid.innerHTML = images.map(function(img) {
+      var safeUrl = img.web_path.replace(/'/g, '%27');
+      var safePath = img.web_path.replace(/'/g, '&#39;');
+      return '<div class="img-picker-item" onclick="selectPickerImage(\'' + safePath + '\')">' +
+        '<img src="/repo-images' + safeUrl + '" loading="lazy" ' +
+        'onerror="this.style.display=\'none\'">' +
+        '<span>' + img.filename + '</span></div>';
+    }).join('');
+  }
+
+  function selectPickerImage(webPath) {
+    if (_pickerTarget) { _pickerTarget.value = webPath; }
+    closeImagePicker();
+  }
+
+  // Close on overlay click
+  document.getElementById('imgPickerModal').addEventListener('click', function(e) {
+    if (e.target === this) closeImagePicker();
+  });
 </script>
 {% endblock %}

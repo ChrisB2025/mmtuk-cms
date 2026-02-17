@@ -1691,6 +1691,22 @@ def upload_image(request):
         return JsonResponse({'error': 'Failed to upload image.'}, status=500)
 
 
+def _find_image_references(web_path):
+    """Return list of {content_type, slug, title} for items whose frontmatter references web_path."""
+    refs = []
+    for item in list_content():
+        fm = item.get('frontmatter', {})
+        for field in ('thumbnail', 'image', 'photo', 'heroImage'):
+            if fm.get(field) == web_path:
+                refs.append({
+                    'content_type': item['content_type'],
+                    'slug': item['slug'],
+                    'title': item['title'],
+                })
+                break
+    return refs
+
+
 @login_required
 @require_POST
 def delete_image(request):
@@ -1704,12 +1720,18 @@ def delete_image(request):
     if not web_path.startswith('/images/') or '..' in web_path:
         return JsonResponse({'error': 'Invalid path'}, status=400)
 
+    # Reference check — warn before deleting images used by content items
+    force = request.POST.get('force') == '1'
+    if not force:
+        refs = _find_image_references(web_path)
+        if refs:
+            return JsonResponse({'warning': True, 'references': refs})
+
     rel_path = 'public' + web_path  # e.g. public/images/news/foo.png
     filename = rel_path.rsplit('/', 1)[-1]
 
     try:
         if settings.DEBUG:
-            from .services.git_service import write_file_to_output
             import pathlib
             full = pathlib.Path(settings.OUTPUT_DIR) / rel_path
             if full.exists():
@@ -1727,6 +1749,16 @@ def delete_image(request):
     except Exception:
         logger.exception('Image delete failed for %s', web_path)
         return JsonResponse({'error': 'Failed to delete image.'}, status=500)
+
+
+@login_required
+def images_api(request):
+    """Return a flat JSON list of all images for the image picker."""
+    images = list_images()
+    return JsonResponse({'images': [
+        {'web_path': img['web_path'], 'filename': img['filename']}
+        for img in images
+    ]})
 
 
 # --- Repo image serving ---
