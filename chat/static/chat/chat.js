@@ -87,6 +87,9 @@
     messageInput.style.height = 'auto';
     setTyping(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 270000); // 4.5 min
+
     try {
       const resp = await fetch(window.SEND_URL, {
         method: 'POST',
@@ -95,8 +98,10 @@
           'X-CSRFToken': window.CSRF_TOKEN,
         },
         body: JSON.stringify({ message: text }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       setTyping(false);
 
       if (resp.status === 429) {
@@ -130,8 +135,13 @@
       }
 
     } catch (err) {
+      clearTimeout(timeoutId);
       setTyping(false);
-      appendMessage('assistant', 'Network error. Please check your connection and try again.');
+      if (err.name === 'AbortError') {
+        appendMessage('assistant', 'This is taking longer than expected. The content may still be processing \u2014 try refreshing the page in a minute to check.');
+      } else {
+        appendMessage('assistant', 'Network error. Please check your connection and try again.');
+      }
     } finally {
       messageInput.disabled = false;
       sendBtn.disabled = false;
