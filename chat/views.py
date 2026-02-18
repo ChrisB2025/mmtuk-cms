@@ -213,6 +213,7 @@ def conversation(request, conversation_id):
         .exclude(content__startswith='[SYSTEM:')
         .exclude(content__startswith='[Uploaded')
         .exclude(content='')
+        .exclude(content__regex=r'^\s+$')
     )
     profile = request.user.profile
 
@@ -881,7 +882,7 @@ def upload_pdf(request, conversation_id):
 
 def _save_stripped_message(conv, text):
     """Strip action JSON then save as an assistant message; skip if content is empty."""
-    content = strip_action_block(text)
+    content = strip_action_block(text).strip()
     if content:
         Message.objects.create(conversation=conv, role='assistant', content=content)
 
