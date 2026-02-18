@@ -959,8 +959,8 @@ def send_message(request, conversation_id):
             response_text_extra, action_result = _handle_content_action(
                 action_data, profile, conv, request.user,
             )
-            if action_result and action_result.get('type') != 'error':
-                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
+            preamble = strip_action_block(response_text).strip()
+            response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
         elif action_type == 'read':
             # Save Claude's initial response (skip if empty after stripping), then load content and re-call
@@ -978,15 +978,15 @@ def send_message(request, conversation_id):
             response_text_extra, action_result = _handle_edit_action(
                 action_data, profile, conv, request.user,
             )
-            if action_result and action_result.get('type') != 'error':
-                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
+            preamble = strip_action_block(response_text).strip()
+            response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
         elif action_type == 'delete':
             response_text_extra, action_result = _handle_delete_action(
                 action_data, profile, conv, request.user,
             )
-            if action_result and action_result.get('type') != 'error':
-                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
+            preamble = strip_action_block(response_text).strip()
+            response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
         elif action_type == 'list':
             # Save Claude's initial response (skip if empty after stripping), then list content and re-call
@@ -996,7 +996,7 @@ def send_message(request, conversation_id):
     # Save final assistant response (strip action JSON; skip if empty)
     _save_stripped_message(conv, response_text)
 
-    display_text = strip_action_block(response_text) or response_text
+    display_text = strip_action_block(response_text).strip() or response_text
     logger.info(
         'send_message complete: conv=%s, action=%s, response_len=%d',
         conv.id,
