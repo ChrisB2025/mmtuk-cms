@@ -996,6 +996,12 @@ def send_message(request, conversation_id):
     _save_stripped_message(conv, response_text)
 
     display_text = strip_action_block(response_text) or response_text
+    logger.info(
+        'send_message complete: conv=%s, action=%s, response_len=%d',
+        conv.id,
+        action_result.get('type') if action_result else None,
+        len(display_text),
+    )
     return JsonResponse({
         'response': display_text,
         'conversation_id': str(conv.id),
