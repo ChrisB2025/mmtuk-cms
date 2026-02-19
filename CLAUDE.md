@@ -308,3 +308,134 @@ export default defineConfig({
 **Documentation:**
 - `PHASE2_TASK5_SUMMARY.md` — Complete implementation guide
 - `pytest.ini` — Pytest configuration for Django tests
+
+---
+
+## Session: Chat Reliability Fixes (2026-02-19)
+
+### Problem Summary
+
+The AI chat interface had two persistent issues:
+1. **Empty/invisible AI chat bubbles** on page reload
+2. **"Network error"** on Substack URL import and article confirmation
+
+Both were diagnosed and fixed across multiple commits.
+
+---
+
+### Fix 1 — Empty AI Chat Bubbles (commit `4f06e71`)
+
+**Root cause:** `{{ msg.content|escapejs|safe }}` was used in the template without wrapping
+in JS string quotes. `escapejs` escapes special characters but does NOT add the surrounding
+`"..."`. The resulting `marked.parse(Hello world)` threw a syntax error silently.
+
+**Fixes applied:**
+- Added `"..."` quotes around `escapejs` output in `chat/templates/chat/index.html`
+- Pinned marked.js to specific version (`@15.0.12`) to avoid CDN version drift
+- Added try/catch around `marked.parse()` with plaintext fallback
+- Added `display_text` fallback in `views.py` to prevent raw JSON leaking to the client
+
+**Key lesson:** Django's `escapejs` escapes string *contents* only. You must add the
+surrounding `"..."` yourself: `"{{ value|escapejs }}"`.
+
+---
+
+### Fix 2 — Django 5 Logout 405 Error (commit `5f0c422`)
+
+**Root cause:** Django 5.x changed `LogoutView` to require POST. The sidebar had an `<a href="{% url 'logout' %}">` anchor which issues a GET request.
+
+**Fix:** Replaced the anchor with a `<form method="post">` containing a `{% csrf_token %}` and a styled `<button type="submit">`. Added button-reset CSS to `style.css`.
+
+**Key lesson:** Django 5 requires POST for logout. Never use an anchor tag for logout.
+
+---
+
+### Fix 3 — Double Claude API Calls (commit `d95695c`)
+
+**Root cause:** `_handle_scrape_action()`, `_handle_read_action()`, and `_handle_list_action()` each made a second `call_claude()` call after the initial one in `send_message`. Every scrape/read/list request was calling the Claude API twice — doubling latency.
+
+**Fix:** Each handler now builds and returns a formatted response directly without
+re-calling Claude. The scraped/read/listed data is formatted into markdown and returned as a string.
+
+**Key lesson:** Never call `call_claude()` inside action handlers. Build the response directly from the data.
+
+---
+
+### Fix 4 — Git Fetch on Read Path (commit `8da5147`)
+
+**Root cause:** Every `send_message` call triggered `build_system_prompt()` → `get_content_stats()` → `list_content()` → `_ensure_repo_available()` → `ensure_repo()` → `origin.fetch(kill_after_timeout=30)`. This added 10-30s to every cold-cache request **outside** any try/except, so Railway's proxy timeout cut the connection and the JS catch block showed "Network error".
+
+**Fix:**
+- `_ensure_repo_available()` in `content_reader_service.py` now returns immediately if the
+  clone directory exists (no network call). Only calls `ensure_repo()` for the initial clone.
+- `build_system_prompt()` moved inside the try/except block that wraps `call_claude()`,
+  with a timing log.
+
+**Key lesson:** The read path (`list_content`, `get_content_stats`) must never trigger git fetch. Only the write path should fetch. The warmup command pre-clones the repo so reads always find the directory.
+
+---
+
+### Fix 5 — Git Fetch on Write Path (commit `d4ad1ec`)
+
+**Root cause:** `_handle_content_action()` in `views.py` called `ensure_repo()` before writing, which triggered `origin.fetch(kill_after_timeout=30)` on every gunicorn worker's first request. Combined with Claude API time (20-60s), requests exceeded Railway/Cloudflare's ~100s proxy timeout.
+
+**Fix:** Added `prepare_repo_for_write()` to `git_service.py`. This function:
+- Updates the remote URL (token refresh, instant)
+- Runs `git checkout branch` (local, instant)
+- Does **not** fetch from remote
+
+`push_to_remote()` already handles non-fast-forward pushes via `git pull --rebase` retry, so no pre-fetch is needed.
+
+**Key lesson:** Distinguish three git operations by cost:
+- `git checkout` / `set_url` → instant, safe anywhere
+- `origin.fetch()` → 5-30s network call, only call from the **warmup command** (deploy startup)
+- `git push` → 1-5s, handles divergence via rebase retry
+
+---
+
+### Fix 6 — Scrape Happens After Claude (commit `408647f`)
+
+**Root cause:** When a user sent a Substack URL, Claude would ask "import or write original?" (fast). On the next message ("yes import"), Claude responded (20-60s) and **then** Django called `scrape_url()` (5-30s). Total: 25-90s → hits Railway/Cloudflare ~100s proxy timeout → `TypeError: Failed to fetch` in JS → "Network error".
+
+**Fix:** Added `_pre_scrape_substack()` helper in `views.py`. Before calling Claude, the function:
+1. Detects any `substack.com` URL in the user message via regex
+2. Calls `scrape_url()` (5-30s) **before** the Claude API call
+3. Injects the scraped content as a `[SYSTEM: The URL X was scraped...]` message into the conversation DB
+
+Claude then sees the full article in context and responds with the preview directly. No `scrape` action block is needed, eliminating the post-Claude scrape delay.
+
+**Bonus UX improvement:** The "import or write original?" clarifying question is eliminated. The article preview appears immediately when the user sends a Substack URL.
+
+**System prompt updated** to tell Claude: "If you see `[SYSTEM: The URL X was scraped...]` already in the conversation, do NOT emit a scrape action — the data is already available."
+
+**Key lesson:** When a request involves two slow operations (Claude API + scrape), split them so they don't compound in a single request. Move the scrape **before** Claude so the total time is `max(scrape, Claude)` rather than `scrape + Claude`.
+
+---
+
+### Railway/Cloudflare Proxy Timeout — Empirical Finding
+
+Railway uses Cloudflare, which has a **~100s hard timeout** on upstream HTTP connections. This is the actual constraint, not gunicorn's `--timeout 300`.
+
+**Budget per request:**
+- Claude API: 20-60s (typical), up to 120s (configured timeout)
+- Scrape URL: 5-30s
+- Git operations: only `warmup` (deploy) should call `ensure_repo()`
+- Schema validation: <3s (cached in Redis/LocMemCache) or up to 24s (cold)
+
+**Rule of thumb:** Any single HTTP request must complete within ~80s to be safe (leaving buffer before the 100s cut).
+
+---
+
+### Warmup Command (`chat/management/commands/warmup.py`)
+
+Runs at deploy startup (in Dockerfile CMD). Pre-clones the MMTUK site repo to disk so the first user request doesn't need to clone or fetch. Without warmup, the first request to each gunicorn worker would hit `origin.fetch()` and potentially timeout.
+
+---
+
+### Architecture Notes (Updated)
+
+- **`_ensure_repo_available()`** (`content_reader_service.py`) — Read-only check: returns immediately if clone dir exists. Never fetches.
+- **`prepare_repo_for_write()`** (`git_service.py`) — Pre-write setup: updates remote URL + `git checkout`. Never fetches.
+- **`ensure_repo()`** (`git_service.py`) — Full sync: fetches + rebases/resets. Only called by warmup command and initial clone.
+- **`push_to_remote()`** (`git_service.py`) — Handles push with automatic rebase retry on non-fast-forward.
+- **`_pre_scrape_substack()`** (`views.py`) — Eagerly scrapes Substack URLs before Claude is called, so scraped content is in context.
