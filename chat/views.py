@@ -288,7 +288,11 @@ def _handle_scrape_action(action_data, profile, conv):
     # Re-call Claude with the scraped data
     system_prompt = build_system_prompt(profile)
     all_msgs = get_conversation_messages(conv.messages.all())
-    response_text = call_claude(system_prompt, all_msgs)
+    try:
+        response_text = call_claude(system_prompt, all_msgs)
+    except Exception:
+        logger.exception('Claude API call failed during scrape follow-up')
+        return 'Sorry, I encountered an error processing the scraped content. Please try again.'
 
     return response_text
 
@@ -484,7 +488,11 @@ def _handle_read_action(action_data, profile, conv):
     # Re-call Claude with the loaded content
     system_prompt = build_system_prompt(profile)
     all_msgs = get_conversation_messages(conv.messages.all())
-    response_text = call_claude(system_prompt, all_msgs)
+    try:
+        response_text = call_claude(system_prompt, all_msgs)
+    except Exception:
+        logger.exception('Claude API call failed during read follow-up')
+        return 'Sorry, I encountered an error loading that content. Please try again.'
 
     return response_text
 
@@ -726,7 +734,11 @@ def _handle_list_action(action_data, profile, conv):
     # Re-call Claude
     system_prompt = build_system_prompt(profile)
     all_msgs = get_conversation_messages(conv.messages.all())
-    response_text = call_claude(system_prompt, all_msgs)
+    try:
+        response_text = call_claude(system_prompt, all_msgs)
+    except Exception:
+        logger.exception('Claude API call failed during list follow-up')
+        return 'Sorry, I encountered an error processing the content list. Please try again.'
 
     return response_text
 
@@ -861,20 +873,33 @@ def upload_pdf(request, conversation_id):
     action_data = extract_action_block(response_text)
     action_result = None
 
-    if action_data:
-        action_type = action_data.get('action')
-        if action_type == 'create':
-            response_text_extra, action_result = _handle_content_action(
-                action_data, profile, conv, request.user,
-            )
-            if action_result and action_result.get('type') != 'error':
-                response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
+    try:
+        if action_data:
+            action_type = action_data.get('action')
+            if action_type == 'create':
+                response_text_extra, action_result = _handle_content_action(
+                    action_data, profile, conv, request.user,
+                )
+                if action_result and action_result.get('type') != 'error':
+                    response_text = strip_action_block(response_text) + '\n\n' + response_text_extra
+    except Exception:
+        logger.exception('Action handling failed after PDF upload: conv=%s', conv.id)
+        response_text = 'Sorry, something went wrong while processing the uploaded document. Please try again.'
+        action_result = {'type': 'error', 'message': response_text}
 
-    # Save assistant response (strip any action JSON so it doesn't clutter the chat)
-    Message.objects.create(conversation=conv, role='assistant', content=strip_action_block(response_text))
+    # Build display text: strip action JSON, never leak raw JSON to client
+    display_text = strip_action_block(response_text).strip()
+    if not display_text:
+        if action_result and action_result.get('type') not in (None, 'error'):
+            display_text = 'Done! The action has been processed.'
+        else:
+            display_text = response_text
+
+    # Save to DB exactly what the client will see
+    Message.objects.create(conversation=conv, role='assistant', content=display_text)
 
     return JsonResponse({
-        'response': response_text,
+        'response': display_text,
         'conversation_id': str(conv.id),
         'action_taken': action_result,
     })
@@ -939,64 +964,77 @@ def send_message(request, conversation_id):
     action_data = extract_action_block(response_text)
     action_result = None
 
-    if action_data:
-        action_type = action_data.get('action')
+    try:
+        if action_data:
+            action_type = action_data.get('action')
 
-        if action_type == 'scrape':
-            # Save Claude's initial response (skip if empty after stripping)
-            _save_stripped_message(conv, response_text)
-
-            # Handle scraping and re-call Claude
-            response_text = _handle_scrape_action(action_data, profile, conv)
-            action_data_2 = extract_action_block(response_text)
-            if action_data_2 and action_data_2.get('action') == 'create':
+            if action_type == 'scrape':
+                # Save Claude's initial response (skip if empty after stripping)
                 _save_stripped_message(conv, response_text)
-                response_text, action_result = _handle_content_action(
-                    action_data_2, profile, conv, request.user,
+
+                # Handle scraping and re-call Claude
+                response_text = _handle_scrape_action(action_data, profile, conv)
+                action_data_2 = extract_action_block(response_text)
+                if action_data_2 and action_data_2.get('action') == 'create':
+                    _save_stripped_message(conv, response_text)
+                    response_text, action_result = _handle_content_action(
+                        action_data_2, profile, conv, request.user,
+                    )
+
+            elif action_type == 'create':
+                response_text_extra, action_result = _handle_content_action(
+                    action_data, profile, conv, request.user,
                 )
+                preamble = strip_action_block(response_text).strip()
+                response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
-        elif action_type == 'create':
-            response_text_extra, action_result = _handle_content_action(
-                action_data, profile, conv, request.user,
-            )
-            preamble = strip_action_block(response_text).strip()
-            response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
-
-        elif action_type == 'read':
-            # Save Claude's initial response (skip if empty after stripping), then load content and re-call
-            _save_stripped_message(conv, response_text)
-            response_text = _handle_read_action(action_data, profile, conv)
-            # Check if the re-call produced an edit action
-            action_data_2 = extract_action_block(response_text)
-            if action_data_2 and action_data_2.get('action') == 'edit':
+            elif action_type == 'read':
+                # Save Claude's initial response (skip if empty after stripping), then load content and re-call
                 _save_stripped_message(conv, response_text)
-                response_text, action_result = _handle_edit_action(
-                    action_data_2, profile, conv, request.user,
+                response_text = _handle_read_action(action_data, profile, conv)
+                # Check if the re-call produced an edit action
+                action_data_2 = extract_action_block(response_text)
+                if action_data_2 and action_data_2.get('action') == 'edit':
+                    _save_stripped_message(conv, response_text)
+                    response_text, action_result = _handle_edit_action(
+                        action_data_2, profile, conv, request.user,
+                    )
+
+            elif action_type == 'edit':
+                response_text_extra, action_result = _handle_edit_action(
+                    action_data, profile, conv, request.user,
                 )
+                preamble = strip_action_block(response_text).strip()
+                response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
-        elif action_type == 'edit':
-            response_text_extra, action_result = _handle_edit_action(
-                action_data, profile, conv, request.user,
-            )
-            preamble = strip_action_block(response_text).strip()
-            response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
+            elif action_type == 'delete':
+                response_text_extra, action_result = _handle_delete_action(
+                    action_data, profile, conv, request.user,
+                )
+                preamble = strip_action_block(response_text).strip()
+                response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
-        elif action_type == 'delete':
-            response_text_extra, action_result = _handle_delete_action(
-                action_data, profile, conv, request.user,
-            )
-            preamble = strip_action_block(response_text).strip()
-            response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
+            elif action_type == 'list':
+                # Save Claude's initial response (skip if empty after stripping), then list content and re-call
+                _save_stripped_message(conv, response_text)
+                response_text = _handle_list_action(action_data, profile, conv)
 
-        elif action_type == 'list':
-            # Save Claude's initial response (skip if empty after stripping), then list content and re-call
-            _save_stripped_message(conv, response_text)
-            response_text = _handle_list_action(action_data, profile, conv)
+    except Exception:
+        logger.exception('Action handling failed: conv=%s', conv.id)
+        response_text = 'Sorry, something went wrong while processing that action. Please try again.'
+        action_result = {'type': 'error', 'message': response_text}
 
-    # Save final assistant response (strip action JSON; skip if empty)
-    _save_stripped_message(conv, response_text)
+    # Build display text: strip action JSON, never leak raw JSON to client
+    display_text = strip_action_block(response_text).strip()
+    if not display_text:
+        if action_result and action_result.get('type') not in (None, 'error'):
+            display_text = 'Done! The action has been processed.'
+        else:
+            display_text = response_text
 
-    display_text = strip_action_block(response_text).strip() or response_text
+    # Save to DB exactly what the client will see (so page reloads are consistent)
+    Message.objects.create(conversation=conv, role='assistant', content=display_text)
+
     logger.info(
         'send_message complete: conv=%s, action=%s, response_len=%d',
         conv.id,

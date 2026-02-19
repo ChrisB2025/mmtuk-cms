@@ -4,7 +4,7 @@
 {% block title %}Chat — MMTUK CMS{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -45,7 +45,11 @@
         <script>
           (function() {
             const el = document.currentScript.previousElementSibling;
-            el.innerHTML = marked.parse({{ msg.content|escapejs|safe }});
+            try {
+              el.innerHTML = marked.parse("{{ msg.content|escapejs|safe }}");
+            } catch (e) {
+              el.textContent = "{{ msg.content|escapejs|safe }}";
+            }
           })();
         </script>
         {% else %}

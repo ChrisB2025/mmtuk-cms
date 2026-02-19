@@ -45,7 +45,11 @@
 
     if (role === 'assistant') {
       contentEl.classList.add('markdown-body');
-      contentEl.innerHTML = marked.parse(content);
+      try {
+        contentEl.innerHTML = marked.parse(content);
+      } catch (e) {
+        contentEl.textContent = content;
+      }
     } else {
       contentEl.textContent = content;
     }
