@@ -385,6 +385,8 @@ def _handle_content_action(action_data, profile, conv, user):
                         image_repo_path = 'public/' + save_as.lstrip('/')
                     else:
                         image_repo_path = get_image_path(content_type, slug)
+                else:
+                    logger.warning('content_action: process_image returned None for url=%.80s', img_url)
 
     # Check if user can publish directly
     can_publish = profile.can_publish_directly(content_type, local_group)
@@ -1092,7 +1094,7 @@ def _pre_scrape_substack(user_message, conv):
             f'Date: {scraped.get("date", "")}\n'
             f'Publication: {scraped.get("publication", "")}\n'
             f'Image URL: {scraped.get("image_url", "")}\n\n'
-            f'Article body (markdown):\n\n{scraped.get("body_markdown", "")[:8000]}'
+            f'Article body (markdown):\n\n{scraped.get("body_markdown", "")}'
         )
         Message.objects.create(conversation=conv, role='user', content=scraped_summary)
         return scraped  # Return data so caller can skip Claude for this message
@@ -2088,6 +2090,7 @@ def repo_image(request, image_path):
         if settings.DEBUG:
             full_path = Path(settings.OUTPUT_DIR) / 'public' / clean
         if not full_path.exists() or not full_path.is_file():
+            logger.warning('repo_image: 404 path=%s full=%s', image_path, full_path)
             raise Http404
 
     content_type, _ = mimetypes.guess_type(str(full_path))

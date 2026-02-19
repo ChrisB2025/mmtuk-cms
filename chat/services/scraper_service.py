@@ -51,6 +51,38 @@ def _enforce_h2_only(text):
     return re.sub(r'^###\s+', '## ', text, flags=re.MULTILINE)
 
 
+def _preprocess_figures(container):
+    """
+    Replace <figure> elements with inline image + optional caption, in-place.
+    Each figure becomes an <img alt="caption" src="..."> followed by an italic
+    caption paragraph. This preserves image position in the document so
+    markdownify converts them to standard ![alt](src) markdown syntax.
+    """
+    for figure in container.find_all('figure'):
+        img = figure.find('img')
+        caption_el = figure.find('figcaption')
+        caption = caption_el.get_text(strip=True) if caption_el else ''
+
+        if img:
+            src = img.get('src') or img.get('data-src') or ''
+            if src:
+                # Replace all img attrs with just src + alt (caption text)
+                for attr in list(img.attrs):
+                    del img[attr]
+                img['src'] = src
+                img['alt'] = caption
+                figure.replace_with(img)
+                if caption:
+                    cap_soup = BeautifulSoup(
+                        f'<p><em>{caption}</em></p>', 'html.parser'
+                    )
+                    img.insert_after(cap_soup.find('p'))
+            else:
+                figure.decompose()
+        else:
+            figure.decompose()
+
+
 def scrape_substack(url):
     """
     Scrape a Substack article and return structured data.
@@ -88,23 +120,23 @@ def scrape_substack(url):
     if og_image:
         image_url = og_image.get('content', '')
 
-    # Extract article body
-    body_html = ''
-    # Substack uses .body.markup or .available-content
+    # Extract article body — keep container as BS4 object for figure pre-processing
+    container = None
     for selector in ['.body.markup', '.available-content', 'article', '.post-content']:
         container = soup.select_one(selector)
         if container:
-            body_html = str(container)
             break
+    if not container:
+        container = soup.find('main') or soup.find('article') or soup.body
 
-    if not body_html:
-        # Fallback: find the largest text block
-        main = soup.find('main') or soup.find('article') or soup.body
-        if main:
-            body_html = str(main)
+    if container:
+        _preprocess_figures(container)
+        body_html = str(container)
+    else:
+        body_html = ''
 
-    # Convert HTML to markdown
-    body_md = md(body_html, heading_style='ATX', strip=['img', 'figure', 'figcaption'])
+    # Convert HTML to markdown — img is now converted (not stripped)
+    body_md = md(body_html, heading_style='ATX', strip=['figure', 'figcaption'])
 
     # Clean up: remove subscription CTAs, share buttons
     cta_patterns = [
