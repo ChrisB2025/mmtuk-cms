@@ -1631,8 +1631,31 @@ def content_detail(request, content_type, slug):
 
     item = read_content(content_type, slug)
     if not item:
-        from django.http import Http404
-        raise Http404(f'Content not found: {content_type}/{slug}')
+        # File missing from repo clone (lost on redeploy) — try to restore from ContentDraft DB record
+        from chat.models import ContentDraft
+        from chat.services.content_reader_service import invalidate_cache
+        draft = ContentDraft.objects.filter(
+            content_type=content_type, slug=slug, status='pending',
+        ).order_by('-created_at').first()
+        if draft:
+            try:
+                markdown, _ = generate_markdown(draft.content_type, draft.frontmatter_json, draft.body_markdown)
+                file_path = get_file_path(draft.content_type, draft.slug)
+                ensure_repo()
+                write_file_to_repo(file_path, markdown)
+                files = [file_path]
+                if draft.image_data and draft.image_path:
+                    write_file_to_repo(draft.image_path, bytes(draft.image_data))
+                    files.append(draft.image_path)
+                commit_locally(files, f'Restore {draft.content_type}: {draft.title}', 'system')
+                invalidate_cache()
+                item = read_content(content_type, slug)
+                logger.info('content_detail: restored %s/%s from ContentDraft', content_type, slug)
+            except Exception:
+                logger.exception('content_detail: failed to restore %s/%s from ContentDraft', content_type, slug)
+        if not item:
+            from django.http import Http404
+            raise Http404(f'Content not found: {content_type}/{slug}')
 
     from content_schema.schemas import CONTENT_TYPES
     schema = CONTENT_TYPES.get(content_type, {})
