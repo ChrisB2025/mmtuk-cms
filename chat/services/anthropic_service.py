@@ -201,7 +201,10 @@ def call_claude(system_prompt, messages):
     Call the Anthropic API with a system prompt and message history.
     Returns the assistant's text response.
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    client = anthropic.Anthropic(
+        api_key=settings.ANTHROPIC_API_KEY,
+        timeout=120.0,  # 2 min hard cap — prevent runaway requests
+    )
     response = client.messages.create(
         model=settings.ANTHROPIC_MODEL,
         max_tokens=4096,

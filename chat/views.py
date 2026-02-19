@@ -4,6 +4,7 @@ Chat views: conversation UI, message handling, pending approvals.
 
 import json
 import logging
+import time
 from datetime import datetime
 
 from django.conf import settings
@@ -327,7 +328,9 @@ def _handle_content_action(action_data, profile, conv, user):
         )
 
     # Validate against Astro schema (pre-commit validation)
+    t0 = time.monotonic()
     is_valid, astro_error = validate_against_astro_schema(content_type, frontmatter)
+    logger.info('content_action timing: schema_validation=%.1fs', time.monotonic() - t0)
     if not is_valid:
         error_msg = f'Content does not match Astro schema:\n{astro_error}'
         return error_msg, {'type': 'error', 'message': error_msg}
@@ -359,7 +362,9 @@ def _handle_content_action(action_data, profile, conv, user):
             # Image from URL
             img_url = img_info.get('url', '')
             if img_url:
+                t1 = time.monotonic()
                 img_bytes, img_filename = process_image(img_url, slug)
+                logger.info('content_action timing: image_download=%.1fs', time.monotonic() - t1)
                 if img_bytes:
                     image_bytes = img_bytes
                     save_as = img_info.get('save_as', '')
@@ -383,7 +388,9 @@ def _handle_content_action(action_data, profile, conv, user):
                     write_file_to_output(image_repo_path, image_bytes)
                 sha = 'debug-mode'
             else:
+                t2 = time.monotonic()
                 ensure_repo()
+                logger.info('content_action timing: ensure_repo=%.1fs', time.monotonic() - t2)
                 write_file_to_repo(file_path, markdown)
                 files_written.append(file_path)
                 if image_bytes and image_repo_path:
@@ -949,7 +956,9 @@ def send_message(request, conversation_id):
     logger.info('send_message: conv=%s, history_len=%s, msg_preview=%.80r', conv.id, len(all_msgs), user_message)
 
     try:
+        t_claude = time.monotonic()
         response_text = call_claude(system_prompt, all_msgs)
+        logger.info('send_message timing: claude_api=%.1fs', time.monotonic() - t_claude)
     except Exception:
         logger.exception('Claude API call failed')
         error_msg = 'Sorry, I encountered an error. Please try again.'

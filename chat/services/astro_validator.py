@@ -68,7 +68,7 @@ def _fetch_schema_from_url(url: str) -> Optional[dict]:
                 return json.load(f)
         else:
             # Fetch from HTTP/HTTPS
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=3)
             response.raise_for_status()
             return response.json()
     except Exception as e:
