@@ -260,7 +260,8 @@ def _check_rate_limit(user):
 def _handle_scrape_action(action_data, profile, conv):
     """
     Handle a scrape action: fetch URL content, inject it into the conversation,
-    and re-call Claude with the scraped data.
+    and return a formatted preview. Claude will see the scraped data in the
+    conversation history on the user's next message.
     """
     url = action_data.get('url', '')
     if not url:
@@ -270,9 +271,9 @@ def _handle_scrape_action(action_data, profile, conv):
         scraped = scrape_url(url)
     except Exception:
         logger.exception('Scrape failed for %s', url)
-        return f'I wasn\'t able to fetch content from that URL. Could you check it\'s correct and try again?'
+        return 'I wasn\'t able to fetch content from that URL. Could you check it\'s correct and try again?'
 
-    # Build a message with the scraped data for Claude
+    # Build a message with the scraped data for Claude to see on next call
     scraped_summary = (
         f'[SYSTEM: The URL {url} was scraped. Here is the extracted data]\n\n'
         f'Title: {scraped.get("title", "")}\n'
@@ -286,16 +287,27 @@ def _handle_scrape_action(action_data, profile, conv):
     # Save the scraped data as a system-injected user message
     Message.objects.create(conversation=conv, role='user', content=scraped_summary)
 
-    # Re-call Claude with the scraped data
-    system_prompt = build_system_prompt(profile)
-    all_msgs = get_conversation_messages(conv.messages.all())
-    try:
-        response_text = call_claude(system_prompt, all_msgs)
-    except Exception:
-        logger.exception('Claude API call failed during scrape follow-up')
-        return 'Sorry, I encountered an error processing the scraped content. Please try again.'
+    # Return formatted preview directly (no second Claude call — halves request time)
+    title = scraped.get('title', 'Untitled')
+    author = scraped.get('author', '')
+    date = scraped.get('date', '')
+    pub = scraped.get('publication', '')
+    body_preview = scraped.get('body_markdown', '')[:500]
 
-    return response_text
+    parts = ["I've imported the article from that URL. Here's what I found:\n"]
+    parts.append(f'**Title:** {title}')
+    if author:
+        parts.append(f'**Author:** {author}')
+    if date:
+        parts.append(f'**Date:** {date}')
+    if pub:
+        parts.append(f'**Publication:** {pub}')
+    if body_preview:
+        parts.append(f'\n**Preview:**\n{body_preview}...')
+    parts.append('\nWould you like me to create this as an article on the MMTUK site? '
+                 'I can adjust the title, category, or content before publishing.')
+
+    return '\n'.join(parts)
 
 
 def _handle_content_action(action_data, profile, conv, user):
@@ -464,7 +476,8 @@ def _handle_content_action(action_data, profile, conv, user):
 def _handle_read_action(action_data, profile, conv):
     """
     Handle a read action: load content from repo, inject into conversation,
-    and re-call Claude with the content.
+    and return a formatted summary. Claude will see the loaded content in the
+    conversation history on the user's next message.
     """
     content_type = action_data.get('content_type', '')
     slug = action_data.get('slug', '')
@@ -479,7 +492,7 @@ def _handle_read_action(action_data, profile, conv):
     fm = item['frontmatter']
     title = fm.get('title') or fm.get('heading') or fm.get('name', 'Untitled')
 
-    # Build a summary for the conversation
+    # Build a summary for the conversation (for Claude to see on next call)
     fm_lines = '\n'.join(f'  {k}: {v}' for k, v in fm.items())
     body_preview = item['body'][:6000]
     truncated = '' if len(item['body']) <= 6000 else '\n\n[Body truncated — full content is longer]'
@@ -492,16 +505,18 @@ def _handle_read_action(action_data, profile, conv):
 
     Message.objects.create(conversation=conv, role='user', content=injected)
 
-    # Re-call Claude with the loaded content
-    system_prompt = build_system_prompt(profile)
-    all_msgs = get_conversation_messages(conv.messages.all())
-    try:
-        response_text = call_claude(system_prompt, all_msgs)
-    except Exception:
-        logger.exception('Claude API call failed during read follow-up')
-        return 'Sorry, I encountered an error loading that content. Please try again.'
+    # Return formatted summary directly (no second Claude call)
+    display_body = item['body'][:500]
+    fm_display = '\n'.join(f'- **{k}:** {v}' for k, v in fm.items() if v)
 
-    return response_text
+    parts = [f'Here\'s the {content_type} **"{title}"** (slug: `{slug}`):']
+    if fm_display:
+        parts.append(f'\n**Frontmatter:**\n{fm_display}')
+    if display_body:
+        parts.append(f'\n**Body preview:**\n{display_body}...')
+    parts.append('\nWhat would you like to do with this content?')
+
+    return '\n'.join(parts)
 
 
 def _handle_edit_action(action_data, profile, conv, user):
@@ -700,7 +715,8 @@ def _handle_delete_action(action_data, profile, conv, user):
 
 def _handle_list_action(action_data, profile, conv):
     """
-    Handle a list action: list content and inject into conversation.
+    Handle a list action: list content, inject into conversation, and return
+    a formatted list. Claude will see the full data on the user's next message.
     """
     content_type = action_data.get('content_type', None)
     sort_by = action_data.get('sort', 'date_desc')
@@ -738,16 +754,26 @@ def _handle_list_action(action_data, profile, conv):
 
     Message.objects.create(conversation=conv, role='user', content=injected)
 
-    # Re-call Claude
-    system_prompt = build_system_prompt(profile)
-    all_msgs = get_conversation_messages(conv.messages.all())
-    try:
-        response_text = call_claude(system_prompt, all_msgs)
-    except Exception:
-        logger.exception('Claude API call failed during list follow-up')
-        return 'Sorry, I encountered an error processing the content list. Please try again.'
+    # Return formatted list directly (no second Claude call)
+    if not items:
+        type_label = content_type or 'any type'
+        return f'No content found of type "{type_label}".'
 
-    return response_text
+    display_lines = []
+    for i, item in enumerate(items, 1):
+        fm = item.get('frontmatter', {})
+        date = fm.get('pubDate') or fm.get('date') or ''
+        draft = ' (draft)' if fm.get('draft') else ''
+        date_suffix = f' — {date}' if date else ''
+        display_lines.append(
+            f'{i}. **{item["title"]}** (`{item["slug"]}`){date_suffix}{draft}'
+        )
+
+    type_label = content_type or 'content'
+    header = f'Here are the {type_label} items I found:\n'
+    footer = '\nWhich one would you like to view or edit?'
+
+    return header + '\n'.join(display_lines) + footer
 
 
 def _log_audit(content_type, slug, action, user, sha='', changes_summary=''):
@@ -981,14 +1007,8 @@ def send_message(request, conversation_id):
                 # Save Claude's initial response (skip if empty after stripping)
                 _save_stripped_message(conv, response_text)
 
-                # Handle scraping and re-call Claude
+                # Handle scraping — returns formatted preview (no second Claude call)
                 response_text = _handle_scrape_action(action_data, profile, conv)
-                action_data_2 = extract_action_block(response_text)
-                if action_data_2 and action_data_2.get('action') == 'create':
-                    _save_stripped_message(conv, response_text)
-                    response_text, action_result = _handle_content_action(
-                        action_data_2, profile, conv, request.user,
-                    )
 
             elif action_type == 'create':
                 response_text_extra, action_result = _handle_content_action(
@@ -998,16 +1018,11 @@ def send_message(request, conversation_id):
                 response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
             elif action_type == 'read':
-                # Save Claude's initial response (skip if empty after stripping), then load content and re-call
+                # Save Claude's initial response (skip if empty after stripping)
                 _save_stripped_message(conv, response_text)
+
+                # Handle read — returns formatted summary (no second Claude call)
                 response_text = _handle_read_action(action_data, profile, conv)
-                # Check if the re-call produced an edit action
-                action_data_2 = extract_action_block(response_text)
-                if action_data_2 and action_data_2.get('action') == 'edit':
-                    _save_stripped_message(conv, response_text)
-                    response_text, action_result = _handle_edit_action(
-                        action_data_2, profile, conv, request.user,
-                    )
 
             elif action_type == 'edit':
                 response_text_extra, action_result = _handle_edit_action(
@@ -1024,8 +1039,10 @@ def send_message(request, conversation_id):
                 response_text = f'{preamble}\n\n{response_text_extra}' if preamble else response_text_extra
 
             elif action_type == 'list':
-                # Save Claude's initial response (skip if empty after stripping), then list content and re-call
+                # Save Claude's initial response (skip if empty after stripping)
                 _save_stripped_message(conv, response_text)
+
+                # Handle list — returns formatted list (no second Claude call)
                 response_text = _handle_list_action(action_data, profile, conv)
 
     except Exception:
