@@ -30,7 +30,7 @@ from .services.content_reader_service import (
 )
 from .services.image_catalog import categorise_images
 from .services.git_service import (
-    ensure_repo, write_file_to_repo, write_file_to_output,
+    ensure_repo, prepare_repo_for_write, write_file_to_repo, write_file_to_output,
     commit_locally, push_to_remote, get_unpushed_changes,
     read_file_from_repo, delete_file_from_repo, reset_unpushed_commits,
 )
@@ -401,8 +401,8 @@ def _handle_content_action(action_data, profile, conv, user):
                 sha = 'debug-mode'
             else:
                 t2 = time.monotonic()
-                ensure_repo()
-                logger.info('content_action timing: ensure_repo=%.1fs', time.monotonic() - t2)
+                prepare_repo_for_write()
+                logger.info('content_action timing: repo_prep=%.1fs', time.monotonic() - t2)
                 write_file_to_repo(file_path, markdown)
                 files_written.append(file_path)
                 if image_bytes and image_repo_path:

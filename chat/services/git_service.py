@@ -36,6 +36,25 @@ def _get_repo():
     return git.Repo(str(clone_dir))
 
 
+def prepare_repo_for_write():
+    """
+    Prepare the cloned repo for a write operation without fetching from remote.
+    The warmup command ensures a recent clone exists; push_to_remote() handles
+    non-fast-forward pushes via rebase retry.
+    """
+    clone_dir = Path(settings.REPO_CLONE_DIR)
+    branch = settings.GITHUB_BRANCH
+
+    if not clone_dir.exists():
+        logger.warning('Repo not found at %s; cloning now', clone_dir)
+        return ensure_repo()
+
+    repo = git.Repo(str(clone_dir))
+    repo.remotes.origin.set_url(_repo_url())
+    repo.git.checkout(branch)
+    return repo
+
+
 def has_unpushed_commits():
     """
     Check if there are local commits not yet pushed to origin/branch.
