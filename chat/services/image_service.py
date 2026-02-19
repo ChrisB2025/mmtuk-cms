@@ -32,7 +32,7 @@ def download_image(url):
         url,
         headers={'User-Agent': _USER_AGENT},
         follow_redirects=True,
-        timeout=30,
+        timeout=httpx.Timeout(connect=5, read=20, write=5, pool=5),
     )
     resp.raise_for_status()
 
