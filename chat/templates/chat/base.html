@@ -95,7 +95,10 @@
           <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
           <span class="user-role">{{ profile.get_role_display }}</span>
         </div>
-        <a href="{% url 'logout' %}" class="sidebar-link logout-link">Log out</a>
+        <form method="post" action="{% url 'logout' %}" style="margin:0">
+          {% csrf_token %}
+          <button type="submit" class="sidebar-link logout-link">Log out</button>
+        </form>
       </div>
     </aside>
     {% endif %}
