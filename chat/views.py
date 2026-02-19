@@ -948,6 +948,117 @@ def _save_stripped_message(conv, text):
 
 _SUBSTACK_URL_RE = re.compile(r'https?://\S*substack\.com\S*')
 
+_CONFIRMATIONS = {
+    'yes', 'yep', 'yeah', 'yup', 'sure', 'ok', 'okay',
+    'create', 'create it', 'go ahead', 'do it', 'add it', 'add',
+    'publish', 'confirm', 'proceed', 'please', 'perfect', 'great',
+    'yes please', 'yes create it', 'yes add it', 'yes go ahead',
+    'sounds good', 'looks good',
+}
+
+
+def _slugify(text):
+    """Convert text to a URL-safe slug."""
+    slug = text.lower()
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[\s_]+', '-', slug)
+    return slug.strip('-')
+
+
+def _is_confirmation(message):
+    """Return True if message is a simple affirmative confirmation."""
+    return message.lower().strip().rstrip(' .,!?') in _CONFIRMATIONS
+
+
+def _find_scraped_url_data(conv):
+    """
+    Return (url, scraped_dict) by parsing the [SYSTEM: scraped] message already in
+    the conversation DB, or (None, None) if none found or article already created.
+    """
+    # Don't double-create if already done in this conversation
+    if conv.messages.filter(role='assistant', content__icontains='successfully created').exists():
+        return None, None
+
+    msg = conv.messages.filter(
+        role='user',
+        content__startswith='[SYSTEM: The URL ',
+    ).order_by('created_at').first()
+    if not msg:
+        return None, None
+
+    header_match = re.match(r'\[SYSTEM: The URL (.+?) was scraped\.', msg.content)
+    if not header_match:
+        return None, None
+    url = header_match.group(1)
+
+    data = {'source_url': url, 'title': '', 'author': '', 'date': '',
+            'publication': '', 'image_url': '', 'body_markdown': ''}
+
+    for line in msg.content.splitlines():
+        if line.startswith('Title: '):
+            data['title'] = line[7:].strip()
+        elif line.startswith('Author: '):
+            data['author'] = line[8:].strip()
+        elif line.startswith('Date: '):
+            data['date'] = line[6:].strip()
+        elif line.startswith('Publication: '):
+            data['publication'] = line[13:].strip()
+        elif line.startswith('Image URL: '):
+            data['image_url'] = line[11:].strip()
+
+    body_marker = '\nArticle body (markdown):\n\n'
+    idx = msg.content.find(body_marker)
+    if idx != -1:
+        data['body_markdown'] = msg.content[idx + len(body_marker):]
+
+    return url, data
+
+
+def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
+    """
+    Create a briefing directly from scraped URL data — no Claude call.
+    Constructs action_data and delegates to _handle_content_action.
+    Returns (response_text, action_result).
+    """
+    from datetime import date as _date
+
+    title = scraped.get('title') or 'Untitled'
+    slug = _slugify(title) or 'briefing'
+    author = scraped.get('author') or 'MMTUK'
+    raw_date = scraped.get('date') or _date.today().isoformat()
+    pub_date = f'{raw_date}T00:00:00.000Z'
+    image_url = scraped.get('image_url') or ''
+    publication = scraped.get('publication') or ''
+    body = scraped.get('body_markdown') or ''
+
+    frontmatter = {
+        'title': title,
+        'slug': slug,
+        'author': 'MMTUK',
+        'pubDate': pub_date,
+        'readTime': 5,
+        'sourceUrl': url,
+        'sourceAuthor': author,
+        'sourceTitle': title,
+        'sourceDate': raw_date,
+    }
+    if publication:
+        frontmatter['sourcePublication'] = publication
+    if image_url:
+        frontmatter['thumbnail'] = f'/images/briefings/{slug}-thumbnail.png'
+
+    action_data = {
+        'action': 'create',
+        'content_type': 'briefing',
+        'frontmatter': frontmatter,
+        'body': body,
+    }
+    if image_url:
+        action_data['images'] = [{'url': image_url, 'save_as': f'images/briefings/{slug}-thumbnail.png'}]
+
+    logger.info('direct_briefing: creating "%s" (slug=%s) from %s', title, slug, url)
+    return _handle_content_action(action_data, profile, conv, user)
+
 
 def _pre_scrape_substack(user_message, conv):
     """
@@ -1043,9 +1154,26 @@ def send_message(request, conversation_id):
         conv.title = user_message[:80]
         conv.save(update_fields=['title'])
 
-    # Pre-scrape Substack URLs. If successful, return a formatted preview directly —
-    # no Claude call needed for this message. Eliminates the scrape+Claude sequential
-    # timing that could exceed Railway/Cloudflare's ~100s proxy timeout.
+    # STEP 1: Confirmation after URL preview → create briefing directly (no Claude call).
+    # This handles "yes" / "create it" / "go ahead" after a Substack URL was scraped.
+    if _is_confirmation(user_message):
+        scraped_url, scraped_data = _find_scraped_url_data(conv)
+        if scraped_data:
+            try:
+                t_direct = time.monotonic()
+                response_text, action_result = _direct_briefing_from_scraped(
+                    scraped_url, scraped_data, profile, conv, request.user,
+                )
+                logger.info('direct_briefing timing: %.1fs', time.monotonic() - t_direct)
+                return JsonResponse({
+                    'response': response_text,
+                    'conversation_id': str(conv.id),
+                    'action_taken': action_result,
+                })
+            except Exception:
+                logger.exception('Direct briefing creation failed; falling through to Claude')
+
+    # STEP 2: URL in message → scrape and return preview directly (no Claude call).
     scraped_data = _pre_scrape_substack(user_message, conv)
     if scraped_data:
         preview = _format_scrape_preview(scraped_data)
@@ -1056,7 +1184,7 @@ def send_message(request, conversation_id):
             'action_taken': None,
         })
 
-    # No URL detected or scrape failed — call Claude normally
+    # STEP 3: No URL and not a confirmation — call Claude normally.
     # Build messages and call Claude
     try:
         t_prompt = time.monotonic()
