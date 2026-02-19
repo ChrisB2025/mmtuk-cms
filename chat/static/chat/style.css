@@ -288,10 +288,6 @@ body {
 .conversation-item .conv-link {
   flex: 1;
 }
-.delete-conversation-form {
-  margin: 0;
-  padding: 0;
-}
 .delete-conversation-btn {
   background: transparent;
   border: none;

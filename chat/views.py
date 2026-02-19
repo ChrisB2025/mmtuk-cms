@@ -952,13 +952,13 @@ _SUBSTACK_URL_RE = re.compile(r'https?://\S*substack\.com\S*')
 def _pre_scrape_substack(user_message, conv):
     """
     If the user message contains a Substack URL that hasn't been scraped yet in
-    this conversation, scrape it and inject the content as a system message before
-    Claude is called. This prevents scraping from happening AFTER the Claude API
-    response (which would push total request time over Railway's proxy timeout).
+    this conversation, scrape it and inject the content as a system message.
+    Returns the scraped data dict on success, or None if not applicable/failed.
+    The caller can use the returned data to skip the Claude API call entirely.
     """
     match = _SUBSTACK_URL_RE.search(user_message)
     if not match:
-        return
+        return None
 
     url = match.group(0).rstrip('.,;!?)')
 
@@ -967,7 +967,7 @@ def _pre_scrape_substack(user_message, conv):
         role='user',
         content__startswith=f'[SYSTEM: The URL {url} was scraped',
     ).exists():
-        return
+        return None
 
     try:
         t = time.monotonic()
@@ -984,8 +984,32 @@ def _pre_scrape_substack(user_message, conv):
             f'Article body (markdown):\n\n{scraped.get("body_markdown", "")[:8000]}'
         )
         Message.objects.create(conversation=conv, role='user', content=scraped_summary)
+        return scraped  # Return data so caller can skip Claude for this message
     except Exception:
         logger.warning('Pre-scrape failed for %s; Claude will handle normally', url)
+        return None
+
+
+def _format_scrape_preview(scraped):
+    """Format a scraped article as a chat preview without calling Claude."""
+    title = scraped.get('title') or 'Unknown title'
+    author = scraped.get('author') or 'Unknown author'
+    date = scraped.get('date', '')
+    publication = scraped.get('publication', '')
+    body_text = scraped.get('body_markdown') or ''
+    body_preview = body_text[:300].strip()
+
+    lines = [f'**{title}**', f'By {author}']
+    if date:
+        lines.append(f'Published: {date}')
+    if publication:
+        lines.append(f'Publication: {publication}')
+    if body_preview:
+        lines.append('')
+        lines.append(body_preview + ('...' if len(body_text) > 300 else ''))
+    lines.append('')
+    lines.append('Would you like me to create this as a briefing article on the MMTUK site?')
+    return '\n'.join(lines)
 
 
 @login_required
@@ -1019,10 +1043,20 @@ def send_message(request, conversation_id):
         conv.title = user_message[:80]
         conv.save(update_fields=['title'])
 
-    # Pre-scrape Substack URLs before calling Claude so the content is already in context.
-    # This avoids a post-Claude scrape that would push total request time over the proxy timeout.
-    _pre_scrape_substack(user_message, conv)
+    # Pre-scrape Substack URLs. If successful, return a formatted preview directly —
+    # no Claude call needed for this message. Eliminates the scrape+Claude sequential
+    # timing that could exceed Railway/Cloudflare's ~100s proxy timeout.
+    scraped_data = _pre_scrape_substack(user_message, conv)
+    if scraped_data:
+        preview = _format_scrape_preview(scraped_data)
+        Message.objects.create(conversation=conv, role='assistant', content=preview)
+        return JsonResponse({
+            'response': preview,
+            'conversation_id': str(conv.id),
+            'action_taken': None,
+        })
 
+    # No URL detected or scrape failed — call Claude normally
     # Build messages and call Claude
     try:
         t_prompt = time.monotonic()

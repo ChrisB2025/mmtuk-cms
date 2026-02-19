@@ -28,7 +28,7 @@ def _fetch_html(url):
         url,
         headers={'User-Agent': _USER_AGENT},
         follow_redirects=True,
-        timeout=30,
+        timeout=15,
     )
     resp.raise_for_status()
     return resp.text
