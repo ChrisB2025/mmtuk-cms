@@ -1171,18 +1171,39 @@ def send_message(request, conversation_id):
                     'action_taken': action_result,
                 })
             except Exception:
-                logger.exception('Direct briefing creation failed; falling through to Claude')
+                logger.exception('Direct briefing creation failed')
+                error_msg = 'Sorry, I encountered an error creating the briefing. Please try again.'
+                Message.objects.create(conversation=conv, role='assistant', content=error_msg)
+                return JsonResponse({
+                    'response': error_msg,
+                    'conversation_id': str(conv.id),
+                    'action_taken': None,
+                })
 
-    # STEP 2: URL in message → scrape and return preview directly (no Claude call).
-    scraped_data = _pre_scrape_substack(user_message, conv)
-    if scraped_data:
-        preview = _format_scrape_preview(scraped_data)
-        Message.objects.create(conversation=conv, role='assistant', content=preview)
-        return JsonResponse({
-            'response': preview,
-            'conversation_id': str(conv.id),
-            'action_taken': None,
-        })
+    # STEP 2: URL in message → scrape and return preview or error (no Claude call).
+    url_match = _SUBSTACK_URL_RE.search(user_message)
+    if url_match:
+        scraped_data = _pre_scrape_substack(user_message, conv)
+        if scraped_data:
+            preview = _format_scrape_preview(scraped_data)
+            Message.objects.create(conversation=conv, role='assistant', content=preview)
+            return JsonResponse({
+                'response': preview,
+                'conversation_id': str(conv.id),
+                'action_taken': None,
+            })
+        else:
+            error_msg = (
+                "I wasn't able to fetch that article. The site may be temporarily unavailable "
+                "or the article may require a subscription. Please try again in a moment, "
+                "or paste the article text directly."
+            )
+            Message.objects.create(conversation=conv, role='assistant', content=error_msg)
+            return JsonResponse({
+                'response': error_msg,
+                'conversation_id': str(conv.id),
+                'action_taken': None,
+            })
 
     # STEP 3: No URL and not a confirmation — call Claude normally.
     # Build messages and call Claude
