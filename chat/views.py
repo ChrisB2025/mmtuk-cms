@@ -1156,8 +1156,6 @@ def send_message(request, conversation_id):
     if not user_message:
         return JsonResponse({'error': 'Empty message'}, status=400)
 
-    logger.info('recv: user=%s conv=%s msg=%.40r', request.user.username, conversation_id, user_message)
-
     # Save user message
     Message.objects.create(conversation=conv, role='user', content=user_message)
 
@@ -1168,16 +1166,22 @@ def send_message(request, conversation_id):
 
     # STEP 1: Confirmation after URL preview → create briefing directly (no Claude call).
     # This handles "yes" / "create it" / "go ahead" after a Substack URL was scraped.
-    logger.info('step1_check: is_confirmation=%s msg=%.20r', _is_confirmation(user_message), user_message)
     if _is_confirmation(user_message):
         scraped_url, scraped_data = _find_scraped_url_data(conv)
-        logger.info('step1_scraped: url=%s has_data=%s', scraped_url, scraped_data is not None)
         if scraped_data:
             try:
+                import concurrent.futures
                 t_direct = time.monotonic()
-                response_text, action_result = _direct_briefing_from_scraped(
-                    scraped_url, scraped_data, profile, conv, request.user,
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        _direct_briefing_from_scraped,
+                        scraped_url, scraped_data, profile, conv, request.user,
+                    )
+                    try:
+                        response_text, action_result = future.result(timeout=90)
+                    except concurrent.futures.TimeoutError:
+                        logger.warning('direct_briefing timed out after 90s for url=%s', scraped_url)
+                        raise TimeoutError('Briefing creation timed out')
                 logger.info('direct_briefing timing: %.1fs', time.monotonic() - t_direct)
                 return JsonResponse({
                     'response': response_text,

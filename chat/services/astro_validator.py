@@ -34,10 +34,10 @@ SCHEMA_CACHE_TTL = 86400  # 24 hours
 
 # Schema source URLs (try in order)
 SCHEMA_SOURCES = [
-    # 1. Deployed site (production)
-    'https://mmtuk.org/schemas/',
-    # 2. Local repo (for development)
+    # 1. Local repo (fast, always available if clone exists)
     'file://{repo_path}/public/schemas/',
+    # 2. Deployed site (fallback if local repo unavailable)
+    'https://mmtuk.org/schemas/',
 ]
 
 
