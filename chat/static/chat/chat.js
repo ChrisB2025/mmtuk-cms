@@ -92,7 +92,7 @@
     setTyping(true);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 270000); // 4.5 min
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min (match gunicorn)
 
     try {
       const resp = await fetch(window.SEND_URL, {

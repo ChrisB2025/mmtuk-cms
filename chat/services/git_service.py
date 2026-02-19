@@ -6,6 +6,7 @@ accumulate commits, and push_to_remote() sends them all at once.
 """
 
 import logging
+import time
 import threading
 from pathlib import Path
 
@@ -16,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 # Module-level lock to serialise git operations
 _git_lock = threading.Lock()
+
+# Fetch cooldown: skip fetch if last one was recent (seconds)
+_last_fetch_time = 0
+_FETCH_COOLDOWN = 120
 
 
 def _repo_url():
@@ -63,13 +68,17 @@ def ensure_repo():
     clone_dir = Path(settings.REPO_CLONE_DIR)
     branch = settings.GITHUB_BRANCH
 
+    global _last_fetch_time
+
     if not clone_dir.exists():
         logger.info('Cloning repo to %s', clone_dir)
         repo = git.Repo.clone_from(
             _repo_url(),
             str(clone_dir),
             branch=branch,
+            kill_after_timeout=60,
         )
+        _last_fetch_time = time.time()
         return repo
 
     repo = git.Repo(str(clone_dir))
@@ -78,8 +87,16 @@ def ensure_repo():
     # Update remote URL in case token changed
     origin.set_url(_repo_url())
 
+    # Skip fetch if we fetched recently (avoids slow network call on back-to-back requests)
+    elapsed = time.time() - _last_fetch_time
+    if elapsed < _FETCH_COOLDOWN:
+        logger.info('Skipping fetch — last fetch was %ds ago', int(elapsed))
+        repo.git.checkout(branch)
+        return repo
+
     logger.info('Fetching latest from origin/%s', branch)
-    origin.fetch()
+    origin.fetch(kill_after_timeout=30)
+    _last_fetch_time = time.time()
     repo.git.checkout(branch)
 
     # Check for unpushed local commits
@@ -263,11 +280,11 @@ def push_to_remote():
 
         # Push (retry once with rebase on failure)
         try:
-            repo.remotes.origin.push()
+            repo.remotes.origin.push(kill_after_timeout=60)
         except git.GitCommandError:
             logger.warning('Push failed, pulling with rebase and retrying...')
             repo.git.pull('--rebase')
-            repo.remotes.origin.push()
+            repo.remotes.origin.push(kill_after_timeout=60)
 
         logger.info('Pushed %d commit(s) to origin/%s', count, branch)
         return count
@@ -290,7 +307,7 @@ def get_unpushed_changes():
         branch = settings.GITHUB_BRANCH
 
         # Fetch to make sure we have latest remote state
-        repo.remotes.origin.fetch()
+        repo.remotes.origin.fetch(kill_after_timeout=30)
 
         ahead = list(repo.iter_commits(f'origin/{branch}..{branch}'))
         return [
@@ -339,7 +356,7 @@ def reset_unpushed_commits(commit_shas):
             branch = settings.GITHUB_BRANCH
 
             # Fetch to ensure we have latest remote state
-            repo.remotes.origin.fetch()
+            repo.remotes.origin.fetch(kill_after_timeout=30)
 
             # Get all unpushed commits
             unpushed = list(repo.iter_commits(f'origin/{branch}..{branch}'))
