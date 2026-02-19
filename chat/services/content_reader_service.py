@@ -34,11 +34,15 @@ def invalidate_cache():
 
 
 def _ensure_repo_available():
-    """Ensure the repo is cloned and up to date. In DEBUG mode, also checks output dir."""
+    """Ensure the repo clone directory exists. Does NOT fetch — read ops use whatever is on disk."""
+    clone_dir = Path(settings.REPO_CLONE_DIR)
+    if clone_dir.exists():
+        return  # fast path — already have a clone, use it as-is
+    # First time only: do a full clone
     try:
         ensure_repo()
     except Exception:
-        logger.warning('Could not ensure repo; will try to read from existing clone or output dir')
+        logger.warning('Could not clone repo; reads may return empty results')
 
 
 def _get_content_dir(content_type):

@@ -977,11 +977,12 @@ def send_message(request, conversation_id):
         conv.save(update_fields=['title'])
 
     # Build messages and call Claude
-    system_prompt = build_system_prompt(profile)
-    all_msgs = get_conversation_messages(conv.messages.all())
-    logger.info('send_message: conv=%s, history_len=%s, msg_preview=%.80r', conv.id, len(all_msgs), user_message)
-
     try:
+        t_prompt = time.monotonic()
+        system_prompt = build_system_prompt(profile)
+        logger.info('send_message timing: build_prompt=%.1fs', time.monotonic() - t_prompt)
+        all_msgs = get_conversation_messages(conv.messages.all())
+        logger.info('send_message: conv=%s, history_len=%s, msg_preview=%.80r', conv.id, len(all_msgs), user_message)
         t_claude = time.monotonic()
         response_text = call_claude(system_prompt, all_msgs)
         logger.info('send_message timing: claude_api=%.1fs', time.monotonic() - t_claude)
