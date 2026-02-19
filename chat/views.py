@@ -4,6 +4,7 @@ Chat views: conversation UI, message handling, pending approvals.
 
 import json
 import logging
+import re
 import time
 from datetime import datetime
 
@@ -945,6 +946,48 @@ def _save_stripped_message(conv, text):
         Message.objects.create(conversation=conv, role='assistant', content=content)
 
 
+_SUBSTACK_URL_RE = re.compile(r'https?://\S*substack\.com\S*')
+
+
+def _pre_scrape_substack(user_message, conv):
+    """
+    If the user message contains a Substack URL that hasn't been scraped yet in
+    this conversation, scrape it and inject the content as a system message before
+    Claude is called. This prevents scraping from happening AFTER the Claude API
+    response (which would push total request time over Railway's proxy timeout).
+    """
+    match = _SUBSTACK_URL_RE.search(user_message)
+    if not match:
+        return
+
+    url = match.group(0).rstrip('.,;!?)')
+
+    # Skip if this URL was already scraped in this conversation
+    if conv.messages.filter(
+        role='user',
+        content__startswith=f'[SYSTEM: The URL {url} was scraped',
+    ).exists():
+        return
+
+    try:
+        t = time.monotonic()
+        scraped = scrape_url(url)
+        logger.info('pre_scrape timing: %.1fs for %s', time.monotonic() - t, url)
+
+        scraped_summary = (
+            f'[SYSTEM: The URL {url} was scraped. Here is the extracted data]\n\n'
+            f'Title: {scraped.get("title", "")}\n'
+            f'Author: {scraped.get("author", "")}\n'
+            f'Date: {scraped.get("date", "")}\n'
+            f'Publication: {scraped.get("publication", "")}\n'
+            f'Image URL: {scraped.get("image_url", "")}\n\n'
+            f'Article body (markdown):\n\n{scraped.get("body_markdown", "")[:8000]}'
+        )
+        Message.objects.create(conversation=conv, role='user', content=scraped_summary)
+    except Exception:
+        logger.warning('Pre-scrape failed for %s; Claude will handle normally', url)
+
+
 @login_required
 @require_POST
 def send_message(request, conversation_id):
@@ -975,6 +1018,10 @@ def send_message(request, conversation_id):
     if conv.messages.count() <= 1:
         conv.title = user_message[:80]
         conv.save(update_fields=['title'])
+
+    # Pre-scrape Substack URLs before calling Claude so the content is already in context.
+    # This avoids a post-Claude scrape that would push total request time over the proxy timeout.
+    _pre_scrape_substack(user_message, conv)
 
     # Build messages and call Claude
     try:
