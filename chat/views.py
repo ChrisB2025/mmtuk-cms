@@ -1137,6 +1137,7 @@ def _format_scrape_preview(scraped):
 @require_POST
 def send_message(request, conversation_id):
     """Handle a chat message from the user."""
+    logger.info('send_message: arrived conv=%s user=%s', conversation_id, request.user.username)
     conv = get_object_or_404(Conversation, id=conversation_id, user=request.user)
     profile = request.user.profile
 
