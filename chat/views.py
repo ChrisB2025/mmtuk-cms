@@ -1083,8 +1083,16 @@ def _pre_scrape_substack(user_message, conv):
         return None
 
     try:
+        import concurrent.futures
         t = time.monotonic()
-        scraped = scrape_url(url)
+        logger.info('pre_scrape: start url=%s', url)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(scrape_url, url)
+            try:
+                scraped = future.result(timeout=60)
+            except concurrent.futures.TimeoutError:
+                logger.warning('pre_scrape: timed out after 60s for %s', url)
+                return None
         logger.info('pre_scrape timing: %.1fs for %s', time.monotonic() - t, url)
 
         scraped_summary = (
@@ -1099,7 +1107,7 @@ def _pre_scrape_substack(user_message, conv):
         Message.objects.create(conversation=conv, role='user', content=scraped_summary)
         return scraped  # Return data so caller can skip Claude for this message
     except Exception:
-        logger.warning('Pre-scrape failed for %s; Claude will handle normally', url)
+        logger.warning('Pre-scrape failed for %s', url, exc_info=True)
         return None
 
 

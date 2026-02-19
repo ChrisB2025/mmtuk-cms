@@ -24,13 +24,15 @@ _USER_AGENT = (
 
 def _fetch_html(url):
     """Fetch a URL and return the HTML content."""
+    logger.info('fetch_html: start %.100s', url)
     resp = httpx.get(
         url,
         headers={'User-Agent': _USER_AGENT},
         follow_redirects=True,
-        timeout=15,
+        timeout=httpx.Timeout(connect=10, read=30, write=10, pool=10),
     )
     resp.raise_for_status()
+    logger.info('fetch_html: done status=%d bytes=%d', resp.status_code, len(resp.content))
     return resp.text
 
 
@@ -88,8 +90,13 @@ def scrape_substack(url):
     Scrape a Substack article and return structured data.
     Returns a dict with title, author, date, publication, image_url, body_markdown, source_url.
     """
+    import time as _time
+    t0 = _time.monotonic()
+
     html = _fetch_html(url)
+    logger.info('scrape_substack: parse html %d bytes', len(html))
     soup = BeautifulSoup(html, 'html.parser')
+    logger.info('scrape_substack: parsed in %.1fs', _time.monotonic() - t0)
 
     # Extract metadata from og/meta tags
     title = ''
@@ -130,13 +137,17 @@ def scrape_substack(url):
         container = soup.find('main') or soup.find('article') or soup.body
 
     if container:
+        logger.info('scrape_substack: preprocessing figures at %.1fs', _time.monotonic() - t0)
         _preprocess_figures(container)
         body_html = str(container)
+        logger.info('scrape_substack: body_html %d bytes at %.1fs', len(body_html), _time.monotonic() - t0)
     else:
         body_html = ''
 
     # Convert HTML to markdown — img is now converted (not stripped)
+    logger.info('scrape_substack: running markdownify at %.1fs', _time.monotonic() - t0)
     body_md = md(body_html, heading_style='ATX', strip=['figure', 'figcaption'])
+    logger.info('scrape_substack: markdownify done, md %d chars at %.1fs', len(body_md), _time.monotonic() - t0)
 
     # Clean up: remove subscription CTAs, share buttons
     cta_patterns = [

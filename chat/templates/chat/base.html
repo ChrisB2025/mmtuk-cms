@@ -103,25 +103,26 @@
       </div>
     </aside>
     <script>
-    // Delete conversation — double-click to confirm (avoids browser-blocked confirm dialogs)
+    // Delete conversation — click once to show confirm label, click again to delete
     document.querySelectorAll('.delete-conversation-btn').forEach(function(btn) {
+      var originalHTML = btn.innerHTML;
       var confirmed = false;
       var resetTimer = null;
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
         if (!confirmed) {
           confirmed = true;
-          btn.style.opacity = '1';
+          btn.innerHTML = '<span style="font-size:0.65rem;font-weight:600;color:var(--danger,#e53e3e);vertical-align:middle;white-space:nowrap;">Delete?</span>';
           btn.title = 'Click again to confirm';
-          btn.querySelector('svg').style.stroke = 'var(--danger, #e53e3e)';
           resetTimer = setTimeout(function() {
             confirmed = false;
+            btn.innerHTML = originalHTML;
             btn.title = 'Delete conversation';
-            btn.querySelector('svg').style.stroke = '';
-          }, 2000);
+          }, 3000);
           return;
         }
         clearTimeout(resetTimer);
+        btn.innerHTML = '<span style="font-size:0.65rem;color:var(--muted,#999);white-space:nowrap;">…</span>';
         var deleteUrl = btn.dataset.deleteUrl;
         var isActive = btn.dataset.active === '1';
         var csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -132,8 +133,8 @@
           btn.closest('li').remove();
           if (isActive) window.location.href = '/';
         }).catch(function() {
+          btn.innerHTML = originalHTML;
           btn.title = 'Delete failed — try again';
-          btn.querySelector('svg').style.stroke = '';
           confirmed = false;
         });
       });
