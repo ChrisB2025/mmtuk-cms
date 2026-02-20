@@ -603,7 +603,14 @@ body {
 .alert-info { background: var(--info-bg); color: var(--info-text); border: 1px solid rgba(59, 130, 246, 0.4); }
 .alert-success { background: var(--success-bg); color: var(--success-text); border: 1px solid rgba(16, 185, 129, 0.4); }
 .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid rgba(245, 158, 11, 0.4); }
-.messages-container { padding: 0 var(--space-4); }
+.messages-container { padding: 0 var(--space-4); max-height: 200px; overflow-y: auto; }
+.alert { position: relative; padding-right: 32px; }
+.alert-close {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; font-size: 18px; cursor: pointer;
+  color: inherit; opacity: 0.6; line-height: 1;
+}
+.alert-close:hover { opacity: 1; }
 
 /* ---- Disabled button ---- */
 .btn-disabled {
