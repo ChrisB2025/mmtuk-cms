@@ -96,6 +96,12 @@
     messageInput.style.height = 'auto';
     setTyping(true);
 
+    // If message is just a bare URL, add context so Cloudflare WAF doesn't block it
+    var sendText = text.trim();
+    if (/^https?:\/\/\S+$/i.test(sendText)) {
+      sendText = 'I want to add this article: ' + sendText;
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min (match gunicorn)
 
@@ -106,7 +112,7 @@
           'Content-Type': 'application/json',
           'X-CSRFToken': window.CSRF_TOKEN,
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: sendText }),
         signal: controller.signal,
       });
 

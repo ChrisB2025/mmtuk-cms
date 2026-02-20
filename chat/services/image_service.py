@@ -40,12 +40,19 @@ def download_image(url):
     return resp.content, content_type
 
 
-def convert_to_png(image_bytes, source_format=None):
+def convert_to_png(image_bytes, source_format=None, max_width=1200):
     """
     Convert image bytes to PNG format using Pillow.
+    Resizes to max_width (maintaining aspect ratio) if the image is wider.
     Returns PNG bytes.
     """
     img = Image.open(io.BytesIO(image_bytes))
+
+    # Resize if wider than max_width (maintain aspect ratio)
+    if max_width and img.width > max_width:
+        ratio = max_width / img.width
+        new_height = int(img.height * ratio)
+        img = img.resize((max_width, new_height), Image.LANCZOS)
 
     # Convert to RGB if necessary (e.g. RGBA, CMYK, palette)
     if img.mode in ('RGBA', 'LA'):
@@ -82,19 +89,12 @@ def process_image(url, slug):
         logger.exception('Failed to download image from %s', url)
         return None, None
 
-    # Check if already PNG
-    is_png = (
-        content_type.startswith('image/png')
-        or url.lower().endswith('.png')
-        or image_bytes[:8] == b'\x89PNG\r\n\x1a\n'
-    )
-
-    if not is_png:
-        try:
-            image_bytes = convert_to_png(image_bytes)
-        except Exception:
-            logger.exception('Failed to convert image to PNG from %s', url)
-            return None, None
+    # Always convert + resize (handles format conversion and max_width in one step)
+    try:
+        image_bytes = convert_to_png(image_bytes, max_width=1200)
+    except Exception:
+        logger.exception('Failed to process image from %s', url)
+        return None, None
 
     filename = f'{slug}-thumbnail.png'
     return image_bytes, filename

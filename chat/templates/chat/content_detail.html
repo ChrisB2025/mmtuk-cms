@@ -306,10 +306,8 @@
           // For block prefixes, prepend on a new line if not already at line start
           var needsNewline = before.length > 0 && !before.endsWith('\n');
           var text = sel || action.placeholder;
-          // Strip existing heading markers before adding new prefix (e.g., "# Foo" → "Foo")
-          if (action.prefix.charAt(0) === '#') {
-            text = text.replace(/^#{1,6}\s*/, '');
-          }
+          // Strip existing prefix markers before adding new prefix
+          text = text.replace(/^(?:#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s+)/, '');
           replacement = (needsNewline ? '\n' : '') + action.prefix + text;
           cursor = start + replacement.length;
         }
