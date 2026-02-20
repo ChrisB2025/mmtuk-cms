@@ -507,3 +507,47 @@ Runs at deploy startup (in Dockerfile CMD). Pre-clones the MMTUK site repo to di
 - Copy button was destroying SVG icon (used `innerText` instead of `innerHTML`)
 - Fallback `window.open(shareUrl)` removed — was opening page in new tab instead of copying
 - Now saves/restores `icon.innerHTML` to preserve SVG icon after "Copied" feedback
+
+---
+
+## Session: Image Compression, Template Cleanup, Validation Fix (2026-02-20)
+
+### Image Pipeline: PNG to WebP
+
+**Problem:** All scraped and uploaded images saved as PNG (lossless). Briefing thumbnails were 1.8 MB each. Event images up to 429 KB.
+
+**Fix (`chat/services/image_service.py`):**
+- `convert_to_png()` renamed to `optimize_image()` — now saves as WebP (quality 82, method 6) for photos, WebP lossless for transparent images
+- `process_image()` returns `.webp` filenames instead of `.png`
+- Backward-compat alias `convert_to_png = optimize_image` retained
+- Upload handler (`views.py`) now also applies `max_width=1200` (previously missing for manual uploads)
+
+**Updated references:**
+- `chat/views.py`: hardcoded `.png` paths → `.webp` in `_direct_briefing_from_scraped()` and `upload_image()`
+- `chat/services/content_service.py`: `get_image_path()` default extension `'png'` → `'webp'`
+- `chat/services/anthropic_service.py`: Claude prompt examples updated to `.webp`
+- `chat/management/commands/compress_images.py`: Rewritten — converts existing PNGs/JPEGs to WebP, renames files, updates frontmatter refs in `.md` files. Runs automatically on deploy via Dockerfile CMD.
+
+**Result:** 35 images converted, 76% total savings. Briefing thumbnails now ~100-150 KB.
+
+### Briefing/Article Template Cleanup
+
+**Problem:** Briefing pages showed forced "Summary" + "Analysis" headings. Articles showed "Executive Summary" + "Content". These were legacy Webflow structure that duplicated content and imposed rigid formatting.
+
+**Fix (Astro repo):**
+- `[slug].astro` (briefings): Removed Summary block and "Analysis" label entirely
+- `[slug].astro` (articles): Removed "Executive Summary" block and "Content" label
+- Article body now flows naturally from title/date without imposed structure
+- `summary` field preserved in schema for SEO meta and listing page previews
+
+### pubDate Validation Fix
+
+**Problem:** CMS couldn't edit briefings with unquoted `pubDate` in YAML. PyYAML parses bare ISO dates as Python `datetime` objects, but the validator expected strings.
+
+**Fix (`chat/services/content_service.py` `sanitize_frontmatter()`):**
+- Converts `datetime`/`date` objects to strings using `format_date()` before validation runs
+- This runs in the sanitize step, before `validate_frontmatter()` is called
+
+### Featured Briefing
+
+Changed featured briefing from "On The Nature of Money" to "Shadows on the Wall" via frontmatter `featured: true/false` toggle in the briefing `.md` files.
