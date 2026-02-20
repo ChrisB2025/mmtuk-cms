@@ -3,6 +3,7 @@ Markdown file generation and file path resolution for MMTUK content.
 """
 
 import logging
+from datetime import date, datetime
 
 from content_schema.schemas import (
     CONTENT_TYPES,
@@ -72,7 +73,15 @@ def sanitize_frontmatter(content_type, frontmatter):
     required = set(schema['required_fields'])
     result = {}
 
+    fields = schema.get('fields', {})
+
     for key, value in frontmatter.items():
+        # Convert datetime/date objects to strings (PyYAML parses bare ISO
+        # dates as datetime objects; the validator expects strings)
+        if isinstance(value, (datetime, date)) and key in fields:
+            if fields[key]['type'] in ('date', 'datetime'):
+                value = format_date(value)
+
         # Strip whitespace from strings
         if isinstance(value, str):
             value = value.strip()
