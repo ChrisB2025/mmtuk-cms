@@ -47,10 +47,28 @@ def _clean_markdown(text):
 
 def _enforce_h2_only(text):
     """
-    Convert any h3 (###) headings to h2 (##).
-    Briefings should only use h2 — h3 renders larger than h2 in Webflow CSS.
+    Normalize headings: convert H1 and H3+ to H2.
+    Briefings should only use h2 — h1 is reserved for the title in frontmatter,
+    and h3 renders larger than h2 in the Webflow-derived CSS.
     """
-    return re.sub(r'^###\s+', '## ', text, flags=re.MULTILINE)
+    # Convert H1 to H2 (single # followed by space, not ##)
+    text = re.sub(r'^# (?!#)', '## ', text, flags=re.MULTILINE)
+    # Convert H3+ to H2
+    text = re.sub(r'^#{3,6}\s+', '## ', text, flags=re.MULTILINE)
+    return text
+
+
+def _strip_title_heading(body_md, title):
+    """Remove the first heading if it matches the article title (avoids duplication)."""
+    if not title:
+        return body_md
+    clean_title = re.sub(r'\*{1,2}', '', title).strip().lower()
+    match = re.match(r'^#{1,2}\s+\*{0,2}(.+?)\*{0,2}\s*$', body_md, re.MULTILINE)
+    if match:
+        heading_text = re.sub(r'\*{1,2}', '', match.group(1)).strip().lower()
+        if heading_text == clean_title or clean_title.startswith(heading_text):
+            body_md = body_md[match.end():].lstrip('\n')
+    return body_md
 
 
 def _preprocess_figures(container):
@@ -149,21 +167,13 @@ def scrape_substack(url):
     body_md = md(body_html, heading_style='ATX', strip=['figure', 'figcaption'])
     logger.info('scrape_substack: markdownify done, md %d chars at %.1fs', len(body_md), _time.monotonic() - t0)
 
-    # Clean up: remove subscription CTAs, share buttons
-    cta_patterns = [
-        r'Subscribe\s*\n',
-        r'Share\s*\n',
-        r'Thanks for reading.*?\n',
-        r'Get more from.*?\n',
-        r'\[Subscribe now\].*?\n',
-        r'\[Share\].*?\n',
-        r'A publication of.*?\n',
-    ]
-    for pattern in cta_patterns:
+    # Clean up: remove subscription CTAs, share buttons, navigation links
+    for pattern in _CTA_PATTERNS:
         body_md = re.sub(pattern, '', body_md, flags=re.IGNORECASE)
 
     body_md = _clean_markdown(body_md)
     body_md = _enforce_h2_only(body_md)
+    body_md = _strip_title_heading(body_md, title)
 
     return {
         'title': title,
@@ -176,10 +186,24 @@ def scrape_substack(url):
     }
 
 
+# CTA/navigation patterns to strip from scraped article bodies
+_CTA_PATTERNS = [
+    r'Subscribe\s*\n',
+    r'Share\s*\n',
+    r'Thanks for reading.*?\n',
+    r'Get more from.*?\n',
+    r'\[Subscribe now\].*?\n',
+    r'\[Share\].*?\n',
+    r'A publication of.*?\n',
+    r'\[?←[^\]]*\]\([^)]*\)\s*\n',    # [← Back to Articles](/articles/)
+    r'←\s*Back to\s+\w+.*?\n',         # ← Back to Articles
+]
+
+
 def scrape_general_url(url):
     """
     Scrape a general URL for content import.
-    Returns a dict with title, author, date, body_markdown, source_url.
+    Returns a dict with title, author, date, image_url, body_markdown, source_url.
     """
     html = _fetch_html(url)
     soup = BeautifulSoup(html, 'html.parser')
@@ -188,6 +212,9 @@ def scrape_general_url(url):
     og_title = soup.find('meta', property='og:title')
     if og_title:
         title = og_title.get('content', '')
+    if not title:
+        h1 = soup.find('h1')
+        title = h1.get_text(strip=True) if h1 else ''
     if not title:
         title_tag = soup.find('title')
         title = title_tag.get_text(strip=True) if title_tag else ''
@@ -207,19 +234,38 @@ def scrape_general_url(url):
     if og_image:
         image_url = og_image.get('content', '')
 
-    # Find the main content
-    body_html = ''
-    for selector in ['article', 'main', '.post-content', '.article-content', '.entry-content', '[role="main"]']:
+    # Find the main content container
+    container = None
+    for selector in ['article', 'main', '.post-content', '.article-content',
+                     '.entry-content', '[role="main"]']:
         container = soup.select_one(selector)
         if container:
-            body_html = str(container)
             break
+    if not container:
+        container = soup.body
 
-    if not body_html and soup.body:
-        body_html = str(soup.body)
+    if container:
+        # Fallback image: extract first <img> from content if og:image is missing
+        if not image_url:
+            first_img = container.find('img')
+            if first_img:
+                image_url = first_img.get('src') or first_img.get('data-src') or ''
 
-    body_md = md(body_html, heading_style='ATX', strip=['nav', 'header', 'footer', 'aside'])
+        _preprocess_figures(container)
+        body_html = str(container)
+    else:
+        body_html = ''
+
+    body_md = md(body_html, heading_style='ATX',
+                 strip=['nav', 'header', 'footer', 'aside', 'figure', 'figcaption'])
+
+    # Clean CTA/navigation patterns
+    for pattern in _CTA_PATTERNS:
+        body_md = re.sub(pattern, '', body_md, flags=re.IGNORECASE)
+
     body_md = _clean_markdown(body_md)
+    body_md = _enforce_h2_only(body_md)
+    body_md = _strip_title_heading(body_md, title)
 
     return {
         'title': title,

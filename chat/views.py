@@ -951,6 +951,7 @@ def _save_stripped_message(conv, text):
 
 
 _SUBSTACK_URL_RE = re.compile(r'https?://\S*substack\.com\S*')
+_GENERAL_URL_RE = re.compile(r'https?://\S+')
 
 _CONFIRMATIONS = {
     'yes', 'yep', 'yeah', 'yup', 'sure', 'ok', 'okay',
@@ -1028,7 +1029,7 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
 
     title = scraped.get('title') or 'Untitled'
     slug = _slugify(title) or 'briefing'
-    author = scraped.get('author') or 'MMTUK'
+    source_author = scraped.get('author') or ''
     raw_date = scraped.get('date') or _date.today().isoformat()
     pub_date = f'{raw_date}T00:00:00.000Z'
     image_url = scraped.get('image_url') or ''
@@ -1042,10 +1043,11 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
         'pubDate': pub_date,
         'readTime': 5,
         'sourceUrl': url,
-        'sourceAuthor': author,
         'sourceTitle': title,
         'sourceDate': raw_date,
     }
+    if source_author:
+        frontmatter['sourceAuthor'] = source_author
     if publication:
         frontmatter['sourcePublication'] = publication
     if image_url:
@@ -1064,14 +1066,14 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
     return _handle_content_action(action_data, profile, conv, user)
 
 
-def _pre_scrape_substack(user_message, conv):
+def _pre_scrape_url(user_message, conv):
     """
-    If the user message contains a Substack URL that hasn't been scraped yet in
+    If the user message contains a URL that hasn't been scraped yet in
     this conversation, scrape it and inject the content as a system message.
     Returns the scraped data dict on success, or None if not applicable/failed.
     The caller can use the returned data to skip the Claude API call entirely.
     """
-    match = _SUBSTACK_URL_RE.search(user_message)
+    match = _GENERAL_URL_RE.search(user_message)
     if not match:
         return None
 
@@ -1201,10 +1203,10 @@ def send_message(request, conversation_id):
                     'action_taken': None,
                 })
 
-    # STEP 2: URL in message → scrape and return preview or error (no Claude call).
-    url_match = _SUBSTACK_URL_RE.search(user_message)
+    # STEP 2: URL in message → scrape and return preview (no Claude call).
+    url_match = _GENERAL_URL_RE.search(user_message)
     if url_match:
-        scraped_data = _pre_scrape_substack(user_message, conv)
+        scraped_data = _pre_scrape_url(user_message, conv)
         if scraped_data:
             preview = _format_scrape_preview(scraped_data)
             Message.objects.create(conversation=conv, role='assistant', content=preview)
@@ -1213,18 +1215,7 @@ def send_message(request, conversation_id):
                 'conversation_id': str(conv.id),
                 'action_taken': None,
             })
-        else:
-            error_msg = (
-                "I wasn't able to fetch that article. The site may be temporarily unavailable "
-                "or the article may require a subscription. Please try again in a moment, "
-                "or paste the article text directly."
-            )
-            Message.objects.create(conversation=conv, role='assistant', content=error_msg)
-            return JsonResponse({
-                'response': error_msg,
-                'conversation_id': str(conv.id),
-                'action_taken': None,
-            })
+        # If scrape failed, fall through to Claude (Step 3)
 
     # STEP 3: No URL and not a confirmation — call Claude normally.
     # Build messages and call Claude
