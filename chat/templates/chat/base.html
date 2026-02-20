@@ -163,6 +163,8 @@
     </main>
   </div>
 
+  {% block modals %}{% endblock %}
+
   <!-- Command palette -->
   {% if user.is_authenticated %}
   <div id="cmdPalette" class="cmd-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Command palette">

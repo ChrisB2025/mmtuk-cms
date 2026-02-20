@@ -151,7 +151,10 @@
   </div>
 </div>
 
-<!-- Delete confirmation modal -->
+{% endblock %}
+
+{% block modals %}
+<!-- Delete confirmation modal (outside main-content to avoid overflow clipping) -->
 <div class="modal-overlay" id="deleteModal" style="display:none;">
   <div class="modal-card" style="max-width: 600px;">
     <h3>Delete Content</h3>
