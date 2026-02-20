@@ -438,4 +438,72 @@ Runs at deploy startup (in Dockerfile CMD). Pre-clones the MMTUK site repo to di
 - **`prepare_repo_for_write()`** (`git_service.py`) — Pre-write setup: updates remote URL + `git checkout`. Never fetches.
 - **`ensure_repo()`** (`git_service.py`) — Full sync: fetches + rebases/resets. Only called by warmup command and initial clone.
 - **`push_to_remote()`** (`git_service.py`) — Handles push with automatic rebase retry on non-fast-forward.
-- **`_pre_scrape_substack()`** (`views.py`) — Eagerly scrapes Substack URLs before Claude is called, so scraped content is in context.
+- **`_pre_scrape_url()`** (`views.py`) — Eagerly scrapes any URL (not just Substack) before Claude is called, so scraped content is in context. Renamed from `_pre_scrape_substack()`.
+
+---
+
+## Session: Scraper Quality, Chat UX, and Briefing Fixes (2026-02-20)
+
+### General URL Scraping Improvements
+
+**Problem:** `scrape_general_url()` was significantly worse than `scrape_substack()` — no figure preprocessing, no heading enforcement, no CTA/navigation cleanup. Non-Substack URLs went through Claude (slower) instead of the fast direct-scrape path.
+
+**Fixes applied (`chat/services/scraper_service.py`):**
+- Extended `scrape_general_url()` with `_preprocess_figures()`, `_enforce_h2_only()`, `_strip_title_heading()`, CTA/nav cleanup, and fallback image extraction from first `<img>` when og:image missing
+- `_enforce_h2_only()` now handles H1→H2 (not just H3→H2)
+- New `_strip_title_heading()` helper removes first heading when it duplicates the title
+- Shared `_CTA_PATTERNS` list (navigation links like "← Back to Articles" stripped)
+- New `_strip_thumbnail_from_body()` strips the thumbnail image from body markdown to avoid duplication with frontmatter
+
+**Fixes applied (`chat/views.py`):**
+- Added `_GENERAL_URL_RE` — Step 2 in `send_message()` now matches ANY URL (not just Substack)
+- `_pre_scrape_substack()` renamed to `_pre_scrape_url()` with general URL regex
+- Failed scrapes fall through to Claude (Step 3) instead of returning an error
+- `_direct_briefing_from_scraped()`: `author` field uses scraped author name (not hardcoded 'MMTUK'); `sourceAuthor` only set when non-empty
+
+### Chat Home Page Suggested Actions
+
+**Problem:** "Import Briefing from URL" and "Write New Article" were confusingly similar. No button for "Create a Briefing" from scratch. "Import" message still referenced "Substack URL".
+
+**Fix (`chat/views.py` `SUGGESTED_ACTIONS`):**
+- "Import Briefing from URL" → **"Add Briefing"** (covers URL import + writing from scratch)
+- "Add News Item" → **"Add News"**
+- "Write New Article" → **"Write Article"**
+- "Upload a PDF" → **"Upload Document"** (also handles DOCX)
+- "Add Team Member Bio" → **"Add Team Member"**
+- Reordered: briefing first (most common workflow)
+
+### Scrape Preview Markdown Rendering
+
+**Problem:** Preview included first 300 chars of body_markdown. When body started with `![alt](very-long-S3-url...)`, truncation broke the markdown mid-URL, causing raw text to render instead of formatted content. Also showed "By Unknown author".
+
+**Fix (`chat/views.py` `_format_scrape_preview()`):**
+- `_IMAGE_MD_RE` strips `![...](...)` image markdown before taking the 300-char slice
+- `_BARE_URL_RE` strips bare URLs on their own lines
+- Author line omitted when no author found (no more "By Unknown author")
+
+**Fix (`chat/static/chat/style.css`):**
+- Added `.markdown-body img` rules (max-width: 100%, border-radius)
+- Added `.markdown-body a` rules (teal color, underline, hover state)
+
+### Delete Modal Overlay
+
+**Problem:** Delete confirmation modal backdrop was transparent — page content visible behind it.
+
+**Fix (`chat/static/chat/style.css`):**
+- Modal overlay uses explicit `width: 100vw; height: 100vh` instead of `inset: 0`
+- Increased background opacity to `rgba(0, 0, 0, 0.6)`
+- Hardcoded `z-index: 9000` (was CSS variable `var(--z-modal-backdrop)`)
+- Modal in `{% block modals %}` outside `.app-layout` (prevents overflow clipping)
+
+### Astro Site Fixes (MMTUK repo)
+
+**Attribution box (`[slug].astro`):**
+- "In Response To" → **"Originally Published"**
+- Default fallback: "View original article"
+- Separator logic fixed for missing sourceAuthor
+
+**Share buttons (`[slug].astro` + `BaseLayout.astro`):**
+- Copy button was destroying SVG icon (used `innerText` instead of `innerHTML`)
+- Fallback `window.open(shareUrl)` removed — was opening page in new tab instead of copying
+- Now saves/restores `icon.innerHTML` to preserve SVG icon after "Copied" feedback

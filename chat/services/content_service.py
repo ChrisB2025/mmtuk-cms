@@ -24,7 +24,7 @@ def get_file_path(content_type, slug):
     return schema['directory'] + filename
 
 
-def get_image_path(content_type, slug, extension='png'):
+def get_image_path(content_type, slug, extension='webp'):
     """Get the relative image path within the repo's public/images/ dir."""
     if content_type == 'bio':
         return f'public/images/bios/{slug}.{extension}'

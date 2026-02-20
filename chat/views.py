@@ -1053,7 +1053,7 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
     if publication:
         frontmatter['sourcePublication'] = publication
     if image_url:
-        frontmatter['thumbnail'] = f'/images/briefings/{slug}-thumbnail.png'
+        frontmatter['thumbnail'] = f'/images/briefings/{slug}-thumbnail.webp'
 
     action_data = {
         'action': 'create',
@@ -1062,7 +1062,7 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
         'body': body,
     }
     if image_url:
-        action_data['images'] = [{'url': image_url, 'save_as': f'images/briefings/{slug}-thumbnail.png'}]
+        action_data['images'] = [{'url': image_url, 'save_as': f'images/briefings/{slug}-thumbnail.webp'}]
 
     logger.info('direct_briefing: creating "%s" (slug=%s) from %s', title, slug, url)
     return _handle_content_action(action_data, profile, conv, user)
@@ -2012,16 +2012,16 @@ def upload_image(request):
     filename = filename.replace('\\', '/').split('/')[-1]
     filename = ''.join(c for c in filename if c.isalnum() or c in '.-_').strip()
     if not filename:
-        filename = 'upload.png'
+        filename = 'upload.webp'
 
     image_bytes = uploaded.read()
 
-    # Convert to PNG if needed (skip SVG)
-    if uploaded.content_type != 'image/svg+xml' and not filename.lower().endswith('.png'):
-        from .services.image_service import convert_to_png
+    # Optimize to WebP (skip SVG)
+    if uploaded.content_type != 'image/svg+xml':
+        from .services.image_service import optimize_image
         try:
-            image_bytes = convert_to_png(image_bytes)
-            filename = filename.rsplit('.', 1)[0] + '.png'
+            image_bytes = optimize_image(image_bytes, max_width=1200)
+            filename = filename.rsplit('.', 1)[0] + '.webp'
         except Exception:
             pass  # Keep original format
 

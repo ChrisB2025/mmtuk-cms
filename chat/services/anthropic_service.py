@@ -42,7 +42,7 @@ The system will scrape the URL and provide you with the extracted content. Then 
   "frontmatter": {{ ... }},
   "body": "markdown content here",
   "images": [
-    {{"url": "source_url", "save_as": "path/in/public/images/filename.png"}}
+    {{"url": "source_url", "save_as": "path/in/public/images/filename.webp"}}
   ]
 }}
 ```
@@ -111,7 +111,7 @@ The user's local group (if group lead): {local_group}
 - For briefings imported from URLs, always populate the source fields (sourceUrl, sourceTitle, sourceAuthor, sourcePublication, sourceDate)
 - For local events and local news, the localGroup must be one of: brighton, london, oxford, pennines, scotland, solent
 - Date format in frontmatter should be YYYY-MM-DDT00:00:00.000Z for dates, YYYY-MM-DDTHH:MM:SS.000Z for datetimes
-- Image paths in frontmatter should be relative to public/, e.g. /images/my-image.png
+- Image paths in frontmatter should be relative to public/, e.g. /images/my-image.webp
 - Never invent or hallucinate content. If you need information, ask the user.
 - Only emit a scrape action when the user explicitly wants to IMPORT an article or briefing from a URL. If they mention a URL as a link to include inside the content body (e.g. registration links, reference links), use it as a markdown hyperlink — do NOT scrape it.
 - If the user wants to do something outside your capabilities, let them know and suggest they contact an admin.
@@ -130,7 +130,7 @@ When working with uploaded document content:
 7. Once the user confirms, emit the create action using the document text as the body (adjusted by any corrections the user gave).
 8. If the document contains images you want to use, reference them in the create action block using the "pdf" source:
 ```json
-"images": [{{"source": "pdf", "index": 0, "save_as": "images/my-slug-thumbnail.png"}}]
+"images": [{{"source": "pdf", "index": 0, "save_as": "images/my-slug-thumbnail.webp"}}]
 ```
    The "index" corresponds to the image number listed in the document extraction summary (0-based).
 

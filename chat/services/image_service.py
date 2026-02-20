@@ -40,11 +40,15 @@ def download_image(url):
     return resp.content, content_type
 
 
-def convert_to_png(image_bytes, source_format=None, max_width=1200):
+def optimize_image(image_bytes, source_format=None, max_width=1200):
     """
-    Convert image bytes to PNG format using Pillow.
-    Resizes to max_width (maintaining aspect ratio) if the image is wider.
-    Returns PNG bytes.
+    Optimize image bytes for web delivery using WebP.
+
+    - Photos (RGB): WebP lossy, quality=82 — typically 80-150 KB at 1200px
+    - Transparent images (RGBA/LA): WebP lossless — still much smaller than PNG
+    - Resizes to max_width (maintaining aspect ratio) if the image is wider.
+
+    Returns WebP bytes.
     """
     img = Image.open(io.BytesIO(image_bytes))
 
@@ -54,16 +58,23 @@ def convert_to_png(image_bytes, source_format=None, max_width=1200):
         new_height = int(img.height * ratio)
         img = img.resize((max_width, new_height), Image.LANCZOS)
 
-    # Convert to RGB if necessary (e.g. RGBA, CMYK, palette)
-    if img.mode in ('RGBA', 'LA'):
-        # Preserve transparency
-        pass
-    elif img.mode != 'RGB':
-        img = img.convert('RGB')
-
     output = io.BytesIO()
-    img.save(output, format='PNG', optimize=True)
+
+    if img.mode in ('RGBA', 'LA'):
+        # Preserve transparency — WebP lossless
+        img.save(output, format='WEBP', lossless=True)
+    else:
+        # Convert to RGB if necessary (e.g. CMYK, palette)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        # Lossy WebP — quality 82, method 6 (best compression)
+        img.save(output, format='WEBP', quality=82, method=6)
+
     return output.getvalue()
+
+
+# Backward-compat alias — used by upload_image() in views.py
+convert_to_png = optimize_image
 
 
 def get_image_dimensions(image_path):
@@ -80,8 +91,8 @@ def get_image_dimensions(image_path):
 
 def process_image(url, slug):
     """
-    Download an image and ensure it's in PNG format.
-    Returns (png_bytes, filename) or (None, None) on failure.
+    Download an image and optimize it as WebP.
+    Returns (webp_bytes, filename) or (None, None) on failure.
     """
     try:
         image_bytes, content_type = download_image(url)
@@ -89,12 +100,12 @@ def process_image(url, slug):
         logger.exception('Failed to download image from %s', url)
         return None, None
 
-    # Always convert + resize (handles format conversion and max_width in one step)
+    # Always optimize + resize (handles format conversion and max_width in one step)
     try:
-        image_bytes = convert_to_png(image_bytes, max_width=1200)
+        image_bytes = optimize_image(image_bytes, max_width=1200)
     except Exception:
         logger.exception('Failed to process image from %s', url)
         return None, None
 
-    filename = f'{slug}-thumbnail.png'
+    filename = f'{slug}-thumbnail.webp'
     return image_bytes, filename

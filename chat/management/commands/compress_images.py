@@ -1,11 +1,11 @@
 """
-Management command to losslessly compress existing PNG/JPEG images in the site repo.
+Management command to compress and convert existing images to WebP in the site repo.
 
-New uploads are already optimised via optimize=True in image_service.py.
-This command retroactively compresses images that were uploaded before that change.
+Converts PNG and JPEG images to WebP (lossy quality=82 for photos, lossless for
+transparent images). Resizes images wider than 1200px. Updates frontmatter
+references in .md files when filenames change (.png/.jpg → .webp).
 
-AVIF and SVG files are skipped — they are already optimised or incompatible with
-Pillow's PNG/JPEG encoder.
+AVIF and SVG files are skipped — already optimised or incompatible.
 
 Usage:
     python manage.py compress_images            # Compress all images, print savings
@@ -26,39 +26,51 @@ from chat.services.git_service import commit_locally, ensure_repo
 logger = logging.getLogger(__name__)
 
 COMPRESSIBLE_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
+MAX_WIDTH = 1200
 
 
-def _compress_image(path: Path) -> tuple[int, int]:
+def _optimize_to_webp(path: Path) -> tuple[bytes, bool]:
     """
-    Losslessly recompress the image at path in-place.
-    Returns (before_bytes, after_bytes).
-    Raises on failure.
+    Convert an image to optimized WebP.
+    Returns (webp_bytes, has_transparency).
     """
-    before = path.stat().st_size
-    ext = path.suffix.lower()
-
     with Image.open(path) as img:
+        # Resize if wider than MAX_WIDTH
+        if img.width > MAX_WIDTH:
+            ratio = MAX_WIDTH / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((MAX_WIDTH, new_height), Image.LANCZOS)
+
         output = io.BytesIO()
-        if ext == '.png':
-            img.save(output, format='PNG', optimize=True)
+        has_transparency = img.mode in ('RGBA', 'LA')
+
+        if has_transparency:
+            img.save(output, format='WEBP', lossless=True)
         else:
-            # JPEG — keep quality high (95) with optimization
-            if img.mode in ('RGBA', 'LA', 'P'):
+            if img.mode != 'RGB':
                 img = img.convert('RGB')
-            img.save(output, format='JPEG', quality=95, optimize=True)
+            img.save(output, format='WEBP', quality=82, method=6)
 
-    compressed = output.getvalue()
-    after = len(compressed)
+    return output.getvalue(), has_transparency
 
-    # Only write if we actually made it smaller
-    if after < before:
-        path.write_bytes(compressed)
 
-    return before, min(before, after)
+def _update_frontmatter_refs(content_dir: Path, old_web_path: str, new_web_path: str) -> list[str]:
+    """
+    Find and update frontmatter references in .md files.
+    Returns list of changed file paths (relative to repo root).
+    """
+    changed = []
+    for md_file in content_dir.rglob('*.md'):
+        text = md_file.read_text(encoding='utf-8')
+        if old_web_path in text:
+            updated = text.replace(old_web_path, new_web_path)
+            md_file.write_text(updated, encoding='utf-8')
+            changed.append(md_file)
+    return changed
 
 
 class Command(BaseCommand):
-    help = 'Losslessly compress existing PNG/JPEG images in the site repo'
+    help = 'Compress and convert existing PNG/JPEG images to WebP'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -81,7 +93,10 @@ class Command(BaseCommand):
 
         ensure_repo()
 
-        images_dir = Path(settings.REPO_CLONE_DIR) / 'public' / 'images'
+        clone_dir = Path(settings.REPO_CLONE_DIR)
+        images_dir = clone_dir / 'public' / 'images'
+        content_dir = clone_dir / 'src' / 'content'
+
         if not images_dir.exists():
             self.stdout.write(self.style.ERROR(f'Images directory not found: {images_dir}'))
             return
@@ -101,64 +116,78 @@ class Command(BaseCommand):
         total_after = 0
         compressed_count = 0
         skipped_count = 0
-        files_changed = []
+        files_changed = []  # Relative paths for git staging
 
         for img_path in candidates:
-            rel = img_path.relative_to(Path(settings.REPO_CLONE_DIR))
+            rel = img_path.relative_to(clone_dir)
             before = img_path.stat().st_size
 
+            try:
+                webp_bytes, has_transparency = _optimize_to_webp(img_path)
+                after = len(webp_bytes)
+            except Exception as exc:
+                self.stdout.write(self.style.ERROR(f'  {rel}  ERROR: {exc}'))
+                skipped_count += 1
+                continue
+
+            # New path with .webp extension
+            webp_path = img_path.with_suffix('.webp')
+            webp_rel = webp_path.relative_to(clone_dir)
+
+            saving = before - after
+            pct = (saving / before * 100) if before > 0 else 0
+
+            if saving <= 0:
+                self.stdout.write(f'  {rel}  {_fmt(before)} — already optimal')
+                total_before += before
+                total_after += before
+                skipped_count += 1
+                continue
+
+            total_before += before
+            total_after += after
+            compressed_count += 1
+
+            # Web paths for frontmatter: /images/foo.png → /images/foo.webp
+            old_web_path = '/' + str(rel).replace('public/', '', 1).replace('\\', '/')
+            new_web_path = '/' + str(webp_rel).replace('public/', '', 1).replace('\\', '/')
+
             if dry_run:
-                # Estimate savings without writing
-                try:
-                    ext = img_path.suffix.lower()
-                    with Image.open(img_path) as img:
-                        output = io.BytesIO()
-                        if ext == '.png':
-                            img.save(output, format='PNG', optimize=True)
-                        else:
-                            pil_img = img
-                            if pil_img.mode in ('RGBA', 'LA', 'P'):
-                                pil_img = pil_img.convert('RGB')
-                            pil_img.save(output, format='JPEG', quality=95, optimize=True)
-                    after = len(output.getvalue())
-                    saving = before - after
-                    pct = (saving / before * 100) if before > 0 else 0
-                    if saving > 0:
-                        self.stdout.write(
-                            f'  {rel}  {_fmt(before)} → {_fmt(after)}  '
-                            f'({self.style.SUCCESS(f"-{_fmt(saving)} / -{pct:.0f}%")})'
-                        )
-                        total_before += before
-                        total_after += after
-                        compressed_count += 1
-                    else:
-                        self.stdout.write(f'  {rel}  {_fmt(before)} — already optimal')
-                        total_before += before
-                        total_after += before
-                        skipped_count += 1
-                except Exception as exc:
-                    self.stdout.write(self.style.ERROR(f'  {rel}  ERROR: {exc}'))
-                    skipped_count += 1
+                self.stdout.write(
+                    f'  {rel} → {webp_rel.name}  {_fmt(before)} → {_fmt(after)}  '
+                    f'({self.style.SUCCESS(f"-{_fmt(saving)} / -{pct:.0f}%")})'
+                )
+                # Check for frontmatter references
+                if content_dir.exists():
+                    for md_file in content_dir.rglob('*.md'):
+                        text = md_file.read_text(encoding='utf-8')
+                        if old_web_path in text:
+                            md_rel = md_file.relative_to(clone_dir)
+                            self.stdout.write(
+                                f'    ↳ will update ref in {md_rel}'
+                            )
             else:
-                try:
-                    before_b, after_b = _compress_image(img_path)
-                    saving = before_b - after_b
-                    pct = (saving / before_b * 100) if before_b > 0 else 0
-                    total_before += before_b
-                    total_after += after_b
-                    if saving > 0:
-                        self.stdout.write(
-                            f'  {rel}  {_fmt(before_b)} → {_fmt(after_b)}  '
-                            f'({self.style.SUCCESS(f"-{_fmt(saving)} / -{pct:.0f}%")})'
-                        )
-                        compressed_count += 1
-                        files_changed.append(str(rel).replace('\\', '/'))
-                    else:
-                        self.stdout.write(f'  {rel}  {_fmt(before_b)} — already optimal')
-                        skipped_count += 1
-                except Exception as exc:
-                    self.stdout.write(self.style.ERROR(f'  {rel}  ERROR: {exc}'))
-                    skipped_count += 1
+                # Write WebP file
+                webp_path.write_bytes(webp_bytes)
+                files_changed.append(str(webp_rel).replace('\\', '/'))
+
+                # Remove old file (if different path)
+                if img_path != webp_path:
+                    img_path.unlink()
+                    files_changed.append(str(rel).replace('\\', '/'))
+
+                # Update frontmatter references
+                if content_dir.exists() and old_web_path != new_web_path:
+                    changed_mds = _update_frontmatter_refs(content_dir, old_web_path, new_web_path)
+                    for md_file in changed_mds:
+                        md_rel = md_file.relative_to(clone_dir)
+                        files_changed.append(str(md_rel).replace('\\', '/'))
+                        self.stdout.write(f'    ↳ updated ref in {md_rel}')
+
+                self.stdout.write(
+                    f'  {rel} → {webp_rel.name}  {_fmt(before)} → {_fmt(after)}  '
+                    f'({self.style.SUCCESS(f"-{_fmt(saving)} / -{pct:.0f}%")})'
+                )
 
         # Summary
         self.stdout.write('\n' + '=' * 60)
@@ -183,23 +212,25 @@ class Command(BaseCommand):
             return
 
         if do_commit:
+            # Deduplicate file paths
+            unique_files = list(dict.fromkeys(files_changed))
             try:
                 commit_locally(
-                    files=files_changed,
-                    commit_message=f'chore: Losslessly compress {len(files_changed)} image(s) (-{total_pct:.0f}%)',
+                    files=unique_files,
+                    commit_message=f'chore: Convert {compressed_count} image(s) to WebP (-{total_pct:.0f}%)',
                     author_name='MMTUK CMS Compression',
                 )
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f'✓ Committed {len(files_changed)} file(s). '
+                        f'Committed {len(unique_files)} file(s). '
                         f'Go to Review & Publish when ready to push to the live site.'
                     )
                 )
             except Exception as exc:
-                self.stdout.write(self.style.ERROR(f'✗ Commit failed: {exc}'))
+                self.stdout.write(self.style.ERROR(f'Commit failed: {exc}'))
         else:
             self.stdout.write(
-                f'{len(files_changed)} file(s) compressed. '
+                f'{len(files_changed)} file(s) changed. '
                 f'Run with --commit to create a git commit, then Publish to go live.\n'
             )
 
