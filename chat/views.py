@@ -2,7 +2,6 @@
 Chat views: conversation UI, message handling, pending approvals.
 """
 
-import base64
 import json
 import logging
 import re
@@ -953,20 +952,6 @@ def _save_stripped_message(conv, text):
 
 _SUBSTACK_URL_RE = re.compile(r'https?://\S*substack\.com\S*')
 
-
-def _decode_encoded_urls(text: str) -> str:
-    """Decode client-side base64-encoded URLs (WAF bypass scheme).
-
-    chat.js encodes URLs as ENC:<base64> before sending so they don't
-    trigger Cloudflare WAF rules that flag raw URLs in POST bodies.
-    """
-    def _dec(m):
-        try:
-            return base64.b64decode(m.group(1)).decode('utf-8')
-        except Exception:
-            return m.group(0)
-    return re.sub(r'ENC:([A-Za-z0-9+/=]+)', _dec, text)
-
 _CONFIRMATIONS = {
     'yes', 'yep', 'yeah', 'yup', 'sure', 'ok', 'okay',
     'create', 'create it', 'go ahead', 'do it', 'add it', 'add',
@@ -1170,7 +1155,7 @@ def send_message(request, conversation_id):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-    user_message = _decode_encoded_urls(data.get('message', '').strip())
+    user_message = data.get('message', '').strip()
     if not user_message:
         return JsonResponse({'error': 'Empty message'}, status=400)
 

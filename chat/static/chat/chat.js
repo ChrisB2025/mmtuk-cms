@@ -21,7 +21,7 @@
   messageInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      chatForm.dispatchEvent(new Event('submit'));
+      sendMessage(messageInput.value);
     }
   });
 
@@ -73,13 +73,6 @@
     if (window.showToast) window.showToast(message, type === 'error' ? 'error' : 'success');
   }
 
-  // Encode URLs in message to avoid WAF detection (decoded server-side)
-  function encodeUrlsInMessage(text) {
-    return text.replace(/https?:\/\/[^\s,;'")\]]+/g, function(url) {
-      try { return 'ENC:' + btoa(url); } catch(e) { return url; }
-    });
-  }
-
   // Send message
   async function sendMessage(text) {
     if (!text.trim()) return;
@@ -113,7 +106,7 @@
           'Content-Type': 'application/json',
           'X-CSRFToken': window.CSRF_TOKEN,
         },
-        body: JSON.stringify({ message: encodeUrlsInMessage(text) }),
+        body: JSON.stringify({ message: text }),
         signal: controller.signal,
       });
 
