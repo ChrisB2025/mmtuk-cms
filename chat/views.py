@@ -1041,7 +1041,7 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
     frontmatter = {
         'title': title,
         'slug': slug,
-        'author': 'MMTUK',
+        'author': source_author or 'MMTUK',
         'pubDate': pub_date,
         'readTime': 5,
         'sourceUrl': url,

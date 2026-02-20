@@ -71,6 +71,23 @@ def _strip_title_heading(body_md, title):
     return body_md
 
 
+def _strip_thumbnail_from_body(body_md, image_url):
+    """Remove the first markdown image whose URL matches the thumbnail (avoids duplication)."""
+    if not image_url:
+        return body_md
+    # Try exact match first, then match just the base URL (without query params)
+    escaped = re.escape(image_url)
+    body_md = re.sub(r'!\[[^\]]*\]\(' + escaped + r'\)\s*', '', body_md, count=1)
+    # Also try matching without query string (signed URLs have different params)
+    base_url = image_url.split('?')[0]
+    if base_url != image_url:
+        escaped_base = re.escape(base_url)
+        body_md = re.sub(
+            r'!\[[^\]]*\]\(' + escaped_base + r'[^)]*\)\s*', '', body_md, count=1
+        )
+    return body_md
+
+
 def _preprocess_figures(container):
     """
     Replace <figure> elements with inline image + optional caption, in-place.
@@ -167,6 +184,10 @@ def scrape_substack(url):
     body_md = md(body_html, heading_style='ATX', strip=['figure', 'figcaption'])
     logger.info('scrape_substack: markdownify done, md %d chars at %.1fs', len(body_md), _time.monotonic() - t0)
 
+    # Strip the thumbnail image from body to avoid duplication with frontmatter
+    if image_url:
+        body_md = _strip_thumbnail_from_body(body_md, image_url)
+
     # Clean up: remove subscription CTAs, share buttons, navigation links
     for pattern in _CTA_PATTERNS:
         body_md = re.sub(pattern, '', body_md, flags=re.IGNORECASE)
@@ -258,6 +279,10 @@ def scrape_general_url(url):
 
     body_md = md(body_html, heading_style='ATX',
                  strip=['nav', 'header', 'footer', 'aside', 'figure', 'figcaption'])
+
+    # Strip the thumbnail image from body to avoid duplication with frontmatter
+    if image_url:
+        body_md = _strip_thumbnail_from_body(body_md, image_url)
 
     # Clean CTA/navigation patterns
     for pattern in _CTA_PATTERNS:
