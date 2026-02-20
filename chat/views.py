@@ -1697,6 +1697,16 @@ def content_detail(request, content_type, slug):
         except Exception:
             pass
 
+    # Determine if content has been published (pushed to remote)
+    is_published = True  # assume published for pre-CMS content
+    if site_url and audit_entries:
+        latest_action = audit_entries[0]
+        if latest_action.git_commit_sha:
+            is_published = ContentAuditLog.objects.filter(
+                content_type='site', action='publish',
+                created_at__gte=latest_action.created_at,
+            ).exists()
+
     return render(request, 'chat/content_detail.html', {
         'conversations': conversations,
         'item': item,
@@ -1705,6 +1715,7 @@ def content_detail(request, content_type, slug):
         'title': title,
         'schema': schema,
         'site_url': site_url,
+        'is_published': is_published,
         'profile': profile,
         'audit_entries': audit_entries,
         'active_tab': 'content',
@@ -1803,19 +1814,25 @@ def quick_edit(request, content_type, slug):
     schema = CT_SCHEMAS.get(content_type, {})
     required_fields = set(schema.get('required_fields', []))
 
+    schema_fields = schema.get('fields', {})
     merged_fm = dict(existing['frontmatter'])
     for key in list(existing['frontmatter'].keys()):
         form_key = f'fm_{key}'
         if form_key in request.POST:
             value = request.POST[form_key]
-            # Convert string booleans
-            if value.lower() == 'true':
-                value = True
-            elif value.lower() == 'false':
-                value = False
             # Convert empty optional fields to None (sanitize_frontmatter will strip them)
-            elif value == '' and key not in required_fields:
+            if value == '' and key not in required_fields:
                 value = None
+            else:
+                # Coerce form string values back to schema types
+                field_type = schema_fields.get(key, {}).get('type', 'string')
+                if field_type == 'boolean' and isinstance(value, str):
+                    value = value.lower() == 'true'
+                elif field_type == 'number' and isinstance(value, str):
+                    try:
+                        value = int(value) if '.' not in value else float(value)
+                    except (ValueError, TypeError):
+                        pass  # leave as string, validation will catch it
             merged_fm[key] = value
 
     # Get body
@@ -2100,7 +2117,8 @@ def delete_image(request):
 @login_required
 def images_api(request):
     """Return a flat JSON list of all images for the image picker."""
-    images = list_images()
+    directory = request.GET.get('directory', '')
+    images = list_images(directory=directory or None)
     return JsonResponse({'images': [
         {'web_path': img['web_path'], 'filename': img['filename']}
         for img in images
@@ -2131,8 +2149,12 @@ def repo_image(request, image_path):
             logger.warning('repo_image: 404 path=%s full=%s', image_path, full_path)
             raise Http404
 
+    # Fallback MIME types for formats Python's mimetypes may not know
+    _EXTRA_MIME = {'.avif': 'image/avif', '.webp': 'image/webp', '.heic': 'image/heic'}
     content_type, _ = mimetypes.guess_type(str(full_path))
-    return FileResponse(open(full_path, 'rb'), content_type=content_type or 'application/octet-stream')
+    if not content_type:
+        content_type = _EXTRA_MIME.get(full_path.suffix.lower(), 'application/octet-stream')
+    return FileResponse(open(full_path, 'rb'), content_type=content_type)
 
 
 # --- Featured toggle API ---

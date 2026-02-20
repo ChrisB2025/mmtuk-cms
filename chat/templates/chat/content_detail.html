@@ -12,8 +12,11 @@
   <div class="detail-top-bar">
     <a href="{% url 'content_browser' %}?type={{ content_type }}" class="back-link">&larr; Back to {{ content_type }}</a>
     <div class="detail-actions">
-      {% if site_url %}
+      {% if site_url and is_published %}
       <a href="{{ site_url }}" target="_blank" class="btn btn-secondary btn-small">View on Site</a>
+      {% elif site_url %}
+      <span class="btn btn-secondary btn-small btn-disabled"
+            title="Not yet published — use Review & Publish to push to the live site">View on Site</span>
       {% endif %}
       {% if profile.can_edit %}
       <a href="{% url 'edit_in_chat' content_type slug %}" class="btn btn-primary btn-small">Edit in Chat</a>
@@ -59,6 +62,10 @@
             <button type="button" class="btn btn-small btn-secondary fm-browse-btn"
                     data-field="fm_{{ key }}" onclick="openImagePicker(this)">Browse</button>
           </div>
+          {% if value %}
+          <img src="/repo-images{{ value }}" class="fm-thumbnail-preview"
+               onerror="this.style.display='none'" alt="Current image">
+          {% endif %}
           {% else %}
           <input type="text" name="fm_{{ key }}" value="{{ value }}" class="form-input form-input-sm">
           {% endif %}
@@ -299,6 +306,10 @@
           // For block prefixes, prepend on a new line if not already at line start
           var needsNewline = before.length > 0 && !before.endsWith('\n');
           var text = sel || action.placeholder;
+          // Strip existing heading markers before adding new prefix (e.g., "# Foo" → "Foo")
+          if (action.prefix.charAt(0) === '#') {
+            text = text.replace(/^#{1,6}\s*/, '');
+          }
           replacement = (needsNewline ? '\n' : '') + action.prefix + text;
           cursor = start + replacement.length;
         }
@@ -401,13 +412,22 @@
 <script>
   var _pickerTarget = null;
   var _pickerImages = null;
+  var _pickerDir = '';
 
   function openImagePicker(btn) {
     _pickerTarget = document.getElementById(btn.getAttribute('data-field'));
     document.getElementById('imgPickerSearch').value = '';
     document.getElementById('imgPickerModal').style.display = '';
-    if (!_pickerImages) {
-      fetch('/api/images/')
+    // Extract subdirectory from current value (e.g., "/images/briefings/foo.png" → "briefings")
+    var currentVal = _pickerTarget ? _pickerTarget.value : '';
+    var dirMatch = currentVal.match(/^\/images\/([^/]+)\//);
+    var subDir = dirMatch ? dirMatch[1] : '';
+    // Re-fetch if directory changed
+    if (!_pickerImages || subDir !== _pickerDir) {
+      _pickerDir = subDir;
+      _pickerImages = null;
+      var url = '/api/images/' + (subDir ? '?directory=' + encodeURIComponent(subDir) : '');
+      fetch(url)
         .then(function(r) { return r.json(); })
         .then(function(data) {
           _pickerImages = data.images;
