@@ -454,6 +454,20 @@ body {
   margin: var(--space-2) 0;
   color: var(--text-secondary);
 }
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  margin: var(--space-2) 0;
+}
+.markdown-body a {
+  color: var(--teal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.markdown-body a:hover {
+  color: var(--teal-dark);
+}
 
 /* Typing indicator */
 .typing-indicator { padding: 0 var(--space-6); }

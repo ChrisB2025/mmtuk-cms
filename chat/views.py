@@ -50,8 +50,17 @@ logger = logging.getLogger(__name__)
 
 SUGGESTED_ACTIONS = [
     {
+        'id': 'add_briefing',
+        'label': 'Add Briefing',
+        'message': 'I want to add a briefing to the MMTUK site.',
+        'action_type': 'send',
+        'content_type': 'briefing',
+        'admin_only': False,
+        'needs_group': False,
+    },
+    {
         'id': 'add_news',
-        'label': 'Add News Item',
+        'label': 'Add News',
         'message': 'I want to add a news item for the MMTUK site.',
         'action_type': 'send',
         'content_type': 'news',
@@ -59,17 +68,8 @@ SUGGESTED_ACTIONS = [
         'needs_group': False,
     },
     {
-        'id': 'add_briefing',
-        'label': 'Import Briefing from URL',
-        'message': 'I want to import a briefing from a Substack URL.',
-        'action_type': 'send',
-        'content_type': 'briefing',
-        'admin_only': False,
-        'needs_group': False,
-    },
-    {
         'id': 'add_article',
-        'label': 'Write New Article',
+        'label': 'Write Article',
         'message': 'I want to write a new article for the MMTUK site.',
         'action_type': 'send',
         'content_type': 'article',
@@ -95,8 +95,8 @@ SUGGESTED_ACTIONS = [
         'needs_group': True,
     },
     {
-        'id': 'upload_pdf',
-        'label': 'Upload a PDF',
+        'id': 'upload_document',
+        'label': 'Upload Document',
         'message': '',
         'action_type': 'upload',
         'content_type': None,
@@ -105,7 +105,7 @@ SUGGESTED_ACTIONS = [
     },
     {
         'id': 'add_bio',
-        'label': 'Add Team Member Bio',
+        'label': 'Add Team Member',
         'message': 'I want to add a new team member bio.',
         'action_type': 'send',
         'content_type': 'bio',
@@ -952,6 +952,8 @@ def _save_stripped_message(conv, text):
 
 _SUBSTACK_URL_RE = re.compile(r'https?://\S*substack\.com\S*')
 _GENERAL_URL_RE = re.compile(r'https?://\S+')
+_IMAGE_MD_RE = re.compile(r'!\[[^\]]*\]\([^)]*\)')
+_BARE_URL_RE = re.compile(r'^\s*https?://\S+\s*$', re.MULTILINE)
 
 _CONFIRMATIONS = {
     'yes', 'yep', 'yeah', 'yup', 'sure', 'ok', 'okay',
@@ -1118,20 +1120,27 @@ def _pre_scrape_url(user_message, conv):
 def _format_scrape_preview(scraped):
     """Format a scraped article as a chat preview without calling Claude."""
     title = scraped.get('title') or 'Unknown title'
-    author = scraped.get('author') or 'Unknown author'
+    author = scraped.get('author') or ''
     date = scraped.get('date', '')
     publication = scraped.get('publication', '')
     body_text = scraped.get('body_markdown') or ''
-    body_preview = body_text[:300].strip()
 
-    lines = [f'**{title}**', f'By {author}']
+    # Strip image markdown and bare URLs before taking the preview slice
+    clean_body = _IMAGE_MD_RE.sub('', body_text)
+    clean_body = _BARE_URL_RE.sub('', clean_body)
+    clean_body = clean_body.strip()
+    body_preview = clean_body[:300].strip()
+
+    lines = [f'**{title}**']
+    if author:
+        lines.append(f'By {author}')
     if date:
         lines.append(f'Published: {date}')
     if publication:
         lines.append(f'Publication: {publication}')
     if body_preview:
         lines.append('')
-        lines.append(body_preview + ('...' if len(body_text) > 300 else ''))
+        lines.append(body_preview + ('...' if len(clean_body) > 300 else ''))
     lines.append('')
     lines.append('Would you like me to create this as a briefing article on the MMTUK site?')
     return '\n'.join(lines)
