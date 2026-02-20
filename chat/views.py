@@ -15,6 +15,7 @@ from django.core.cache import cache
 from django.http import FileResponse, Http404, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import Conversation, Message, ContentDraft, ContentAuditLog, DeploymentLog
@@ -203,6 +204,7 @@ def index(request):
 
 
 @login_required
+@never_cache
 def conversation(request, conversation_id):
     """View a specific conversation."""
     conv = get_object_or_404(Conversation, id=conversation_id, user=request.user)
