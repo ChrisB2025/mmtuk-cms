@@ -163,7 +163,7 @@ class Command(BaseCommand):
             try:
                 commit_locally(
                     files=files_to_commit,
-                    message=message,
+                    commit_message=message,
                     author_name='MMTUK CMS Auto-Archival'
                 )
                 self.stdout.write('\n' + '=' * 60)

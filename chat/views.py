@@ -1616,7 +1616,7 @@ def unarchive_event(request, content_type, slug):
     # Commit
     commit_locally(
         files=[file_path],
-        message=f'chore: Unarchive event "{frontmatter.get("title", slug)}"',
+        commit_message=f'chore: Unarchive event "{frontmatter.get("title", slug)}"',
         author_name=f'{request.user.username} (via CMS)'
     )
 
@@ -2445,18 +2445,36 @@ def publish_changes(request):
         return HttpResponseForbidden('You do not have permission to publish changes.')
 
     # Generate redirects config for deleted content (SEO preservation)
+    redirect_count = 0
     try:
         redirect_summary = get_redirect_summary()
-        if redirect_summary['total_count'] > 0:
-            logger.info(f'Generating {redirect_summary["total_count"]} redirect(s) before publish')
+        redirect_count = redirect_summary['total_count']
+        if redirect_count > 0:
+            logger.info(f'Generating {redirect_count} redirect(s) before publish')
             write_redirects_to_repo()
-            # Commit the redirects file
+
+            # Build a descriptive commit message from pending content commits
             from .services.git_service import commit_locally
-            commit_locally(
-                ['redirects.config.mjs'],
-                f'Update redirects: {redirect_summary["total_count"]} redirect(s) — via MMTUK CMS',
-                'MMTUK CMS'
-            )
+            pending = get_unpushed_changes()
+            content_msgs = [
+                c['message'] for c in pending
+                if not c['message'].startswith(('Update redirects:', 'chore:'))
+            ]
+
+            if len(content_msgs) == 1:
+                # Single content change — show it prominently
+                redirect_msg = f'{content_msgs[0]} (+{redirect_count} redirect)'
+            elif content_msgs:
+                # Multiple content changes — summarise
+                redirect_msg = (
+                    f'Publish: {len(content_msgs)} change(s) '
+                    f'(+{redirect_count} redirect) — via MMTUK CMS ({request.user.username})'
+                )
+            else:
+                # Redirects only — no content commits pending
+                redirect_msg = f'Update redirects: {redirect_count} redirect(s) — via MMTUK CMS'
+
+            commit_locally(['redirects.config.mjs'], redirect_msg, 'MMTUK CMS')
     except Exception as e:
         # Fail open - don't block publish if redirect generation fails
         logger.exception(f'Failed to generate redirects: {e}')
