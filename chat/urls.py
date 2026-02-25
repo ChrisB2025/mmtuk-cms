@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/pending-publish/', views.pending_publish, name='pending_publish'),
     # Review & Publish
     path('review/', views.review_changes, name='review_changes'),
+    path('review/discard/', views.discard_unpublished, name='discard_unpublished'),
     path('publish/', views.publish_changes, name='publish_changes'),
     # Redirect Management (SEO)
     path('redirects/', views.redirect_management, name='redirect_management'),

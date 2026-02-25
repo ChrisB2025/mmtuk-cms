@@ -415,6 +415,36 @@ def reset_unpushed_commits(commit_shas):
             return 0
 
 
+def discard_all_unpushed():
+    """
+    Hard-reset to origin/branch, discarding ALL unpushed commits and file changes.
+    Returns the number of commits that were discarded.
+    """
+    with _git_lock:
+        clone_dir = Path(settings.REPO_CLONE_DIR)
+        if not clone_dir.exists():
+            return 0
+
+        try:
+            repo = git.Repo(str(clone_dir))
+            branch = settings.GITHUB_BRANCH
+
+            repo.remotes.origin.fetch(kill_after_timeout=30)
+
+            unpushed = list(repo.iter_commits(f'origin/{branch}..{branch}'))
+            count = len(unpushed)
+            if count == 0:
+                return 0
+
+            repo.git.reset('--hard', f'origin/{branch}')
+            logger.info('Discarded %d unpushed commit(s) via hard reset to origin/%s', count, branch)
+            return count
+
+        except Exception:
+            logger.exception('Failed to discard unpushed commits')
+            return 0
+
+
 def commit_and_push(files, commit_message, author_name='MMTUK CMS', author_email='cms@mmtuk.org'):
     """
     Stage, commit, and push files to the remote repo.

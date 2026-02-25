@@ -2,6 +2,7 @@
 URL scraping for importing content (Substack articles, general URLs).
 """
 
+import json
 import re
 import logging
 
@@ -120,6 +121,50 @@ def _preprocess_figures(container):
             figure.decompose()
 
 
+def _extract_pub_date(soup):
+    """
+    Extract publication date from HTML using multiple strategies.
+    Returns a YYYY-MM-DD string, or '' if no date found.
+
+    Strategies (in order):
+    1. <meta property="article:published_time">  (Open Graph)
+    2. JSON-LD structured data (Schema.org datePublished)
+    3. <time datetime="..."> element
+    4. Common meta name tags (date, DC.date, etc.)
+    """
+    # Strategy 1: article:published_time meta (Open Graph)
+    meta_date = soup.find('meta', property='article:published_time')
+    if meta_date and meta_date.get('content', ''):
+        return meta_date['content'][:10]
+
+    # Strategy 2: JSON-LD structured data (Schema.org)
+    for script in soup.find_all('script', type='application/ld+json'):
+        try:
+            ld = json.loads(script.string or '')
+            items = ld if isinstance(ld, list) else [ld]
+            for item in items:
+                dp = item.get('datePublished', '')
+                if dp:
+                    return dp[:10]
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+    # Strategy 3: <time datetime="..."> element
+    time_el = soup.find('time', attrs={'datetime': True})
+    if time_el:
+        dt = time_el['datetime']
+        if len(dt) >= 10:
+            return dt[:10]
+
+    # Strategy 4: Other common meta tags
+    for meta_name in ('date', 'DC.date', 'dcterms.date', 'publish_date'):
+        meta = soup.find('meta', attrs={'name': meta_name})
+        if meta and meta.get('content', ''):
+            return meta['content'][:10]
+
+    return ''
+
+
 def scrape_substack(url):
     """
     Scrape a Substack article and return structured data.
@@ -147,10 +192,7 @@ def scrape_substack(url):
     if meta_author:
         author = meta_author.get('content', '')
 
-    pub_date = ''
-    meta_date = soup.find('meta', property='article:published_time')
-    if meta_date:
-        pub_date = meta_date.get('content', '')[:10]  # YYYY-MM-DD
+    pub_date = _extract_pub_date(soup)
 
     publication = ''
     og_site = soup.find('meta', property='og:site_name')
@@ -245,10 +287,7 @@ def scrape_general_url(url):
     if meta_author:
         author = meta_author.get('content', '')
 
-    pub_date = ''
-    meta_date = soup.find('meta', property='article:published_time')
-    if meta_date:
-        pub_date = meta_date.get('content', '')[:10]
+    pub_date = _extract_pub_date(soup)
 
     image_url = ''
     og_image = soup.find('meta', property='og:image')

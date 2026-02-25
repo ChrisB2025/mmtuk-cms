@@ -35,6 +35,7 @@ from .services.git_service import (
     ensure_repo, prepare_repo_for_write, write_file_to_repo, write_file_to_output,
     commit_locally, push_to_remote, get_unpushed_changes,
     read_file_from_repo, delete_file_from_repo, reset_unpushed_commits,
+    discard_all_unpushed,
 )
 from .services.scraper_service import scrape_url
 from .services.image_service import process_image
@@ -2525,6 +2526,28 @@ def publish_changes(request):
     if referer:
         return redirect(referer)
     return redirect('content_browser')
+
+
+@login_required
+@require_POST
+def discard_unpublished(request):
+    """Discard all unpushed local commits (hard reset to remote)."""
+    from django.contrib import messages
+
+    profile = request.user.profile
+    if profile.role not in ('admin', 'editor'):
+        return HttpResponseForbidden('You do not have permission to discard changes.')
+
+    count = discard_all_unpushed()
+    if count > 0:
+        _log_audit('site', 'discard', 'discard', request.user,
+                   changes_summary=f'{count} commit(s) discarded')
+        messages.success(request, f'Discarded {count} unpublished change(s).')
+        logger.info('User %s discarded %d unpushed commit(s)', request.user.username, count)
+    else:
+        messages.info(request, 'No unpublished changes to discard.')
+
+    return redirect('review_changes')
 
 
 @login_required
