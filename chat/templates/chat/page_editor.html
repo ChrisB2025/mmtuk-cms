@@ -1,0 +1,42 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_meta.name }} — Page Manager — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+  <div class="detail-top-bar">
+    <a href="{% url 'page_manager' %}" class="back-link">&larr; Back to Page Manager</a>
+    <div class="detail-actions">
+      <a href="https://mmtuk.org{{ page_meta.route }}" target="_blank" class="btn btn-secondary btn-small">View on Site</a>
+    </div>
+  </div>
+
+  <div class="detail-split" style="grid-template-columns: 1fr;">
+    <div class="detail-meta" style="max-width: 760px;">
+      <h2>{{ page_meta.name }}</h2>
+      <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        Route: <code>{{ page_meta.route }}</code>
+      </p>
+
+      <h3 style="margin-bottom: 1rem; font-size: 1rem;">Sections</h3>
+      {% for section_key, section_meta in page_meta.sections.items %}
+      <div class="content-row" style="align-items: flex-start; padding: 1rem; margin-bottom: 0.75rem; background: var(--bg-raised, #f8f9fa); border-radius: 6px; border: 1px solid var(--border);">
+        <div style="flex: 1;">
+          <div class="row-title" style="font-weight: 600; margin-bottom: 0.5rem;">{{ section_meta.name }}</div>
+          <div style="font-size: 0.8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            {% for field_name, field_meta in section_meta.fields.items %}
+            <span style="background: var(--bg, #fff); border: 1px solid var(--border); border-radius: 4px; padding: 0.15rem 0.5rem;">
+              {{ field_name }}
+              {% if field_meta.admin_only %}<em style="color: var(--warning, #e67e00);"> (admin only)</em>{% endif %}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        <a href="{% url 'page_section_editor' page_key section_key %}" class="btn btn-primary btn-small" style="margin-left: 1rem; flex-shrink: 0;">Edit</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

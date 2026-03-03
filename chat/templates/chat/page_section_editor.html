@@ -1,0 +1,157 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Edit {{ section_meta.name }} — {{ page_meta.name }} — MMTUK CMS{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+  <div class="detail-top-bar">
+    <a href="{% url 'page_editor' page_key %}" class="back-link">&larr; Back to {{ page_meta.name }}</a>
+    <div class="detail-actions">
+      <a href="https://mmtuk.org{{ page_meta.route }}" target="_blank" class="btn btn-secondary btn-small">View on Site</a>
+    </div>
+  </div>
+
+  <div class="detail-split" style="grid-template-columns: 1fr;">
+    <div class="detail-meta" style="max-width: 900px;">
+      <h2>{{ section_meta.name }}</h2>
+      <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        {{ page_meta.name }} &rsaquo; {{ section_meta.name }}
+      </p>
+
+      <form id="sectionForm">
+        {% for field in section_fields %}
+        {% if not field.admin_only or profile.role == 'admin' %}
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="form-label" for="field_{{ field.name }}" style="font-weight: 600; display: block; margin-bottom: 0.4rem;">
+            {{ field.label }}
+            {% if field.admin_only %}<em style="font-weight: 400; color: var(--warning, #e67e00); font-size: 0.8rem;"> (admin only)</em>{% endif %}
+          </label>
+
+          {% if field.type == 'markdown' %}
+          <div class="md-editor-wrap" style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
+            <div class="md-editor-tabs" style="display: flex; border-bottom: 1px solid var(--border); background: var(--bg-raised, #f8f9fa);">
+              <button type="button" class="md-tab md-tab-active" data-tab="write" data-field="{{ field.name }}"
+                      style="padding: 0.4rem 0.9rem; font-size: 0.8rem; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid var(--accent, #1a56db);">
+                Write
+              </button>
+              <button type="button" class="md-tab" data-tab="preview" data-field="{{ field.name }}"
+                      style="padding: 0.4rem 0.9rem; font-size: 0.8rem; border: none; background: none; cursor: pointer; color: var(--muted);">
+                Preview
+              </button>
+            </div>
+            <textarea id="field_{{ field.name }}" name="{{ field.name }}"
+                      class="form-input md-textarea" rows="18"
+                      style="border: none; border-radius: 0; width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.875rem; resize: vertical;">{{ field.value }}</textarea>
+            <div id="preview_{{ field.name }}" class="md-preview text-rich-text w-richtext"
+                 style="display: none; padding: 1rem; min-height: 200px; font-size: 0.9rem;"></div>
+          </div>
+          {% else %}
+          <input type="text" id="field_{{ field.name }}" name="{{ field.name }}"
+                 value="{{ field.value }}"
+                 class="form-input" style="width: 100%; box-sizing: border-box;">
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+          <button type="submit" class="btn btn-primary" id="saveBtn">Save &amp; Publish</button>
+          <a href="{% url 'page_editor' page_key %}" class="btn btn-ghost">Cancel</a>
+          <span id="saveStatus" style="font-size: 0.85rem; color: var(--muted);"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  var PAGE_KEY    = '{{ page_key }}';
+  var SECTION_KEY = '{{ section_key }}';
+  var API_URL = '/api/pages/' + PAGE_KEY + '/section/' + SECTION_KEY + '/';
+
+  var form    = document.getElementById('sectionForm');
+  var saveBtn = document.getElementById('saveBtn');
+  var status  = document.getElementById('saveStatus');
+
+  // --- Markdown preview tab switching ---
+  document.querySelectorAll('.md-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var fieldName = this.dataset.field;
+      var tabName   = this.dataset.tab;
+      var textarea  = document.getElementById('field_' + fieldName);
+      var preview   = document.getElementById('preview_' + fieldName);
+      var tabs      = document.querySelectorAll('[data-field="' + fieldName + '"].md-tab');
+
+      tabs.forEach(function(t) {
+        t.style.fontWeight = '400';
+        t.style.color = 'var(--muted)';
+        t.style.borderBottom = 'none';
+      });
+      this.style.fontWeight = '600';
+      this.style.color = '';
+      this.style.borderBottom = '2px solid var(--accent, #1a56db)';
+
+      if (tabName === 'preview') {
+        textarea.style.display = 'none';
+        preview.style.display = '';
+        preview.innerHTML = typeof marked !== 'undefined'
+          ? marked.parse(textarea.value || '')
+          : '<em>Preview not available</em>';
+      } else {
+        textarea.style.display = '';
+        preview.style.display = 'none';
+      }
+    });
+  });
+
+  // --- Form submit ---
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving\u2026';
+    status.textContent = '';
+
+    var payload = {};
+    form.querySelectorAll('textarea, input').forEach(function(el) {
+      if (el.name) payload[el.name] = el.value;
+    });
+
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf,
+      },
+      body: JSON.stringify(payload),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.status === 'ok') {
+        window.showToast && showToast('Changes saved and published.', 'success');
+        status.textContent = 'Saved.';
+      } else {
+        window.showToast && showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+        status.textContent = 'Error: ' + (data.error || 'Unknown error');
+      }
+    })
+    .catch(function() {
+      window.showToast && showToast('Network error \u2014 please try again.', 'error');
+      status.textContent = 'Network error.';
+    })
+    .finally(function() {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save & Publish';
+    });
+  });
+})();
+</script>
+{% endblock %}

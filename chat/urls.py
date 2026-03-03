@@ -43,4 +43,9 @@ urlpatterns = [
     path('redirects/', views.redirect_management, name='redirect_management'),
     path('redirects/edit/', views.edit_redirect, name='edit_redirect'),
     path('redirects/remove/', views.remove_redirect, name='remove_redirect'),
+    # Page management
+    path('pages/', views.page_manager, name='page_manager'),
+    path('pages/<str:page_key>/', views.page_editor, name='page_editor'),
+    path('pages/<str:page_key>/section/<str:section_key>/', views.page_section_editor, name='page_section_editor'),
+    path('api/pages/<str:page_key>/section/<str:section_key>/', views.page_section_api, name='page_section_api'),
 ]

@@ -120,6 +120,18 @@ class UserProfile(models.Model):
         """Check if user can delete content."""
         return self.role in ('admin', 'editor')
 
+    def can_edit_page(self, page_key: str, field: str | None = None) -> bool:
+        """Check if user can edit the given static page (and optionally a specific field)."""
+        from content_schema.schemas import PAGE_EDITOR_ROLES, ADMIN_ONLY_PAGES, ADMIN_ONLY_FIELDS
+        if self.role not in PAGE_EDITOR_ROLES:
+            return False
+        if page_key in ADMIN_ONLY_PAGES and self.role != 'admin':
+            return False
+        if field and page_key in ADMIN_ONLY_FIELDS:
+            if field in ADMIN_ONLY_FIELDS[page_key] and self.role != 'admin':
+                return False
+        return True
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

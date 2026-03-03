@@ -2855,3 +2855,124 @@ def delete_conversation(request, conversation_id):
 
     # Redirect to index (will show next conversation or empty state)
     return redirect('index')
+
+
+# ---------------------------------------------------------------------------
+# Page management views
+# ---------------------------------------------------------------------------
+
+@login_required
+def page_manager(request):
+    """List all CMS-managed static pages."""
+    profile = request.user.profile
+    if profile.role not in ('admin', 'editor'):
+        return HttpResponseForbidden()
+    from content_schema.schemas import PAGE_TYPES
+    pages = [
+        {"key": key, "name": meta["name"], "route": meta["route"]}
+        for key, meta in PAGE_TYPES.items()
+        if profile.can_edit_page(key)
+    ]
+    return render(request, 'chat/page_manager.html', {
+        'pages': pages,
+        'profile': profile,
+        'active_tab': 'pages',
+    })
+
+
+@login_required
+def page_editor(request, page_key):
+    """Show sections for a single managed page."""
+    profile = request.user.profile
+    if not profile.can_edit_page(page_key):
+        return HttpResponseForbidden()
+    from content_schema.schemas import PAGE_TYPES
+    if page_key not in PAGE_TYPES:
+        raise Http404
+    page_meta = PAGE_TYPES[page_key]
+    from .services.page_service import read_page_data
+    page_data = read_page_data(page_key)
+    return render(request, 'chat/page_editor.html', {
+        'page_key': page_key,
+        'page_meta': page_meta,
+        'page_data': page_data,
+        'profile': profile,
+        'active_tab': 'pages',
+    })
+
+
+@login_required
+def page_section_editor(request, page_key, section_key):
+    """Form editor for a single section of a managed page."""
+    profile = request.user.profile
+    if not profile.can_edit_page(page_key):
+        return HttpResponseForbidden()
+    from content_schema.schemas import PAGE_TYPES
+    if page_key not in PAGE_TYPES:
+        raise Http404
+    section_meta = PAGE_TYPES[page_key]['sections'].get(section_key)
+    if not section_meta:
+        raise Http404
+    from .services.page_service import read_page_data
+    page_data = read_page_data(page_key)
+    section_data = page_data.get(section_key, {})
+    # Pre-build field list with current values so the template can iterate cleanly
+    section_fields = [
+        {
+            'name': field_name,
+            'label': field_meta.get('label', field_name),
+            'type': field_meta.get('type', 'string'),
+            'admin_only': field_meta.get('admin_only', False),
+            'value': section_data.get(field_name, ''),
+        }
+        for field_name, field_meta in section_meta['fields'].items()
+    ]
+    return render(request, 'chat/page_section_editor.html', {
+        'page_key': page_key,
+        'section_key': section_key,
+        'page_meta': PAGE_TYPES[page_key],
+        'section_meta': section_meta,
+        'section_fields': section_fields,
+        'profile': profile,
+        'active_tab': 'pages',
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def page_section_api(request, page_key, section_key):
+    """Apply a patch to a page section and commit to git."""
+    profile = request.user.profile
+    if not profile.can_edit_page(page_key):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    from content_schema.schemas import PAGE_TYPES
+    if page_key not in PAGE_TYPES:
+        return JsonResponse({'error': 'Unknown page'}, status=404)
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    # Validate admin-only fields
+    section_def = PAGE_TYPES[page_key]['sections'].get(section_key, {})
+    for field_name, field_meta in section_def.get('fields', {}).items():
+        if field_meta.get('admin_only') and field_name in body and profile.role != 'admin':
+            return JsonResponse({'error': f'Field {field_name} is admin-only'}, status=403)
+
+    from .services.page_service import apply_page_patch
+    try:
+        prepare_repo_for_write()
+        patch = {section_key: body}
+        updated = apply_page_patch(page_key, patch)
+        file_path = f"src/data/pages/{page_key}.json"
+        author = request.user.get_full_name() or request.user.username
+        commit_locally(
+            [file_path],
+            f"content: update {page_key}/{section_key} via CMS",
+            author,
+        )
+        push_to_remote()
+        return JsonResponse({'status': 'ok', 'data': updated})
+    except Exception as e:
+        logger.exception("page_section_api error for %s/%s", page_key, section_key)
+        return JsonResponse({'error': str(e)}, status=500)

@@ -333,6 +333,67 @@ def apply_defaults(content_type, frontmatter):
     return result
 
 
+PAGE_TYPES = {
+    "privacy-policy": {
+        "name": "Privacy Policy",
+        "route": "/privacy-policy",
+        "sections": {
+            "content": {
+                "name": "Page Content",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "last_updated": {"type": "string", "label": "Last Updated"},
+                    "body": {"type": "markdown", "label": "Body Content"},
+                },
+            }
+        },
+        "admin_only": False,
+    },
+    "terms-of-engagement": {
+        "name": "Terms of Engagement",
+        "route": "/terms-of-engagement",
+        "sections": {
+            "content": {
+                "name": "Page Content",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "last_updated": {"type": "string", "label": "Last Updated"},
+                    "body": {"type": "markdown", "label": "Body Content"},
+                },
+            }
+        },
+        "admin_only": False,
+    },
+    "cookie-preferences": {
+        "name": "Cookie Preferences",
+        "route": "/cookie-preferences",
+        "sections": {
+            "content": {
+                "name": "Page Content",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "last_updated": {"type": "string", "label": "Last Updated"},
+                    "intro": {"type": "markdown", "label": "Introduction (How we use cookies + Cookie categories)"},
+                    "services_list": {"type": "markdown", "label": "Cookies and Services"},
+                },
+            }
+        },
+        "admin_only": False,
+    },
+}
+
+# Roles permitted to edit any page
+PAGE_EDITOR_ROLES = {"admin", "editor"}
+
+# Pages where only admin can access at all
+ADMIN_ONLY_PAGES = {"site-config"}
+
+# Field-level admin restrictions per page
+ADMIN_ONLY_FIELDS = {
+    "site-config": {"discord_url", "stripe_links", "action_network_form_id"},
+}
+
+
 def build_full_schema_prompt():
     """
     Build a detailed schema reference for the Claude system prompt.

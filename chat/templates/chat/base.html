@@ -41,8 +41,11 @@
         </button>
       </div>
       <div class="sidebar-tabs">
-        <a href="{% url 'index' %}" class="sidebar-tab {% if active_tab != 'content' %}active{% endif %}">Chat</a>
+        <a href="{% url 'index' %}" class="sidebar-tab {% if active_tab != 'content' and active_tab != 'pages' %}active{% endif %}">Chat</a>
         <a href="{% url 'content_browser' %}" class="sidebar-tab {% if active_tab == 'content' %}active{% endif %}">Content</a>
+        {% if profile.role == 'admin' or profile.role == 'editor' %}
+        <a href="{% url 'page_manager' %}" class="sidebar-tab {% if active_tab == 'pages' %}active{% endif %}">Pages</a>
+        {% endif %}
       </div>
       <div class="sidebar-actions">
         <a href="{% url 'new_conversation' %}" class="btn btn-new">+ New Chat</a>
@@ -188,6 +191,9 @@
       { label: 'New Chat',          icon: '+',   url: '{% url "new_conversation" %}',  section: 'Actions' },
       { label: 'Content Browser',   icon: '📄',  url: '{% url "content_browser" %}',   section: 'Navigate' },
       { label: 'Media Library',     icon: '🖼',  url: '{% url "media_library" %}',     section: 'Navigate' },
+      {% if profile.role == 'admin' or profile.role == 'editor' %}
+      { label: 'Page Manager',      icon: '📝',  url: '{% url "page_manager" %}',      section: 'Navigate' },
+      {% endif %}
       {% if profile.can_approve %}
       { label: 'Review & Publish',  icon: '🚀',  url: '{% url "review_changes" %}',    section: 'Navigate' },
       { label: 'Pending Approvals', icon: '⏳',  url: '{% url "pending_list" %}',      section: 'Navigate' },

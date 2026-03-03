@@ -1,0 +1,33 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Page Manager — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="browser-container">
+  <div class="browser-header">
+    <h2 class="page-title">Page Manager</h2>
+    <p class="page-subtitle" style="color: var(--muted); font-size: 0.875rem; margin-top: 0.25rem;">
+      Edit the content of static pages on the MMTUK site.
+    </p>
+  </div>
+
+  <div class="content-list" style="margin-top: 1.5rem;">
+    {% for page in pages %}
+    <div class="content-row" style="align-items: center;">
+      <a href="{% url 'page_editor' page.key %}" class="row-link" style="flex: 1;">
+        <span class="type-badge" style="background: var(--accent-muted, #e8f0fe); color: var(--accent, #1a56db);">page</span>
+        <span class="row-title">{{ page.name }}</span>
+        <span class="row-meta" style="font-family: monospace; font-size: 0.8rem;">{{ page.route }}</span>
+      </a>
+      <a href="{% url 'page_editor' page.key %}" class="btn btn-secondary btn-small" style="margin-left: 1rem; flex-shrink: 0;">Edit</a>
+    </div>
+    {% empty %}
+    <div class="empty-state-large">
+      <p class="empty-state-title">No pages available</p>
+      <p class="empty-state-sub">No managed pages are configured for your role.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
