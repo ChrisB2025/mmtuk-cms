@@ -90,6 +90,9 @@
       </nav>
       <div class="sidebar-footer">
         <a href="{% url 'media_library' %}" class="sidebar-link">Media Library</a>
+        {% if profile.role == 'admin' %}
+        <a href="{% url 'site_config_editor' %}" class="sidebar-link">Site Config</a>
+        {% endif %}
         {% if profile.can_approve %}
         <a href="{% url 'review_changes' %}" class="sidebar-link">Review &amp; Publish</a>
         <a href="{% url 'pending_list' %}" class="sidebar-link">Pending Approvals</a>
@@ -193,6 +196,9 @@
       { label: 'Media Library',     icon: '🖼',  url: '{% url "media_library" %}',     section: 'Navigate' },
       {% if profile.role == 'admin' or profile.role == 'editor' %}
       { label: 'Page Manager',      icon: '📝',  url: '{% url "page_manager" %}',      section: 'Navigate' },
+      {% endif %}
+      {% if profile.role == 'admin' %}
+      { label: 'Site Config',       icon: '⚙',  url: '{% url "site_config_editor" %}', section: 'Navigate' },
       {% endif %}
       {% if profile.can_approve %}
       { label: 'Review & Publish',  icon: '🚀',  url: '{% url "review_changes" %}',    section: 'Navigate' },

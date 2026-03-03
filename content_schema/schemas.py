@@ -380,6 +380,32 @@ PAGE_TYPES = {
         },
         "admin_only": False,
     },
+    "site-config": {
+        "name": "Site Config",
+        "route": "(global)",
+        "editor_url_name": "site_config_editor",
+        "sections": {
+            "settings": {
+                "name": "Site Settings",
+                "fields": {
+                    "discord_url": {"type": "string", "label": "Discord Invite URL", "admin_only": True},
+                    "stripe_links.supporter": {"type": "string", "label": "Stripe Link \u2014 Supporter (monthly)", "admin_only": True},
+                    "stripe_links.founder": {"type": "string", "label": "Stripe Link \u2014 Founder (one-off)", "admin_only": True},
+                    "stripe_links.patron": {"type": "string", "label": "Stripe Link \u2014 Patron (variable)", "admin_only": True},
+                    "action_network_form_id": {"type": "string", "label": "Action Network Form ID", "admin_only": True},
+                    "founder_scheme.current_count": {"type": "number", "label": "Founder Scheme \u2014 Current Count"},
+                    "founder_scheme.target_count": {"type": "number", "label": "Founder Scheme \u2014 Target Count"},
+                    "founder_scheme.deadline_iso": {"type": "string", "label": "Countdown Deadline (MM/DD/YYYY HH:mm:ss)"},
+                    "founder_scheme.deadline_display": {"type": "string", "label": "Display Deadline (e.g. Sun 17 May 2026)"},
+                    "founder_scheme.milestone_message": {"type": "string", "label": "Milestone Message"},
+                    "announcement_bar.enabled": {"type": "boolean", "label": "Announcement Bar \u2014 Enabled"},
+                    "announcement_bar.message": {"type": "string", "label": "Announcement Bar \u2014 Message"},
+                    "announcement_bar.link": {"type": "string", "label": "Announcement Bar \u2014 Link URL"},
+                },
+            }
+        },
+        "admin_only": True,
+    },
 }
 
 # Roles permitted to edit any page
@@ -390,7 +416,13 @@ ADMIN_ONLY_PAGES = {"site-config"}
 
 # Field-level admin restrictions per page
 ADMIN_ONLY_FIELDS = {
-    "site-config": {"discord_url", "stripe_links", "action_network_form_id"},
+    "site-config": {
+        "discord_url",
+        "stripe_links.supporter",
+        "stripe_links.founder",
+        "stripe_links.patron",
+        "action_network_form_id",
+    },
 }
 
 

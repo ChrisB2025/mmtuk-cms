@@ -48,4 +48,7 @@ urlpatterns = [
     path('pages/<str:page_key>/', views.page_editor, name='page_editor'),
     path('pages/<str:page_key>/section/<str:section_key>/', views.page_section_editor, name='page_section_editor'),
     path('api/pages/<str:page_key>/section/<str:section_key>/', views.page_section_api, name='page_section_api'),
+    # Site config (admin-only)
+    path('site-config/', views.site_config_editor, name='site_config_editor'),
+    path('api/site-config/', views.site_config_api, name='site_config_api'),
 ]

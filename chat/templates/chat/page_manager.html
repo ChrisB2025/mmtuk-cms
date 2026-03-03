@@ -15,12 +15,12 @@
   <div class="content-list" style="margin-top: 1.5rem;">
     {% for page in pages %}
     <div class="content-row" style="align-items: center;">
-      <a href="{% url 'page_editor' page.key %}" class="row-link" style="flex: 1;">
+      <a href="{{ page.url }}" class="row-link" style="flex: 1;">
         <span class="type-badge" style="background: var(--accent-muted, #e8f0fe); color: var(--accent, #1a56db);">page</span>
         <span class="row-title">{{ page.name }}</span>
         <span class="row-meta" style="font-family: monospace; font-size: 0.8rem;">{{ page.route }}</span>
       </a>
-      <a href="{% url 'page_editor' page.key %}" class="btn btn-secondary btn-small" style="margin-left: 1rem; flex-shrink: 0;">Edit</a>
+      <a href="{{ page.url }}" class="btn btn-secondary btn-small" style="margin-left: 1rem; flex-shrink: 0;">Edit</a>
     </div>
     {% empty %}
     <div class="empty-state-large">

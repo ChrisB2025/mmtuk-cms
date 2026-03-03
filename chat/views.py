@@ -2864,12 +2864,18 @@ def delete_conversation(request, conversation_id):
 @login_required
 def page_manager(request):
     """List all CMS-managed static pages."""
+    from django.urls import reverse
     profile = request.user.profile
     if profile.role not in ('admin', 'editor'):
         return HttpResponseForbidden()
     from content_schema.schemas import PAGE_TYPES
     pages = [
-        {"key": key, "name": meta["name"], "route": meta["route"]}
+        {
+            "key": key,
+            "name": meta["name"],
+            "route": meta["route"],
+            "url": reverse(meta["editor_url_name"]) if "editor_url_name" in meta else reverse('page_editor', args=[key]),
+        }
         for key, meta in PAGE_TYPES.items()
         if profile.can_edit_page(key)
     ]
@@ -2975,4 +2981,141 @@ def page_section_api(request, page_key, section_key):
         return JsonResponse({'status': 'ok', 'data': updated})
     except Exception as e:
         logger.exception("page_section_api error for %s/%s", page_key, section_key)
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ---------------------------------------------------------------------------
+# Site config views
+# ---------------------------------------------------------------------------
+
+def _resolve_dotted(data, dotted_key):
+    """Resolve 'stripe_links.founder' to data['stripe_links']['founder']."""
+    parts = dotted_key.split('.')
+    current = data
+    for part in parts:
+        if isinstance(current, dict):
+            current = current.get(part)
+        else:
+            return None
+    return current
+
+
+def _set_dotted(data, dotted_key, value):
+    """Set data['stripe_links']['founder'] from 'stripe_links.founder'."""
+    parts = dotted_key.split('.')
+    current = data
+    for part in parts[:-1]:
+        if part not in current or not isinstance(current[part], dict):
+            current[part] = {}
+        current = current[part]
+    current[parts[-1]] = value
+
+
+def _field_group(name):
+    """Determine visual group from field name prefix."""
+    if name.startswith('stripe_links') or name in ('discord_url', 'action_network_form_id'):
+        return 'external_services'
+    if name.startswith('founder_scheme'):
+        return 'founder_scheme'
+    if name.startswith('announcement_bar'):
+        return 'announcement_bar'
+    return 'other'
+
+
+@login_required
+def site_config_editor(request):
+    """Dedicated editor for the flat site-config settings."""
+    profile = request.user.profile
+    if not profile.can_edit_page('site-config'):
+        return HttpResponseForbidden()
+    from content_schema.schemas import PAGE_TYPES
+    page_meta = PAGE_TYPES['site-config']
+    from .services.page_service import read_page_data
+    page_data = read_page_data('site-config')
+
+    section_meta = page_meta['sections']['settings']
+    fields = []
+    for field_name, field_meta in section_meta['fields'].items():
+        value = _resolve_dotted(page_data, field_name)
+        fields.append({
+            'name': field_name,
+            'label': field_meta.get('label', field_name),
+            'type': field_meta.get('type', 'string'),
+            'admin_only': field_meta.get('admin_only', False),
+            'value': value if value is not None else '',
+            'group': _field_group(field_name),
+        })
+
+    from collections import OrderedDict
+    grouped = OrderedDict([
+        ('external_services', {'label': 'External Services', 'fields': []}),
+        ('founder_scheme', {'label': 'Founder Scheme', 'fields': []}),
+        ('announcement_bar', {'label': 'Announcement Bar', 'fields': []}),
+    ])
+    for f in fields:
+        group_key = f['group']
+        if group_key in grouped:
+            grouped[group_key]['fields'].append(f)
+
+    return render(request, 'chat/site_config_editor.html', {
+        'page_meta': page_meta,
+        'grouped': grouped,
+        'profile': profile,
+        'active_tab': 'pages',
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def site_config_api(request):
+    """Apply a patch to site-config.json and commit to git."""
+    profile = request.user.profile
+    if not profile.can_edit_page('site-config'):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    from content_schema.schemas import PAGE_TYPES, ADMIN_ONLY_FIELDS
+    section_def = PAGE_TYPES['site-config']['sections']['settings']
+    admin_fields = ADMIN_ONLY_FIELDS.get('site-config', set())
+
+    # Validate: only accept known field names, check admin-only
+    for field_name in body:
+        if field_name not in section_def['fields']:
+            return JsonResponse({'error': f'Unknown field: {field_name}'}, status=400)
+        if field_name in admin_fields and profile.role != 'admin':
+            return JsonResponse({'error': f'Field {field_name} is admin-only'}, status=403)
+
+    from .services.page_service import read_page_data, write_page_data
+    try:
+        prepare_repo_for_write()
+        current = read_page_data('site-config')
+
+        for field_name, value in body.items():
+            field_meta = section_def['fields'][field_name]
+            if field_meta.get('type') == 'number':
+                try:
+                    value = int(value)
+                except (ValueError, TypeError):
+                    pass
+            if field_meta.get('type') == 'boolean':
+                if isinstance(value, str):
+                    value = value.lower() in ('true', '1', 'yes')
+            _set_dotted(current, field_name, value)
+
+        write_page_data('site-config', current)
+        file_path = "src/data/pages/site-config.json"
+        author = request.user.get_full_name() or request.user.username
+        commit_locally(
+            [file_path],
+            "content: update site-config via CMS",
+            author,
+        )
+        push_to_remote()
+        return JsonResponse({'status': 'ok', 'data': current})
+    except Exception as e:
+        logger.exception("site_config_api error")
         return JsonResponse({'error': str(e)}, status=500)
