@@ -2926,17 +2926,36 @@ def page_section_editor(request, page_key, section_key):
     section_fields = []
     for field_name, field_meta in section_meta['fields'].items():
         raw = section_data.get(field_name, '')
-        if field_meta.get('type') == 'string_array' and isinstance(raw, list):
+        field_type = field_meta.get('type', 'string')
+        if field_type == 'string_array' and isinstance(raw, list):
             value = '\n'.join(raw)
+            section_fields.append({
+                'name': field_name,
+                'label': field_meta.get('label', field_name),
+                'type': field_type,
+                'admin_only': field_meta.get('admin_only', False),
+                'value': value,
+            })
+        elif field_type == 'object_array':
+            value = raw if isinstance(raw, list) else []
+            section_fields.append({
+                'name': field_name,
+                'label': field_meta.get('label', field_name),
+                'type': 'object_array',
+                'admin_only': field_meta.get('admin_only', False),
+                'value': value,
+                'item_fields': field_meta.get('item_fields', {}),
+                'item_fields_json': json.dumps(field_meta.get('item_fields', {})),
+            })
         else:
             value = raw
-        section_fields.append({
-            'name': field_name,
-            'label': field_meta.get('label', field_name),
-            'type': field_meta.get('type', 'string'),
-            'admin_only': field_meta.get('admin_only', False),
-            'value': value,
-        })
+            section_fields.append({
+                'name': field_name,
+                'label': field_meta.get('label', field_name),
+                'type': field_type,
+                'admin_only': field_meta.get('admin_only', False),
+                'value': value,
+            })
     return render(request, 'chat/page_section_editor.html', {
         'page_key': page_key,
         'section_key': section_key,

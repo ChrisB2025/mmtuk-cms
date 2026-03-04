@@ -1,5 +1,6 @@
 {% extends "chat/base.html" %}
 {% load static %}
+{% load chat_extras %}
 
 {% block title %}Edit {{ section_meta.name }} — {{ page_meta.name }} — MMTUK CMS{% endblock %}
 
@@ -55,6 +56,37 @@
                     class="form-input" rows="8"
                     style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.875rem; resize: vertical;">{{ field.value }}</textarea>
           <p style="font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem;">One item per line.</p>
+          {% elif field.type == 'object_array' %}
+          <div class="object-array-field" data-field-name="{{ field.name }}">
+            <div class="object-array-items">
+              {% for item in field.value %}
+              <div class="object-array-item" data-index="{{ forloop.counter0 }}"
+                   style="border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Item {{ forloop.counter }}</span>
+                  <button type="button" class="btn btn-ghost btn-small remove-array-item">Remove</button>
+                </div>
+                {% for subfield_name, subfield_meta in field.item_fields.items %}
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">
+                    {{ subfield_meta.label }}
+                  </label>
+                  <input type="text"
+                         class="form-input object-array-subfield"
+                         data-subfield="{{ subfield_name }}"
+                         value="{{ item|get_item:subfield_name }}"
+                         style="width: 100%; box-sizing: border-box;">
+                </div>
+                {% endfor %}
+              </div>
+              {% endfor %}
+            </div>
+            <button type="button" class="btn btn-secondary btn-small add-array-item"
+                    data-field="{{ field.name }}"
+                    data-item-fields='{{ field.item_fields_json }}'>
+              + Add item
+            </button>
+          </div>
           {% else %}
           <input type="text" id="field_{{ field.name }}" name="{{ field.name }}"
                  value="{{ field.value }}"
@@ -125,6 +157,22 @@
     status.textContent = '';
 
     var payload = {};
+
+    // Collect object_array fields (their inputs have no name attr, handled separately)
+    document.querySelectorAll('.object-array-field').forEach(function(container) {
+      var fieldName = container.dataset.fieldName;
+      var items = [];
+      container.querySelectorAll('.object-array-item').forEach(function(itemEl) {
+        var obj = {};
+        itemEl.querySelectorAll('.object-array-subfield').forEach(function(input) {
+          obj[input.dataset.subfield] = input.value;
+        });
+        items.push(obj);
+      });
+      payload[fieldName] = items;
+    });
+
+    // Collect regular inputs and textareas
     form.querySelectorAll('textarea, input').forEach(function(el) {
       if (el.name) payload[el.name] = el.value;
     });
@@ -157,6 +205,43 @@
       saveBtn.textContent = 'Save & Publish';
     });
   });
+
+  // --- Add array item ---
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('add-array-item')) return;
+    var btn = e.target;
+    var container = btn.closest('.object-array-field');
+    var itemsEl = container.querySelector('.object-array-items');
+    var itemFields = JSON.parse(btn.dataset.itemFields);
+    var idx = itemsEl.querySelectorAll('.object-array-item').length;
+    var html = '<div class="object-array-item" data-index="' + idx + '" style="border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 0.75rem;">';
+    html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">';
+    html += '<span style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Item ' + (idx + 1) + '</span>';
+    html += '<button type="button" class="btn btn-ghost btn-small remove-array-item">Remove</button></div>';
+    Object.entries(itemFields).forEach(function(entry) {
+      var key = entry[0], meta = entry[1];
+      html += '<div class="form-group" style="margin-bottom: 0.75rem;">';
+      html += '<label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem;">' + meta.label + '</label>';
+      html += '<input type="text" class="form-input object-array-subfield" data-subfield="' + key + '" value="" style="width: 100%; box-sizing: border-box;">';
+      html += '</div>';
+    });
+    html += '</div>';
+    itemsEl.insertAdjacentHTML('beforeend', html);
+  });
+
+  // --- Remove array item + re-number ---
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('remove-array-item')) return;
+    var item = e.target.closest('.object-array-item');
+    var itemsEl = item.closest('.object-array-items');
+    item.remove();
+    itemsEl.querySelectorAll('.object-array-item').forEach(function(el, i) {
+      el.dataset.index = i;
+      var label = el.querySelector('span');
+      if (label) label.textContent = 'Item ' + (i + 1);
+    });
+  });
+
 })();
 </script>
 {% endblock %}
