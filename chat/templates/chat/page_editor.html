@@ -1,5 +1,6 @@
 {% extends "chat/base.html" %}
 {% load static %}
+{% load chat_extras %}
 
 {% block title %}{{ page_meta.name }} — Page Manager — MMTUK CMS{% endblock %}
 
@@ -25,7 +26,7 @@
         <div style="flex: 1;">
           <div class="row-title" style="font-weight: 600; margin-bottom: 0.5rem;">{{ section_meta.name }}</div>
           <div style="font-size: 0.8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            {% for field_name, field_meta in section_meta.fields.items %}
+            {% for field_name, field_meta in section_meta.fields|dict_items %}
             <span style="background: var(--bg, #fff); border: 1px solid var(--border); border-radius: 4px; padding: 0.15rem 0.5rem;">
               {{ field_name }}
               {% if field_meta.admin_only %}<em style="color: var(--warning, #e67e00);"> (admin only)</em>{% endif %}
