@@ -2896,7 +2896,9 @@ def page_editor(request, page_key):
     if page_key not in PAGE_TYPES:
         raise Http404
     page_meta = PAGE_TYPES[page_key]
+    from .services.git_service import ensure_repo
     from .services.page_service import read_page_data
+    ensure_repo()
     page_data = read_page_data(page_key)
     return render(request, 'chat/page_editor.html', {
         'page_key': page_key,
@@ -2919,7 +2921,9 @@ def page_section_editor(request, page_key, section_key):
     section_meta = PAGE_TYPES[page_key]['sections'].get(section_key)
     if not section_meta:
         raise Http404
+    from .services.git_service import ensure_repo
     from .services.page_service import read_page_data
+    ensure_repo()
     page_data = read_page_data(page_key)
     section_data = page_data.get(section_key, {})
     # Pre-build field list with current values so the template can iterate cleanly
