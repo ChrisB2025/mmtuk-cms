@@ -2923,16 +2923,20 @@ def page_section_editor(request, page_key, section_key):
     page_data = read_page_data(page_key)
     section_data = page_data.get(section_key, {})
     # Pre-build field list with current values so the template can iterate cleanly
-    section_fields = [
-        {
+    section_fields = []
+    for field_name, field_meta in section_meta['fields'].items():
+        raw = section_data.get(field_name, '')
+        if field_meta.get('type') == 'string_array' and isinstance(raw, list):
+            value = '\n'.join(raw)
+        else:
+            value = raw
+        section_fields.append({
             'name': field_name,
             'label': field_meta.get('label', field_name),
             'type': field_meta.get('type', 'string'),
             'admin_only': field_meta.get('admin_only', False),
-            'value': section_data.get(field_name, ''),
-        }
-        for field_name, field_meta in section_meta['fields'].items()
-    ]
+            'value': value,
+        })
     return render(request, 'chat/page_section_editor.html', {
         'page_key': page_key,
         'section_key': section_key,
@@ -2964,6 +2968,13 @@ def page_section_api(request, page_key, section_key):
     for field_name, field_meta in section_def.get('fields', {}).items():
         if field_meta.get('admin_only') and field_name in body and profile.role != 'admin':
             return JsonResponse({'error': f'Field {field_name} is admin-only'}, status=403)
+
+    # Coerce string_array fields from newline-delimited textarea strings to lists
+    for field_name, field_meta in section_def.get('fields', {}).items():
+        if field_meta.get('type') == 'string_array' and field_name in body:
+            raw = body[field_name]
+            if isinstance(raw, str):
+                body[field_name] = [item.strip() for item in raw.split('\n') if item.strip()]
 
     from .services.page_service import apply_page_patch
     try:

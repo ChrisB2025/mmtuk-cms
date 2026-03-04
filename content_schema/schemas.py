@@ -406,6 +406,211 @@ PAGE_TYPES = {
         },
         "admin_only": True,
     },
+    "community": {
+        "name": "Community",
+        "route": "/community",
+        "sections": {
+            "meta": {
+                "name": "Meta",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "description": {"type": "string", "label": "Meta Description"},
+                },
+            },
+            "hero": {
+                "name": "Hero",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "tagline": {"type": "string", "label": "Tagline"},
+                },
+            },
+            "local_groups": {
+                "name": "Local Groups",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "button_label": {"type": "string", "label": "Button Label"},
+                },
+            },
+            "events": {
+                "name": "Upcoming Events",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "button_label": {"type": "string", "label": "Button Label"},
+                },
+            },
+            "discord": {
+                "name": "Discord CTA",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "button_label": {"type": "string", "label": "Button Label"},
+                },
+            },
+        },
+        "admin_only": False,
+    },
+    "join": {
+        "name": "Join",
+        "route": "/join",
+        "sections": {
+            "meta": {
+                "name": "Meta",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "description": {"type": "string", "label": "Meta Description"},
+                },
+            },
+            "hero": {
+                "name": "Hero",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "tagline": {"type": "string", "label": "Tagline"},
+                },
+            },
+            "join_section": {
+                "name": "Join Section",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "subtitle": {"type": "string", "label": "Subtitle"},
+                    "intro": {"type": "string", "label": "Intro Paragraph"},
+                    "benefits": {"type": "string_array", "label": "Benefits List (one per line)"},
+                },
+            },
+        },
+        "admin_only": False,
+    },
+    "research": {
+        "name": "Research",
+        "route": "/research",
+        "sections": {
+            "meta": {
+                "name": "Meta",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "description": {"type": "string", "label": "Meta Description"},
+                },
+            },
+            "hero": {
+                "name": "Hero",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "tagline": {"type": "string", "label": "Tagline"},
+                },
+            },
+            "policy_areas": {
+                "name": "Policy Areas",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                },
+            },
+            "job_guarantee": {
+                "name": "Job Guarantee",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "feature_1": {"type": "string", "label": "Feature 1"},
+                    "feature_2": {"type": "string", "label": "Feature 2"},
+                    "feature_3": {"type": "string", "label": "Feature 3"},
+                    "button_label": {"type": "string", "label": "Button Label"},
+                    "button_href": {"type": "string", "label": "Button Link"},
+                },
+            },
+            "zirp": {
+                "name": "ZIRP",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "feature_1": {"type": "string", "label": "Feature 1"},
+                    "feature_2": {"type": "string", "label": "Feature 2"},
+                    "feature_3": {"type": "string", "label": "Feature 3"},
+                    "wip_notice": {"type": "string", "label": "Work in Progress Notice"},
+                },
+            },
+            "briefings": {
+                "name": "MMT Briefings",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "tag_label": {"type": "string", "label": "Tag Label"},
+                    "read_button_label": {"type": "string", "label": "Read Button Label"},
+                    "view_all_label": {"type": "string", "label": "View All Label"},
+                },
+            },
+            "approach": {
+                "name": "Our Approach",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "card_1_heading": {"type": "string", "label": "Card 1 Heading"},
+                    "card_1_body": {"type": "string", "label": "Card 1 Body"},
+                    "card_2_heading": {"type": "string", "label": "Card 2 Heading"},
+                    "card_2_body": {"type": "string", "label": "Card 2 Body"},
+                    "card_3_heading": {"type": "string", "label": "Card 3 Heading"},
+                    "card_3_body": {"type": "string", "label": "Card 3 Body"},
+                    "card_4_heading": {"type": "string", "label": "Card 4 Heading"},
+                    "card_4_body": {"type": "string", "label": "Card 4 Body"},
+                    "card_5_heading": {"type": "string", "label": "Card 5 Heading"},
+                    "card_5_body": {"type": "string", "label": "Card 5 Body"},
+                },
+            },
+        },
+        "admin_only": False,
+    },
+    "about-us": {
+        "name": "About Us",
+        "route": "/about-us",
+        "sections": {
+            "meta": {
+                "name": "Meta",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "description": {"type": "string", "label": "Meta Description"},
+                },
+            },
+            "hero": {
+                "name": "Hero",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                },
+            },
+            "news": {
+                "name": "MMTUK News",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "button_label": {"type": "string", "label": "Read More Button Label"},
+                },
+            },
+            "events": {
+                "name": "MMTUK Events",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "button_label": {"type": "string", "label": "Learn More Button Label"},
+                },
+            },
+            "steering_group": {
+                "name": "Steering Group",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "order": {"type": "string_array", "label": "Display Order (one name per line)"},
+                },
+            },
+            "advisory_board": {
+                "name": "Advisory Board",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                },
+            },
+        },
+        "admin_only": False,
+    },
 }
 
 # Roles permitted to edit any page

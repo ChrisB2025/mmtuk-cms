@@ -50,6 +50,11 @@
             <div id="preview_{{ field.name }}" class="md-preview text-rich-text w-richtext"
                  style="display: none; padding: 1rem; min-height: 200px; font-size: 0.9rem;"></div>
           </div>
+          {% elif field.type == 'string_array' %}
+          <textarea id="field_{{ field.name }}" name="{{ field.name }}"
+                    class="form-input" rows="8"
+                    style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.875rem; resize: vertical;">{{ field.value }}</textarea>
+          <p style="font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem;">One item per line.</p>
           {% else %}
           <input type="text" id="field_{{ field.name }}" name="{{ field.name }}"
                  value="{{ field.value }}"
