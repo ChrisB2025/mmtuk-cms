@@ -881,8 +881,6 @@ PAGE_TYPES = {
         },
         "admin_only": False,
     },
-}
-
     "join": {
         "name": "Join",
         "route": "/join",
