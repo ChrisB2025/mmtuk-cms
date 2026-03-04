@@ -861,6 +861,128 @@ PAGE_TYPES = {
         },
         "admin_only": False,
     },
+    "job-guarantee": {
+        "name": "Job Guarantee",
+        "route": "/job-guarantee",
+        "sections": {
+            "meta": {
+                "name": "Meta",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "description": {"type": "string", "label": "Meta Description"},
+                },
+            },
+            "header": {
+                "name": "Header",
+                "fields": {
+                    "page_title": {"type": "string", "label": "Page Title (H1)"},
+                    "policy_type": {"type": "string", "label": "Policy Type Label"},
+                },
+            },
+            "metadata": {
+                "name": "Publication Metadata",
+                "fields": {
+                    "publication_date": {"type": "string", "label": "Publication Date"},
+                    "download_url": {"type": "string", "label": "PDF Download URL"},
+                    "video_url": {"type": "string", "label": "Vimeo Video URL"},
+                },
+            },
+            "body": {
+                "name": "Body Content",
+                "fields": {
+                    "content": {"type": "markdown", "label": "Body Content"},
+                },
+            },
+        },
+        "admin_only": False,
+    },
+    "founders": {
+        "name": "Founders",
+        "route": "/founders",
+        "sections": {
+            "meta": {
+                "name": "Meta",
+                "fields": {
+                    "title": {"type": "string", "label": "Page Title"},
+                    "description": {"type": "string", "label": "Meta Description"},
+                },
+            },
+            "hero": {
+                "name": "Hero",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "subtitle": {"type": "string", "label": "Subtitle"},
+                },
+            },
+            "feature_1": {
+                "name": "Feature 1",
+                "fields": {
+                    "tag": {"type": "string", "label": "Tag"},
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                },
+            },
+            "feature_2": {
+                "name": "Feature 2 (Countdown)",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "tag": {"type": "string", "label": "Tag"},
+                    "date": {"type": "string", "label": "Deadline Date Label"},
+                    "countdown_target": {"type": "string", "label": "Countdown Target (MM/DD/YYYY HH:mm:ss)"},
+                    "tier_label": {"type": "string", "label": "Tier Label"},
+                    "tier_description": {"type": "string", "label": "Tier Description"},
+                    "tier_price": {"type": "string", "label": "Tier Price"},
+                    "button_label": {"type": "string", "label": "Button Label"},
+                    "form_success_message": {"type": "string", "label": "Form Success Message"},
+                    "form_error_message": {"type": "string", "label": "Form Error Message"},
+                },
+            },
+            "cta_section": {
+                "name": "CTA Section",
+                "fields": {
+                    "heading": {"type": "string", "label": "Heading"},
+                    "description": {"type": "string", "label": "Description"},
+                    "trust_label": {"type": "string", "label": "Trust Label"},
+                    "tier_label": {"type": "string", "label": "Tier Label"},
+                    "tier_description": {"type": "string", "label": "Tier Description"},
+                    "tier_price": {"type": "string", "label": "Tier Price"},
+                    "button_label": {"type": "string", "label": "Button Label"},
+                },
+            },
+            "testimonials": {
+                "name": "Testimonials",
+                "fields": {
+                    "items": {
+                        "type": "object_array",
+                        "label": "Testimonial Items",
+                        "item_fields": {
+                            "quote": {"type": "string", "label": "Quote"},
+                            "name": {"type": "string", "label": "Name"},
+                            "role": {"type": "string", "label": "Role"},
+                        },
+                    },
+                },
+            },
+            "faq": {
+                "name": "FAQs",
+                "fields": {
+                    "heading": {"type": "string", "label": "Section Heading"},
+                    "intro": {"type": "string", "label": "Intro Text"},
+                    "items": {
+                        "type": "object_array",
+                        "label": "FAQ Items",
+                        "item_fields": {
+                            "question": {"type": "string", "label": "Question"},
+                            "answer": {"type": "string", "label": "Answer"},
+                        },
+                    },
+                    "contact_heading": {"type": "string", "label": "Contact Heading"},
+                    "contact_intro": {"type": "string", "label": "Contact Intro"},
+                },
+            },
+        },
+        "admin_only": False,
+    },
 }
 
 # Roles permitted to edit any page
