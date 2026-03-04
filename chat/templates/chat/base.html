@@ -93,6 +93,7 @@
         <a href="{% url 'help' %}" class="sidebar-link {% if request.resolver_match.url_name == 'help' %}active{% endif %}">Help</a>
         {% if profile.role == 'admin' %}
         <a href="{% url 'site_config_editor' %}" class="sidebar-link">Site Config</a>
+        <a href="/admin/" class="sidebar-link">Django Admin</a>
         {% endif %}
         {% if profile.can_approve %}
         <a href="{% url 'review_changes' %}" class="sidebar-link">Review &amp; Publish</a>
