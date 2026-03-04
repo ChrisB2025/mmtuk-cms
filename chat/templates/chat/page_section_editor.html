@@ -5,7 +5,12 @@
 {% block title %}Edit {{ section_meta.name }} — {{ page_meta.name }} — MMTUK CMS{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css">
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<style>
+  .toastui-editor-defaultUI { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .toastui-editor-toolbar { background: var(--bg-raised, #f8f9fa); border-bottom: 1px solid var(--border); }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -34,23 +39,8 @@
           </label>
 
           {% if field.type == 'markdown' %}
-          <div class="md-editor-wrap" style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
-            <div class="md-editor-tabs" style="display: flex; border-bottom: 1px solid var(--border); background: var(--bg-raised, #f8f9fa);">
-              <button type="button" class="md-tab md-tab-active" data-tab="write" data-field="{{ field.name }}"
-                      style="padding: 0.4rem 0.9rem; font-size: 0.8rem; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid var(--accent, #1a56db);">
-                Write
-              </button>
-              <button type="button" class="md-tab" data-tab="preview" data-field="{{ field.name }}"
-                      style="padding: 0.4rem 0.9rem; font-size: 0.8rem; border: none; background: none; cursor: pointer; color: var(--muted);">
-                Preview
-              </button>
-            </div>
-            <textarea id="field_{{ field.name }}" name="{{ field.name }}"
-                      class="form-input md-textarea" rows="18"
-                      style="border: none; border-radius: 0; width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.875rem; resize: vertical;">{{ field.value }}</textarea>
-            <div id="preview_{{ field.name }}" class="md-preview text-rich-text w-richtext"
-                 style="display: none; padding: 1rem; min-height: 200px; font-size: 0.9rem;"></div>
-          </div>
+          <div id="tuieditor_{{ field.name }}" class="tuieditor-wrap" style="min-height: 320px;"></div>
+          <input type="hidden" id="field_{{ field.name }}" name="{{ field.name }}" value="{{ field.value|escape }}">
           {% elif field.type == 'string_array' %}
           <textarea id="field_{{ field.name }}" name="{{ field.name }}"
                     class="form-input" rows="8"
@@ -118,40 +108,14 @@
   var saveBtn = document.getElementById('saveBtn');
   var status  = document.getElementById('saveStatus');
 
-  // --- Markdown preview tab switching ---
-  document.querySelectorAll('.md-tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      var fieldName = this.dataset.field;
-      var tabName   = this.dataset.tab;
-      var textarea  = document.getElementById('field_' + fieldName);
-      var preview   = document.getElementById('preview_' + fieldName);
-      var tabs      = document.querySelectorAll('[data-field="' + fieldName + '"].md-tab');
-
-      tabs.forEach(function(t) {
-        t.style.fontWeight = '400';
-        t.style.color = 'var(--muted)';
-        t.style.borderBottom = 'none';
-      });
-      this.style.fontWeight = '600';
-      this.style.color = '';
-      this.style.borderBottom = '2px solid var(--accent, #1a56db)';
-
-      if (tabName === 'preview') {
-        textarea.style.display = 'none';
-        preview.style.display = '';
-        preview.innerHTML = typeof marked !== 'undefined'
-          ? marked.parse(textarea.value || '')
-          : '<em>Preview not available</em>';
-      } else {
-        textarea.style.display = '';
-        preview.style.display = 'none';
-      }
-    });
-  });
-
   // --- Form submit ---
   form.addEventListener('submit', function(e) {
     e.preventDefault();
+    // Sync WYSIWYG editors → hidden inputs before collecting payload
+    Object.keys(tuiEditors).forEach(function(name) {
+      var inp = document.getElementById('field_' + name);
+      if (inp) inp.value = tuiEditors[name].getMarkdown();
+    });
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving\u2026';
     status.textContent = '';
@@ -204,6 +168,29 @@
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save & Publish';
     });
+  });
+
+  // --- WYSIWYG editors (markdown fields) ---
+  var tuiEditors = {};
+  document.querySelectorAll('.tuieditor-wrap').forEach(function(el) {
+    var fieldName = el.id.replace('tuieditor_', '');
+    var hiddenInput = document.getElementById('field_' + fieldName);
+    var editor = new toastui.Editor({
+      el: el,
+      height: '420px',
+      initialEditType: 'wysiwyg',
+      hideModeSwitch: false,
+      toolbarItems: [
+        ['heading', 'bold', 'italic', 'strike'],
+        ['ul', 'ol'],
+        ['link', 'hr'],
+      ],
+      usageStatistics: false,
+    });
+    if (hiddenInput && hiddenInput.value) {
+      editor.setMarkdown(hiddenInput.value);
+    }
+    tuiEditors[fieldName] = editor;
   });
 
   // --- Add array item ---
