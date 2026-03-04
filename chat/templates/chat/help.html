@@ -1,0 +1,1094 @@
+{% extends "chat/base.html" %}
+{% load static %}
+
+{% block title %}Help — MMTUK CMS{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Help page layout ───────────────────────────────────────── */
+.help-wrap {
+  display: flex;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Left nav panel */
+.help-nav {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border, #e2e8f0);
+  overflow-y: auto;
+  padding: 1.5rem 0;
+  position: sticky;
+  top: 0;
+  height: 100%;
+}
+
+.help-nav-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #718096);
+  padding: 0 1.25rem 0.5rem;
+  margin-top: 1rem;
+}
+
+.help-nav-title:first-child { margin-top: 0; }
+
+.help-nav-link {
+  display: block;
+  padding: 0.45rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text, #1a202c);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  line-height: 1.4;
+}
+
+.help-nav-link:hover {
+  background: var(--hover, rgba(0,0,0,0.04));
+  color: var(--accent, #1a56db);
+}
+
+.help-nav-link.active {
+  border-left-color: var(--accent, #1a56db);
+  color: var(--accent, #1a56db);
+  background: var(--accent-muted, #e8f0fe);
+  font-weight: 600;
+}
+
+/* Right content area */
+.help-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 2.5rem 4rem;
+  min-width: 0;
+}
+
+/* ── Section base styles ──────────────────────────────────────── */
+.help-section {
+  max-width: 760px;
+  margin-bottom: 4rem;
+  padding-top: 0.5rem;
+}
+
+.help-section:first-child { margin-top: 0; }
+
+.help-section h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text, #1a202c);
+  margin: 0 0 0.35rem;
+}
+
+.help-section .section-intro {
+  color: var(--muted, #718096);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.help-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text, #1a202c);
+  margin: 2rem 0 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.help-section h3:first-of-type { margin-top: 1.25rem; }
+
+.help-section p {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text, #1a202c);
+  margin: 0.5rem 0;
+}
+
+.help-section ul, .help-section ol {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+  padding: 0;
+}
+
+.help-section li {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--text, #1a202c);
+  margin-bottom: 0.25rem;
+}
+
+.help-divider {
+  border: none;
+  border-top: 1px solid var(--border, #e2e8f0);
+  margin: 2.5rem 0;
+}
+
+/* ── Callout boxes ───────────────────────────────────────────── */
+.help-callout {
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.help-callout.info {
+  background: var(--accent-muted, #e8f0fe);
+  border-left: 3px solid var(--accent, #1a56db);
+  color: var(--text, #1a202c);
+}
+
+.help-callout.warning {
+  background: #fffbea;
+  border-left: 3px solid #f6ad55;
+  color: #744210;
+}
+
+[data-theme="dark"] .help-callout.warning {
+  background: rgba(246,173,85,0.12);
+  color: #fbd38d;
+}
+
+.help-callout.admin {
+  background: #fef3f2;
+  border-left: 3px solid #e53e3e;
+  color: #742a2a;
+}
+
+[data-theme="dark"] .help-callout.admin {
+  background: rgba(229,62,62,0.12);
+  color: #feb2b2;
+}
+
+.help-callout strong { font-weight: 700; }
+
+/* ── Role callout (personalised) ─────────────────────────────── */
+.role-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--accent-muted, #e8f0fe);
+  border: 1px solid var(--accent, #1a56db);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.role-callout-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.badge-admin    { background: #e53e3e; color: #fff; }
+.badge-editor   { background: #38a169; color: #fff; }
+.badge-group    { background: #6b46c1; color: #fff; }
+.badge-contrib  { background: #718096; color: #fff; }
+
+.role-callout-text { font-size: 0.875rem; line-height: 1.6; color: var(--text, #1a202c); }
+.role-callout-text strong { font-weight: 700; }
+
+/* ── Permission table ────────────────────────────────────────── */
+.perm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.perm-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface, #f8fafc);
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  font-weight: 700;
+  color: var(--muted, #718096);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.perm-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.perm-table tr:last-child td { border-bottom: none; }
+.perm-table td:first-child { font-weight: 600; color: var(--text, #1a202c); }
+
+.tick  { color: #38a169; font-weight: 700; }
+.cross { color: var(--muted, #a0aec0); }
+
+/* ── Step-by-step pathway ────────────────────────────────────── */
+.pathway {
+  margin: 1.25rem 0;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pathway-header {
+  background: var(--surface, #f8fafc);
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  color: var(--text, #1a202c);
+}
+
+.pathway ol {
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  list-style: decimal;
+}
+
+.pathway li {
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text, #1a202c);
+}
+
+/* ── Content type cards ──────────────────────────────────────── */
+.ctype-card {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.ctype-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface, #f8fafc);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.ctype-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text, #1a202c);
+}
+
+.ctype-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ctype-body {
+  padding: 0.75rem 1rem;
+  font-size: 0.855rem;
+  line-height: 1.65;
+  color: var(--text, #1a202c);
+}
+
+.ctype-body ul { margin: 0.25rem 0 0 1.25rem; padding: 0; }
+.ctype-body li { margin-bottom: 0.2rem; }
+
+.ctype-where {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted, #718096);
+}
+
+.ctype-where code {
+  font-family: monospace;
+  background: var(--surface, #f1f5f9);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+}
+
+/* ── Category table ──────────────────────────────────────────── */
+.cat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.cat-table th {
+  text-align: left;
+  padding: 0.45rem 0.75rem;
+  background: var(--surface, #f8fafc);
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  font-weight: 700;
+  color: var(--muted, #718096);
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cat-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  line-height: 1.5;
+  vertical-align: top;
+}
+
+.cat-table tr:last-child td { border-bottom: none; }
+.cat-table td:first-child { font-weight: 700; }
+
+/* ── Inline code ─────────────────────────────────────────────── */
+.help-section code {
+  font-family: monospace;
+  font-size: 0.82em;
+  background: var(--surface, #f1f5f9);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .help-nav { display: none; }
+  .help-content { padding: 1.5rem 1.25rem 3rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-wrap">
+
+  <!-- ── Left nav ───────────────────────────────────────────── -->
+  <nav class="help-nav" id="helpNav" aria-label="Help topics">
+    <div class="help-nav-title">CMS Basics</div>
+    <a class="help-nav-link" href="#orientation">Getting Started</a>
+    <a class="help-nav-link" href="#roles">Your Role</a>
+
+    <div class="help-nav-title">Working with Content</div>
+    <a class="help-nav-link" href="#creating-content">Creating Content</a>
+    <a class="help-nav-link" href="#content-types">Content Types</a>
+    <a class="help-nav-link" href="#approvals">Approvals</a>
+
+    <div class="help-nav-title">Editorial</div>
+    <a class="help-nav-link" href="#editorial-guide">Editorial Guide</a>
+    <a class="help-nav-link" href="#style-guide">Style Guide</a>
+
+    <div class="help-nav-title">Site Management</div>
+    <a class="help-nav-link" href="#page-manager">Page Manager</a>
+    <a class="help-nav-link" href="#media">Media Library</a>
+  </nav>
+
+  <!-- ── Right content ──────────────────────────────────────── -->
+  <div class="help-content" id="helpContent">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 1. GETTING STARTED                                       -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="orientation">
+      <h2>Getting Started</h2>
+      <p class="section-intro">A quick orientation for new editors and contributors.</p>
+
+      <h3>What this CMS does</h3>
+      <p>The MMTUK CMS manages the content on <strong>mmtuk.org</strong>. Every change you make — a new article, an updated page section, an uploaded image — gets saved to a version-controlled Git repository and automatically deployed to the live site. You don't need to know anything about Git; the CMS handles all of that.</p>
+
+      <h3>The sidebar</h3>
+      <p>The sidebar on the left is your main navigation. It has three tabs at the top:</p>
+      <ul>
+        <li><strong>Chat</strong> — Create new content by talking to Claude, the AI assistant</li>
+        <li><strong>Content</strong> — Browse, search, edit, and delete all existing site content</li>
+        <li><strong>Pages</strong> — Edit the text on static pages (Home, Research, etc.) — <em>editors and admins only</em></li>
+      </ul>
+      <p>The sidebar footer links give you access to the Media Library, Pending Approvals, Review &amp; Publish, and Health Check (visibility depends on your role).</p>
+
+      <h3>Quick navigation — <kbd>Ctrl K</kbd></h3>
+      <p>Press <strong>Ctrl+K</strong> (or Cmd+K on Mac) from anywhere to open the command palette. Start typing the name of any page or action to jump to it instantly.</p>
+
+      <h3>Dark mode</h3>
+      <p>Click the sun/moon icon in the top-left corner of the sidebar to switch between light and dark themes. Your preference is saved automatically.</p>
+
+      <h3>Unpublished changes</h3>
+      <p>An orange bar appears at the top of the sidebar when you have changes saved locally that haven't been deployed yet. Click <strong>Review &amp; Publish</strong> to review and push them live. Changes from chat conversations are usually published immediately for editors and admins — the bar is more common after Page Manager edits.</p>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 2. YOUR ROLE                                             -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="roles">
+      <h2>Your Role</h2>
+      <p class="section-intro">The CMS has four roles, each with different permissions. Yours is shown in the sidebar footer.</p>
+
+      <!-- Personalised callout -->
+      {% if profile.role == 'admin' %}
+      <div class="role-callout">
+        <span class="role-callout-badge badge-admin">Admin</span>
+        <div class="role-callout-text">
+          <strong>You have full access.</strong> You can create, edit, delete, and publish any content. You can edit all static pages including Site Config. You can approve drafts from any contributor.
+        </div>
+      </div>
+      {% elif profile.role == 'editor' %}
+      <div class="role-callout">
+        <span class="role-callout-badge badge-editor">Editor</span>
+        <div class="role-callout-text">
+          <strong>You can create and publish content directly.</strong> You can approve drafts from contributors. You can edit all static pages except Site Config. Only admins can access Site Config and its payment/integration fields.
+        </div>
+      </div>
+      {% elif profile.role == 'group_lead' %}
+      <div class="role-callout">
+        <span class="role-callout-badge badge-group">Group Lead</span>
+        <div class="role-callout-text">
+          <strong>You manage content for your local group{% if profile.local_group %}: {{ profile.get_local_group_display }}{% endif %}.</strong>
+          You can create and directly publish local events and news for your group, and approve submissions from other contributors in your group. You cannot publish national content or access the Page Manager.
+        </div>
+      </div>
+      {% else %}
+      <div class="role-callout">
+        <span class="role-callout-badge badge-contrib">Contributor</span>
+        <div class="role-callout-text">
+          <strong>Everything you create goes into the approval queue.</strong> An editor or admin will review your draft and either publish it or send it back with feedback. You can create articles, briefings, news, and local events — but cannot publish, edit, or delete content once it's submitted.
+        </div>
+      </div>
+      {% endif %}
+
+      <h3>Permission overview</h3>
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th>Permission</th>
+            <th>Admin</th>
+            <th>Editor</th>
+            <th>Group Lead</th>
+            <th>Contributor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Create content</td>
+            <td class="tick">✓ All types</td>
+            <td class="tick">✓ All types</td>
+            <td>Local events &amp; news only</td>
+            <td>All types (draft only)</td>
+          </tr>
+          <tr>
+            <td>Publish directly</td>
+            <td class="tick">✓ Yes</td>
+            <td class="tick">✓ Yes</td>
+            <td>Own group only</td>
+            <td class="cross">✗ Needs approval</td>
+          </tr>
+          <tr>
+            <td>Approve drafts</td>
+            <td class="tick">✓ All</td>
+            <td class="tick">✓ All</td>
+            <td>Own group only</td>
+            <td class="cross">✗ No</td>
+          </tr>
+          <tr>
+            <td>Edit existing content</td>
+            <td class="tick">✓ Yes</td>
+            <td class="tick">✓ Yes</td>
+            <td>Own group's content</td>
+            <td class="cross">✗ No</td>
+          </tr>
+          <tr>
+            <td>Delete content</td>
+            <td class="tick">✓ Yes</td>
+            <td class="tick">✓ Yes</td>
+            <td class="cross">✗ No</td>
+            <td class="cross">✗ No</td>
+          </tr>
+          <tr>
+            <td>Edit site pages</td>
+            <td class="tick">✓ All pages</td>
+            <td>Yes (public fields)</td>
+            <td class="cross">✗ No</td>
+            <td class="cross">✗ No</td>
+          </tr>
+          <tr>
+            <td>Media Library</td>
+            <td class="tick">✓ Yes</td>
+            <td class="tick">✓ Yes</td>
+            <td class="tick">✓ Yes</td>
+            <td class="cross">✗ No</td>
+          </tr>
+          <tr>
+            <td>Site Config page</td>
+            <td class="tick">✓ All fields</td>
+            <td class="cross">✗ No access</td>
+            <td class="cross">✗ No access</td>
+            <td class="cross">✗ No access</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Group Leads</h3>
+      <p>Group Leads are tied to a specific local group. Your assigned group determines which events and news items you can approve and publish directly. The six local groups are: <strong>Brighton, London, Oxford, Pennines, Scotland, Solent</strong>.</p>
+      <p>As a Group Lead you can create local events and news for any group, but you can only directly publish content for your own group. Content for other groups goes into the approval queue for an editor or admin to review.</p>
+
+      <h3>Changing your role</h3>
+      <p>Roles are set by an admin via the Django admin panel (<code>/admin/</code>). If you think your role needs changing, contact the site administrator.</p>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 3. CREATING CONTENT                                      -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="creating-content">
+      <h2>Creating Content</h2>
+      <p class="section-intro">All content is created through a chat conversation with Claude. There are three ways to start.</p>
+
+      <div class="pathway">
+        <div class="pathway-header">A — Write something new (natural language)</div>
+        <ol>
+          <li>Click <strong>+ New Chat</strong> in the sidebar, or press <kbd>Ctrl+K</kbd> and select "New Chat"</li>
+          <li>Tell Claude what you want to create — e.g. <em>"I want to write an article about the Job Guarantee"</em></li>
+          <li>Claude will ask you a few follow-up questions (title, category, author, date)</li>
+          <li>Review the draft it proposes in the chat — ask for any changes</li>
+          <li>Say "looks good" or "create it" to confirm</li>
+          <li>If you can publish directly, it goes live. Otherwise it's submitted for approval</li>
+        </ol>
+      </div>
+
+      <div class="pathway">
+        <div class="pathway-header">B — Import from a URL (Substack, blogs, etc.)</div>
+        <ol>
+          <li>Start a new chat</li>
+          <li>Paste the URL of a Substack post, blog article, or any web page</li>
+          <li>Claude automatically scrapes the title, author, date, body, and header image</li>
+          <li>Review the preview — check title, author, and publication date are correct</li>
+          <li>Say "yes" or "create it" to confirm</li>
+          <li>Content is created with full source attribution automatically included</li>
+        </ol>
+      </div>
+
+      <div class="pathway">
+        <div class="pathway-header">C — Upload a document (PDF or Word, max 20 MB)</div>
+        <ol>
+          <li>Start a new chat</li>
+          <li>Click the <strong>paperclip icon</strong> in the chat input and select your file</li>
+          <li>Claude extracts the text and images, and proposes how to format it on the site</li>
+          <li>Review the proposed title, content type, and slug — make any corrections</li>
+          <li>Confirm with "looks good" — Claude creates the content</li>
+          <li>Images from the document can be embedded; Claude will reference them automatically</li>
+        </ol>
+      </div>
+
+      <h3>What happens after you submit</h3>
+      <div class="help-callout info">
+        <strong>Editors and admins:</strong> Content publishes immediately. You'll see a confirmation message in the chat. A green "Saved and published" notice confirms the change has been committed and will deploy on the next push.<br><br>
+        <strong>Contributors and Group Leads (outside own group):</strong> Content is saved as a draft and sent for approval. You'll see "Your [type] has been saved and is awaiting approval." Watch for the notification on your next login.
+      </div>
+
+      <h3>Editing existing content</h3>
+      <p>Go to the <strong>Content</strong> tab, find the item, and click <strong>Edit in Chat</strong>. A new conversation opens with the current content loaded. Tell Claude what to change — it will show you a diff and ask for confirmation before saving.</p>
+      <p>For quick frontmatter edits (changing a title, date, or featured flag without touching the body), use the <strong>Quick Edit</strong> option instead — it opens an inline form.</p>
+
+      <h3>Deleting content</h3>
+      <p>Find the item in the Content browser and click <strong>Delete</strong>. You'll be asked to confirm. Deletion is permanent — editors and admins only.</p>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 4. CONTENT TYPES                                         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="content-types">
+      <h2>Content Types</h2>
+      <p class="section-intro">There are seven content types on the MMTUK site. Use this as a quick reference when Claude asks you which type to create.</p>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">Article</span>
+          <span class="ctype-badge" style="background:#e8f0fe;color:#1a56db;">Most common</span>
+        </div>
+        <div class="ctype-body">
+          <p>In-depth educational pieces, commentary, and research. The bulk of the site's content.</p>
+          <ul>
+            <li><strong>Category</strong> (required) — see <a href="#editorial-guide">Editorial Guide</a> for which to choose</li>
+            <li><strong>Author</strong> — defaults to "MMTUK" if not specified</li>
+            <li><strong>Read time</strong> — estimated minutes; defaults to 5</li>
+            <li><strong>Featured</strong> — mark to surface the article in homepage and section hero slots</li>
+          </ul>
+          <div class="ctype-where">
+            <strong>Appears on:</strong>
+            <code>/research</code> (Research category) · <code>/education</code> (Core Ideas, Core Insights, But what about...?) · linked from other articles
+          </div>
+        </div>
+      </div>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">Briefing</span>
+          <span class="ctype-badge" style="background:#f0fff4;color:#276749;">Long-form</span>
+        </div>
+        <div class="ctype-body">
+          <p>Longer, more rigorous analysis — often from external MMT economists or reprinted from Substack. Use URL import to create these quickly.</p>
+          <ul>
+            <li><strong>Source fields</strong> — <code>sourceUrl</code>, <code>sourcePublication</code>, <code>sourceAuthor</code> — filled automatically on URL import</li>
+            <li><strong>Typical read time:</strong> 8–15 minutes</li>
+          </ul>
+          <div class="ctype-where">
+            <strong>Appears on:</strong>
+            <code>/research</code> — the three most recent briefings are shown in the Briefings section
+          </div>
+        </div>
+      </div>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">News</span>
+          <span class="ctype-badge" style="background:#fffbea;color:#744210;">Announcements</span>
+        </div>
+        <div class="ctype-body">
+          <p>Organisational news, press releases, and event announcements at a national level.</p>
+          <ul>
+            <li><strong>Category</strong>: Announcement · Event · Press Release · Update</li>
+          </ul>
+          <div class="ctype-where">
+            <strong>Appears on:</strong>
+            <code>/about-us</code> → News section
+          </div>
+        </div>
+      </div>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">Local Event</span>
+          <span class="ctype-badge" style="background:#faf5ff;color:#553c9a;">Group content</span>
+        </div>
+        <div class="ctype-body">
+          <p>Events run by or for a local group — meetups, workshops, screenings, panels.</p>
+          <ul>
+            <li><strong>Local group</strong> (required): brighton · london · oxford · pennines · scotland · solent</li>
+            <li><strong>Date &amp; location</strong> — both required</li>
+            <li><strong>Event type tag</strong> — e.g. "Workshop", "Meetup", "Screening"</li>
+            <li>Events <strong>auto-archive</strong> 7 days after their end date</li>
+          </ul>
+          <div class="ctype-where">
+            <strong>Appears on:</strong>
+            <code>/community</code> and <code>/local-group/[group]</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">Local News</span>
+          <span class="ctype-badge" style="background:#faf5ff;color:#553c9a;">Group content</span>
+        </div>
+        <div class="ctype-body">
+          <p>Updates, announcements, and short news items from a specific local chapter.</p>
+          <ul>
+            <li><strong>Local group</strong> (required) — same six groups as local events</li>
+            <li>Shorter than national news — 1–3 paragraphs is typical</li>
+          </ul>
+          <div class="ctype-where">
+            <strong>Appears on:</strong>
+            <code>/community</code> and <code>/local-group/[group]</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">Bio</span>
+          <span class="ctype-badge" style="background:#fef3f2;color:#9b2c2c;">Admin only</span>
+        </div>
+        <div class="ctype-body">
+          <p>Team member and advisor profiles. Only admins can create bios.</p>
+          <ul>
+            <li>Includes name, role, photo, and optional LinkedIn/website links</li>
+            <li>Mark <code>advisoryBoard: true</code> to appear in the Advisory Board section</li>
+          </ul>
+          <div class="ctype-where">
+            <strong>Appears on:</strong>
+            <code>/about-us</code> → Steering Group and Advisory Board sections
+          </div>
+        </div>
+      </div>
+
+      <div class="ctype-card">
+        <div class="ctype-header">
+          <span class="ctype-name">Ecosystem Entry</span>
+          <span class="ctype-badge" style="background:#e2e8f0;color:#4a5568;">Directory</span>
+        </div>
+        <div class="ctype-body">
+          <p>Organisations, projects, and allies in the broader MMT ecosystem — think tanks, academic groups, advocacy organisations.</p>
+          <ul>
+            <li>Includes website, country, and type classification</li>
+            <li>No public page yet — coming soon</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 5. APPROVALS                                             -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="approvals">
+      <h2>Approvals</h2>
+      <p class="section-intro">Content from contributors goes through an approval step before it appears on the site.</p>
+
+      <h3>For Contributors — what happens to your drafts</h3>
+      <ol>
+        <li>You submit content via chat</li>
+        <li>You see "Your [type] has been saved and is awaiting approval"</li>
+        <li>An editor or admin reviews it in the Pending Approvals dashboard</li>
+        <li>If approved — you'll see "Your [title] has been approved and published!" on your next login</li>
+        <li>If rejected — you'll see the feedback message explaining what to change. Start a new chat to revise and resubmit</li>
+      </ol>
+      <div class="help-callout info">
+        There is no editing of an existing draft. If your draft is rejected, create a new conversation and resubmit the corrected version.
+      </div>
+
+      <h3>For Editors and Admins — how to approve</h3>
+      <ol>
+        <li>Click <strong>Pending Approvals</strong> in the sidebar footer</li>
+        <li>The list shows: who created it, content type, when submitted</li>
+        <li>Click <strong>Review</strong> to open the detail view</li>
+        <li>Left panel: metadata (title, type, author, slug, date)</li>
+        <li>Right panel: full markdown preview — exactly how it will appear on the site</li>
+        <li>Check: Does it meet our editorial standards? Is the category correct? Is the slug sensible?</li>
+        <li>Click <strong>Approve &amp; Publish</strong> — it commits to git and deploys</li>
+        <li>Or click <strong>Reject</strong> — enter feedback; the contributor is notified on their next login</li>
+      </ol>
+
+      <h3>For Group Leads</h3>
+      <p>You can only approve local events and local news from your assigned group. Content from other groups will appear in the Pending list but the Approve button will be disabled.</p>
+
+      <h3>Giving useful rejection feedback</h3>
+      <p>Good rejection feedback is specific. Instead of "not suitable", try:</p>
+      <ul>
+        <li><em>"Title needs to be more specific — try 'How Bank of England Rate Decisions Don't Control Inflation'"</em></li>
+        <li><em>"Category should be 'Commentary' not 'Research' — this is opinion not a research paper"</em></li>
+        <li><em>"Missing source attribution — where does the data in paragraph 3 come from?"</em></li>
+      </ul>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 6. EDITORIAL GUIDE                                       -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="editorial-guide">
+      <h2>Editorial Guide</h2>
+      <p class="section-intro">What MMTUK publishes, and why. Read this before creating content.</p>
+
+      <h3>Our purpose</h3>
+      <p>MMTUK exists to explain how money and the UK economy actually work, and to connect that understanding to progressive policy. Our content should always:</p>
+      <ul>
+        <li>Be <strong>grounded in institutional reality</strong> — how the Bank of England, HM Treasury, and HMRC actually operate; not how mainstream textbooks say they do</li>
+        <li>Be <strong>UK-specific</strong> — reference pound sterling, Bank Rate, OBR, ONS, fiscal rules; not generic "the government" without context</li>
+        <li>Connect <strong>theory to policy</strong> — every piece of theory should land in a concrete policy implication (Job Guarantee, Green New Deal, ZIRP, public investment, etc.)</li>
+        <li>Be <strong>accessible</strong> — no assumed economics background; jargon explained on first use</li>
+      </ul>
+
+      <h3>Article categories — which one to use</h3>
+      <table class="cat-table">
+        <thead>
+          <tr><th>Category</th><th>Use when</th><th>Typical length</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Core Ideas</td>
+            <td>Explaining a foundational MMT concept for the first time — e.g. "What is a Job Guarantee?" or "Why taxes don't fund spending"</td>
+            <td>4–6 min read</td>
+          </tr>
+          <tr>
+            <td>Core Insights</td>
+            <td>A sharper, more specific insight — e.g. "Why the BoE can't run out of reserves" or "The accounting identity behind the deficit"</td>
+            <td>3–5 min read</td>
+          </tr>
+          <tr>
+            <td>Article</td>
+            <td>Analysis, opinion, or current affairs viewed through an MMT lens — broader than a single insight</td>
+            <td>5–8 min read</td>
+          </tr>
+          <tr>
+            <td>Commentary</td>
+            <td>Topical response to a news event or policy announcement — time-sensitive</td>
+            <td>3–5 min read</td>
+          </tr>
+          <tr>
+            <td>Research</td>
+            <td>Academic-style, evidence-heavy, longer-form — cites sources, uses data, makes a scholarly argument</td>
+            <td>8–15 min read</td>
+          </tr>
+          <tr>
+            <td>But what about...?</td>
+            <td>Directly rebutting a named common objection to MMT — must use <strong>rebuttal</strong> layout</td>
+            <td>3–6 min read</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>What we need more of</h3>
+      <ol>
+        <li><strong>"But what about...?" rebuttals</strong> — the Education page lists 10 objection topics that each need a linked article. These are high priority.</li>
+        <li><strong>Local group event write-ups</strong> — after every meetup or event, a short local news item keeps the Community page active</li>
+        <li><strong>Briefings from UK-based economists and writers</strong> — import from Substack via URL; source attribution is automatic</li>
+        <li><strong>Core Insights</strong> tied to current UK news — e.g. an insight on Bank Rate after an MPC announcement</li>
+      </ol>
+
+      <h3>What we don't publish</h3>
+      <ul>
+        <li>Pure party political analysis — MMTUK is cross-party</li>
+        <li>Content that treats government finances like a household budget without immediately correcting it</li>
+        <li>Ideological advocacy that isn't grounded in how the monetary system actually works</li>
+        <li>Speculation presented as fact — if it's contested, say so</li>
+      </ul>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 7. STYLE GUIDE                                           -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="style-guide">
+      <h2>Style Guide</h2>
+      <p class="section-intro">How MMTUK content is written — voice, structure, and UK conventions.</p>
+
+      <h3>Voice and tone</h3>
+      <ul>
+        <li><strong>Direct and declarative</strong> — "The government creates money when it spends" not "Some economists argue that..."</li>
+        <li><strong>Confident in heterodoxy</strong> — we challenge mainstream economics; we don't hedge our core claims with "arguably" or "perhaps"</li>
+        <li><strong>Plain language</strong> — a motivated sixth-former should be able to follow the argument from beginning to end</li>
+        <li><strong>Precise</strong> — accounting identities, operational flows, and institutional detail matter; get them right</li>
+        <li><strong>Not preachy</strong> — explain the mechanics; let readers draw their own policy conclusions</li>
+        <li><strong>Not tribal</strong> — we engage seriously with counterarguments rather than dismissing them</li>
+      </ul>
+
+      <h3>Structural patterns that work</h3>
+      <ul>
+        <li>Open with the mainstream claim or myth — then show why it doesn't describe how things actually work</li>
+        <li>Use <strong>numbered steps</strong> to walk through a monetary operation (e.g. "How government spending creates bank reserves, step by step")</li>
+        <li>Include a short "In a nutshell" summary <em>before</em> a long technical section — not just at the end</li>
+        <li>Anticipate the obvious objection and address it explicitly — don't wait for a comment section</li>
+        <li>Close with the <strong>policy implication</strong> — what changes if this understanding is correct?</li>
+      </ul>
+
+      <h3>Headings</h3>
+      <p>Use <strong>H2 headings only</strong>. The site's CSS renders H3 and below the same size as H2, so adding a third heading level creates visual confusion with no benefit. If you need a sub-structure within a section, use bold text or a definition list instead.</p>
+
+      <h3>Links</h3>
+      <ul>
+        <li>Link to related MMTUK articles wherever relevant — this builds the internal knowledge structure</li>
+        <li>When quoting external sources, always link to the original</li>
+        <li>Don't link to paywalled content without noting that it's paywalled</li>
+      </ul>
+
+      <h3>UK English conventions</h3>
+      <ul>
+        <li>Organisation (not organization); labour (the economic factor); Labour (the political party)</li>
+        <li><strong>£</strong> not $ — we write about the UK economy</li>
+        <li>"Chancellor" not "Treasury Secretary"; "Bank Rate" not "Fed Funds Rate"</li>
+        <li>Name UK institutions: BoE, OBR, ONS, HMRC, HM Treasury — not generic "the central bank" or "the government"</li>
+        <li>Dates: 25 February 2026 (not Feb 25 or 25/02/26)</li>
+      </ul>
+
+      <h3>Images</h3>
+      <ul>
+        <li><strong>16:9 ratio</strong> for article thumbnails and briefing covers</li>
+        <li><strong>Square (1:1)</strong> for bio photos</li>
+        <li>Use <strong>descriptive alt text</strong> — required for accessibility and SEO</li>
+        <li>Avoid stock photos of coin stacks, vault doors, or piggy banks — they reinforce exactly the wrong mental models about money</li>
+        <li>Prefer charts, diagrams, infographics, and event photography</li>
+      </ul>
+
+      <h3>Numbers and statistics</h3>
+      <ul>
+        <li>Spell out numbers one through nine; use numerals for 10 and above</li>
+        <li>Use £bn and £tn for large figures (£200bn, £2tn) — not "£200 billion"</li>
+        <li>Always cite the source of statistics; link where possible</li>
+      </ul>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 8. PAGE MANAGER                                          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="page-manager">
+      <h2>Page Manager</h2>
+      <p class="section-intro">Edit the text on MMTUK's static pages — Home, Research, Education, Community, and more.</p>
+
+      <div class="help-callout warning">
+        <strong>Editors and Admins only.</strong> The Pages tab is not visible to contributors or group leads.
+      </div>
+
+      <h3>How to edit a page</h3>
+      <ol>
+        <li>Click the <strong>Pages</strong> tab in the sidebar</li>
+        <li>Select the page you want to edit</li>
+        <li>You'll see a list of sections (Hero, Features, FAQ, etc.)</li>
+        <li>Click <strong>Edit</strong> next to the section you want to change</li>
+        <li>Fill in or update the fields</li>
+        <li>Click <strong>Save &amp; Publish</strong></li>
+        <li>The change commits to git and will deploy automatically on the next push</li>
+      </ol>
+
+      <h3>Field types</h3>
+      <table class="perm-table">
+        <thead>
+          <tr><th>Type</th><th>How it works</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Text field</td>
+            <td>Single line of text — for headlines, labels, button text, short descriptions</td>
+          </tr>
+          <tr>
+            <td>Markdown field</td>
+            <td>Rich text with a WYSIWYG editor — supports bold, italic, headings, lists, and links. Use H2 only (see Style Guide)</td>
+          </tr>
+          <tr>
+            <td>Text list</td>
+            <td>One item per line in a textarea — used for bullet lists or tag groups</td>
+          </tr>
+          <tr>
+            <td>Item list</td>
+            <td>Repeating structured items — e.g. FAQ entries, feature cards, team member cards. Use the + / − buttons to add or remove items</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Admin-only fields</h3>
+      <div class="help-callout admin">
+        <strong>Site Config is admin-only</strong> and contains sensitive integration fields: Discord invite URL, Stripe payment links (Supporter, Founder, Patron tiers), and the Action Network form ID. These are not visible to editors.
+      </div>
+
+      <h3>What the Page Manager can't do</h3>
+      <ul>
+        <li>Add new sections to a page — that requires a code change</li>
+        <li>Change the page layout, design, or component structure</li>
+        <li>Upload images — use the Media Library for that, then paste the image path into the relevant field</li>
+      </ul>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 9. MEDIA LIBRARY                                         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="media">
+      <h2>Media Library</h2>
+      <p class="section-intro">All images and files used on the site are stored here.</p>
+
+      <div class="help-callout warning">
+        <strong>Admins, Editors, and Group Leads only.</strong> Contributors cannot upload or manage media.
+      </div>
+
+      <h3>Uploading an image</h3>
+      <ol>
+        <li>Click <strong>Media Library</strong> in the sidebar footer</li>
+        <li>Click <strong>Upload Image</strong></li>
+        <li>Select a file — JPG, PNG, WebP, or GIF, max 10 MB</li>
+        <li>The image is saved to the repository and a path like <code>/images/my-image.webp</code> is shown</li>
+        <li>Copy that path and paste it into any image field in a content form or page editor</li>
+      </ol>
+
+      <h3>Image guidelines</h3>
+      <table class="perm-table">
+        <thead>
+          <tr><th>Property</th><th>Guidance</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Format</td>
+            <td>WebP preferred — smaller files, same quality. The CMS accepts JPG and PNG and stores them as-is</td>
+          </tr>
+          <tr>
+            <td>File size</td>
+            <td>Under 500 KB for article thumbnails. Hero images up to 1 MB. Compress before uploading if needed</td>
+          </tr>
+          <tr>
+            <td>Aspect ratio</td>
+            <td>16:9 for article thumbnails and briefing covers. Square (1:1) for bio photos. 3:2 for event images</td>
+          </tr>
+          <tr>
+            <td>Filename</td>
+            <td>Descriptive, hyphenated lowercase: <code>job-guarantee-paper-cover.webp</code> not <code>IMG_4521.JPG</code></td>
+          </tr>
+          <tr>
+            <td>Alt text</td>
+            <td>Always write descriptive alt text when the form asks for it — required for accessibility and SEO</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Deleting images</h3>
+      <p>Images can be deleted from the Media Library, but check first that they are not in use on any page or article. Deleting an image that is referenced in content will cause a broken image on the live site.</p>
+    </section>
+
+  </div><!-- /help-content -->
+</div><!-- /help-wrap -->
+
+<script>
+(function () {
+  var navLinks = document.querySelectorAll('.help-nav-link');
+  var sections = document.querySelectorAll('.help-section[id]');
+
+  // Active link highlighting via IntersectionObserver
+  var activeId = null;
+
+  function setActive(id) {
+    if (id === activeId) return;
+    activeId = id;
+    navLinks.forEach(function (link) {
+      var isActive = link.getAttribute('href') === '#' + id;
+      link.classList.toggle('active', isActive);
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          setActive(entry.target.id);
+        }
+      });
+    }, {
+      root: document.getElementById('helpContent'),
+      rootMargin: '-10% 0px -80% 0px',
+      threshold: 0
+    });
+
+    sections.forEach(function (sec) { observer.observe(sec); });
+  }
+
+  // Smooth scroll on nav link click
+  navLinks.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      var targetId = this.getAttribute('href').slice(1);
+      var target = document.getElementById(targetId);
+      if (!target) return;
+      e.preventDefault();
+      var content = document.getElementById('helpContent');
+      var offset = target.offsetTop - 24;
+      content.scrollTo({ top: offset, behavior: 'smooth' });
+      setActive(targetId);
+    });
+  });
+
+  // Set initial active state based on scroll position
+  setActive(sections[0] ? sections[0].id : null);
+})();
+</script>
+{% endblock %}

@@ -90,6 +90,7 @@
       </nav>
       <div class="sidebar-footer">
         <a href="{% url 'media_library' %}" class="sidebar-link">Media Library</a>
+        <a href="{% url 'help' %}" class="sidebar-link {% if request.resolver_match.url_name == 'help' %}active{% endif %}">Help</a>
         {% if profile.role == 'admin' %}
         <a href="{% url 'site_config_editor' %}" class="sidebar-link">Site Config</a>
         {% endif %}
@@ -194,6 +195,7 @@
       { label: 'New Chat',          icon: '+',   url: '{% url "new_conversation" %}',  section: 'Actions' },
       { label: 'Content Browser',   icon: '📄',  url: '{% url "content_browser" %}',   section: 'Navigate' },
       { label: 'Media Library',     icon: '🖼',  url: '{% url "media_library" %}',     section: 'Navigate' },
+      { label: 'Help',              icon: '?',   url: '{% url "help" %}',              section: 'Navigate' },
       {% if profile.role == 'admin' or profile.role == 'editor' %}
       { label: 'Page Manager',      icon: '📝',  url: '{% url "page_manager" %}',      section: 'Navigate' },
       {% endif %}

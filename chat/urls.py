@@ -51,4 +51,6 @@ urlpatterns = [
     # Site config (admin-only)
     path('site-config/', views.site_config_editor, name='site_config_editor'),
     path('api/site-config/', views.site_config_api, name='site_config_api'),
+    # Help
+    path('help/', views.help_view, name='help'),
 ]

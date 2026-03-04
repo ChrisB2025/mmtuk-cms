@@ -3153,3 +3153,10 @@ def site_config_api(request):
     except Exception as e:
         logger.exception("site_config_api error")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def help_view(request):
+    """Help section — editorial guide, roles, and CMS how-tos."""
+    profile = request.user.profile
+    return render(request, 'chat/help.html', {'profile': profile})
