@@ -252,11 +252,11 @@ def commit_locally(files, commit_message, author_name='MMTUK CMS', author_email=
             if full_path.exists():
                 repo.index.add([f])
             else:
-                # File was deleted — stage the removal
+                # File was deleted — stage the removal via git rm --cached
                 try:
-                    repo.index.remove([f])
-                except Exception:
-                    logger.warning('Could not stage removal of %s', f)
+                    repo.git.rm('--cached', '--force', str(f))
+                except git.GitCommandError as exc:
+                    logger.warning('Could not stage removal of %s: %s', f, exc)
 
         # Commit
         actor = git.Actor(author_name, author_email)
