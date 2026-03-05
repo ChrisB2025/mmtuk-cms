@@ -139,7 +139,7 @@
           headers: { 'X-CSRFToken': csrf },
         }).then(function() {
           btn.closest('li').remove();
-          if (isActive) window.location.href = '/';
+          if (isActive) window.location.href = '/cms/';
         }).catch(function() {
           btn.innerHTML = originalHTML;
           btn.title = 'Delete failed — try again';

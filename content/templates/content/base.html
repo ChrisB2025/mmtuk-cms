@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MMTUK{% endblock %} | MMTUK</title>
+  <meta name="description" content="{% block meta_description %}MMTUK promotes better public understanding of money, economics and government spending.{% endblock %}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{% block og_title %}MMTUK{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}MMTUK promotes better public understanding of money, economics and government spending.{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{% static 'content/images/og-image.webp' %}{% endblock %}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/webp" href="{% static 'content/images/favicon.webp' %}">
+  <link rel="apple-touch-icon" href="{% static 'content/images/webclip.webp' %}">
+
+  <!-- Tailwind CSS (includes self-hosted Montserrat @font-face) -->
+  <link href="{% static 'content/css/output.css' %}" rel="stylesheet">
+
+  {% block extra_head %}{% endblock %}
+
+  <!-- Analytics -->
+  <script defer src="https://mmtuk-analytics.up.railway.app/script.js" data-website-id="f63fc379-0150-482b-8bd3-8a0ed540a58c"></script>
+
+  <style>
+    body {
+      font-size: 1.0625rem;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+</head>
+<body class="bg-background font-body text-downriver">
+  <div class="min-h-screen flex flex-col">
+    {% include "content/includes/navbar.html" %}
+    <main class="flex-1">
+      {% block content %}{% endblock %}
+    </main>
+    {% include "content/includes/footer.html" %}
+  </div>
+  {% include "content/includes/consent_banner.html" %}
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

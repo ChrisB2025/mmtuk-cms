@@ -1,0 +1,102 @@
+{% extends "content/base.html" %}
+
+{% block title %}Cookie Preferences{% endblock %}
+{% block meta_description %}Manage your cookie preferences on the MMTUK website.{% endblock %}
+
+{% block content %}
+<section class="py-16 md:py-24">
+  <div class="px-[5%]">
+    <div class="max-w-3xl mx-auto">
+      <h4 class="text-2xl font-bold text-downriver mb-2">{{ title }}</h4>
+      <p class="text-neutral italic mb-8">Last updated: {{ last_updated }}</p>
+
+      <div class="prose prose-lg max-w-none prose-headings:text-downriver prose-headings:font-bold prose-a:text-accent prose-a:underline hover:prose-a:text-accent-hover prose-strong:text-downriver mb-8">
+        {{ intro_html|safe }}
+      </div>
+
+      <h6 class="text-base font-bold text-downriver mb-3">Your current preference</h6>
+      <div id="consent-status" class="bg-[#f5f0e8] border border-secondary rounded-md px-5 py-4 mb-6">
+        <p id="consent-status-text" class="font-semibold text-downriver m-0">Checking your preference...</p>
+        <p id="consent-status-detail" class="text-sm text-shuttle-gray mt-2 m-0"></p>
+      </div>
+
+      <div class="flex flex-wrap gap-3 mb-8">
+        <button id="btn-change-preference" class="px-5 py-2.5 text-sm font-semibold bg-accent text-white rounded hover:bg-accent-hover transition-colors cursor-pointer">Change preference</button>
+        <button id="btn-reset-preference" class="px-5 py-2.5 text-sm font-semibold bg-transparent border border-downriver text-downriver rounded hover:bg-downriver hover:text-white transition-colors cursor-pointer">Reset preferences</button>
+      </div>
+
+      <div class="prose prose-lg max-w-none prose-headings:text-downriver prose-headings:font-bold prose-a:text-accent prose-a:underline hover:prose-a:text-accent-hover prose-strong:text-downriver">
+        {{ services_html|safe }}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  function updateStatusDisplay() {
+    var statusText = document.getElementById('consent-status-text');
+    var statusDetail = document.getElementById('consent-status-detail');
+    if (!statusText || !statusDetail) return;
+
+    var api = window.mmtukConsent;
+    if (!api) return;
+
+    var consent = api.get();
+    if (!consent) {
+      statusText.textContent = 'No preference set';
+      statusDetail.textContent = 'You have not yet made a cookie choice. The consent banner will appear at the bottom of the page.';
+    } else if (consent.consent === 'all') {
+      statusText.textContent = 'All cookies accepted';
+      var date = new Date(consent.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      statusDetail.textContent = 'You accepted all cookies on ' + date + '. This preference expires after 12 months.';
+    } else {
+      statusText.textContent = 'Necessary cookies only';
+      var date = new Date(consent.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      statusDetail.textContent = 'You chose necessary cookies only on ' + date + '. This preference expires after 12 months.';
+    }
+  }
+
+  function initPreferencesPage() {
+    var changeBtn = document.getElementById('btn-change-preference');
+    var resetBtn = document.getElementById('btn-reset-preference');
+    var api = window.mmtukConsent;
+
+    updateStatusDisplay();
+
+    if (changeBtn && api) {
+      changeBtn.addEventListener('click', function() {
+        api.show();
+      });
+    }
+
+    if (resetBtn && api) {
+      resetBtn.addEventListener('click', function() {
+        api.reset();
+        updateStatusDisplay();
+      });
+    }
+
+    window.addEventListener('mmtuk-consent-changed', function() {
+      updateStatusDisplay();
+    });
+  }
+
+  function init() {
+    if (!window.mmtukConsent) {
+      window.addEventListener('mmtuk-consent-ready', init, { once: true });
+      return;
+    }
+    initPreferencesPage();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+{% endblock %}

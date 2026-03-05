@@ -1,0 +1,8 @@
+{
+  "content": {
+    "title": "Cookie Preferences",
+  "last_updated": "February 2026",
+  "intro": "###### How we use cookies\n\nWe use cookies and similar technologies to run this site securely. We only set **non-essential** cookies when you interact with third-party features (such as ActionNetwork forms), and we respect your preferences under UK GDPR.\n\n###### Cookie categories\n\n**Strictly necessary (always on):** Session and security cookies from Railway hosting, and your consent preference stored in your browser's localStorage. These are essential for the site to function and cannot be disabled.\n\n**Functional — ActionNetwork (opt-in):** When you interact with an ActionNetwork form (e.g. signing up for a newsletter or registering for an event), ActionNetwork may set cookies for form functionality and subscriber identification. These cookies are only set when you actively use a form, not on page load.",
+  "services_list": "###### Cookies and services\n\n- **Railway** (strictly necessary) — hosting platform; may set session/security cookies.\n- **Consent storage** (strictly necessary) — your cookie preference is saved in localStorage (not a cookie) and expires after 12 months.\n- **ActionNetwork** (functional) — newsletter sign-up, event registration, and donation forms. Cookies are set only when you interact with a form.\n- **Stripe** (strictly necessary, via ActionNetwork) — payment processing for donations. Stripe sets its own cookies during payment flows.\n\nFor questions about cookies or data processing, contact **contact@mmtuk.org**."
+  }
+}

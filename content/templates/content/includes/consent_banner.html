@@ -1,0 +1,100 @@
+<!-- Cookie consent banner -->
+<div id="cookie-consent-banner" class="fixed bottom-0 left-0 right-0 bg-footer-bg text-white px-4 sm:px-6 py-4 z-[9999] shadow-[0_-2px_10px_rgba(0,0,0,0.2)]" style="display: none;">
+  <div class="max-w-[1200px] mx-auto flex flex-wrap items-center justify-between gap-4">
+    <p class="flex-1 min-w-[280px] text-sm leading-relaxed m-0">
+      We use essential cookies to run this site. ActionNetwork forms use additional cookies when you interact with them.
+      <a href="{% url 'website:privacy_policy' %}" class="text-secondary underline hover:text-[#f0dfc0]">Privacy Policy</a> &middot;
+      <a href="{% url 'website:cookie_preferences' %}" class="text-secondary underline hover:text-[#f0dfc0]">Cookie Settings</a>
+    </p>
+    <div class="flex gap-3 flex-shrink-0">
+      <button id="cookie-necessary" class="px-6 py-2.5 text-sm font-semibold rounded border border-white text-white bg-transparent hover:bg-white/10 active:translate-y-0 hover:-translate-y-px transition-all cursor-pointer">Necessary only</button>
+      <button id="cookie-accept" class="px-6 py-2.5 text-sm font-semibold rounded bg-accent text-white hover:bg-accent-hover active:translate-y-0 hover:-translate-y-px transition-all cursor-pointer">Accept all</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var CONSENT_KEY = 'mmtuk_cookie_consent';
+  var CONSENT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+
+  function getConsent() {
+    try {
+      var raw = localStorage.getItem(CONSENT_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !data.consent || !data.timestamp) return null;
+      if (Date.now() - data.timestamp > CONSENT_MAX_AGE_MS) {
+        localStorage.removeItem(CONSENT_KEY);
+        return null;
+      }
+      return data;
+    } catch(e) {
+      localStorage.removeItem(CONSENT_KEY);
+      return null;
+    }
+  }
+
+  function setConsent(choice) {
+    var data = { consent: choice, timestamp: Date.now() };
+    localStorage.setItem(CONSENT_KEY, JSON.stringify(data));
+  }
+
+  function showBanner() {
+    var banner = document.getElementById('cookie-consent-banner');
+    if (banner) banner.style.display = 'block';
+  }
+
+  function hideBanner() {
+    var banner = document.getElementById('cookie-consent-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  function resetConsent() {
+    localStorage.removeItem(CONSENT_KEY);
+    showBanner();
+  }
+
+  window.mmtukConsent = {
+    get: getConsent,
+    set: setConsent,
+    show: showBanner,
+    hide: hideBanner,
+    reset: resetConsent,
+    KEY: CONSENT_KEY
+  };
+  window.dispatchEvent(new CustomEvent('mmtuk-consent-ready'));
+
+  function initCookieConsent() {
+    var acceptBtn = document.getElementById('cookie-accept');
+    var necessaryBtn = document.getElementById('cookie-necessary');
+
+    var existing = getConsent();
+    if (!existing) {
+      showBanner();
+    }
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', function() {
+        setConsent('all');
+        hideBanner();
+        window.dispatchEvent(new CustomEvent('mmtuk-consent-changed'));
+      });
+    }
+
+    if (necessaryBtn) {
+      necessaryBtn.addEventListener('click', function() {
+        setConsent('necessary');
+        hideBanner();
+        window.dispatchEvent(new CustomEvent('mmtuk-consent-changed'));
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCookieConsent);
+  } else {
+    initCookieConsent();
+  }
+})();
+</script>

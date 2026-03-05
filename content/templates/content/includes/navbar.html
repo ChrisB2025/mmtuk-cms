@@ -1,0 +1,388 @@
+{% load static %}
+<header class="sticky top-0 z-50 bg-background" role="banner">
+  <div class="px-[5%]">
+    <div class="flex items-center justify-between">
+      <!-- Logo -->
+      <a href="/" class="flex-shrink-0">
+        <img loading="eager" height="40" width="160" alt="MMTUK Logo" src="{% static 'content/images/mmtuk-logo.webp' %}" class="h-10 w-auto">
+      </a>
+
+      <!-- Desktop nav (links + buttons in one flex container with space-between) -->
+      <nav role="navigation" class="hidden lg:flex items-center flex-1 justify-between ml-6">
+        <div class="flex items-center">
+          <a href="/research" class="nav-link relative px-4 py-6 font-medium text-[#0c0800] hover:text-accent transition-colors" data-meganav-trigger="research" aria-haspopup="true" aria-expanded="false">Research</a>
+          <a href="/education" class="nav-link relative px-4 py-6 font-medium text-[#0c0800] hover:text-accent transition-colors" data-meganav-trigger="education" aria-haspopup="true" aria-expanded="false">Education</a>
+          <a href="/community" class="nav-link relative px-4 py-6 font-medium text-[#0c0800] hover:text-accent transition-colors" data-meganav-trigger="community" aria-haspopup="true" aria-expanded="false">Community</a>
+          <a href="/about-us" class="nav-link relative px-4 py-6 font-medium text-[#0c0800] hover:text-accent transition-colors" data-meganav-trigger="about-us" aria-haspopup="true" aria-expanded="false">About Us</a>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/donate" class="flex items-center justify-center px-3 py-1.5 font-medium border border-[rgba(12,8,0,0.15)] text-[#0c0800] bg-transparent rounded-[12px] shadow-[0_1px_2px_rgba(10,30,63,0.08),0_2px_4px_rgba(10,30,63,0.06)] hover:bg-[rgba(12,8,0,0.05)] hover:-translate-y-px hover:shadow-[0_4px_8px_rgba(10,30,63,0.12),0_2px_4px_rgba(10,30,63,0.08)] active:translate-y-0 transition-all duration-200">Donate</a>
+          <a href="/join" class="flex items-center justify-center px-3 py-1.5 font-medium border border-downriver bg-footer-bg text-white rounded-[12px] shadow-[0_1px_2px_rgba(10,30,63,0.08),0_2px_4px_rgba(10,30,63,0.06)] hover:bg-[#081832] hover:border-[#081832] hover:-translate-y-px hover:shadow-[0_4px_8px_rgba(10,30,63,0.12),0_2px_4px_rgba(10,30,63,0.08)] active:translate-y-0 transition-all duration-200">Join</a>
+        </div>
+      </nav>
+
+      <!-- Mobile hamburger -->
+      <button class="lg:hidden flex flex-col justify-center items-center w-10 h-10 gap-[5px] group" id="mobile-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span class="hamburger-line block w-6 h-[2px] bg-downriver transition-all duration-300 origin-center"></span>
+        <span class="hamburger-line block w-6 h-[2px] bg-downriver transition-all duration-300 origin-center"></span>
+        <span class="hamburger-line block w-6 h-[2px] bg-downriver transition-all duration-300 origin-center"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="lg:hidden hidden bg-background border-t border-secondary overflow-auto" role="navigation" style="max-height: calc(100dvh - 56px);">
+    <div class="px-[5%] py-6 pb-24">
+      <div class="mobile-nav-item">
+        <a href="/research" class="mobile-nav-heading flex items-center justify-center w-full py-3 text-lg font-medium text-downriver" data-mobile-trigger="research">
+          Research
+          <svg class="mobile-chevron w-3 h-3 ml-1 transition-transform duration-200" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <div class="mobile-submenu hidden pl-4" data-mobile-section="research">
+          <a href="/research#Job-guarantee" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">Job Guarantee</a>
+          <a href="/research#ZIRP" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">Zero Interest Rate Policy</a>
+          <a href="/research/briefings" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">MMT Briefings</a>
+          <a href="/research#our-approach" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray hover:text-accent transition-colors">Our Approach</a>
+        </div>
+      </div>
+      <div class="mobile-nav-item">
+        <a href="/education" class="mobile-nav-heading flex items-center justify-center w-full py-3 text-lg font-medium text-downriver" data-mobile-trigger="education">
+          Education
+          <svg class="mobile-chevron w-3 h-3 ml-1 transition-transform duration-200" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <div class="mobile-submenu hidden pl-4" data-mobile-section="education">
+          <a href="/education#WhatIsMMT" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">What is MMT?</a>
+          <a href="/education#mmt-core-insights" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">MMT Core Insights</a>
+          <a href="/education#but-what-about" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">But what about...?</a>
+          <a href="/education#AdvisoryServices" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray hover:text-accent transition-colors">Advisory Services</a>
+        </div>
+      </div>
+      <div class="mobile-nav-item">
+        <a href="/community" class="mobile-nav-heading flex items-center justify-center w-full py-3 text-lg font-medium text-downriver" data-mobile-trigger="community">
+          Community
+          <svg class="mobile-chevron w-3 h-3 ml-1 transition-transform duration-200" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <div class="mobile-submenu hidden pl-4" data-mobile-section="community">
+          <a href="/community#Network" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">Local Groups</a>
+          <a href="/community#Events" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">Upcoming Events</a>
+          <a href="/community#discord" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray hover:text-accent transition-colors">Discord Server</a>
+        </div>
+      </div>
+      <div class="mobile-nav-item">
+        <a href="/about-us" class="mobile-nav-heading flex items-center justify-center w-full py-3 text-lg font-medium text-downriver" data-mobile-trigger="about-us">
+          About Us
+          <svg class="mobile-chevron w-3 h-3 ml-1 transition-transform duration-200" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+        <div class="mobile-submenu hidden pl-4" data-mobile-section="about-us">
+          <a href="/about-us#MMTUKNews" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">MMTUK News</a>
+          <a href="/about-us#MMTUKEvents" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray border-b border-black/5 hover:text-accent transition-colors">MMTUK Events</a>
+          <a href="/about-us#SteeringGroup" class="flex items-center min-h-[44px] py-2 text-[0.9375rem] text-shuttle-gray hover:text-accent transition-colors">Steering Group</a>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6 pt-4 border-t border-secondary">
+        <a href="/donate" class="flex-1 text-center px-3 py-2 font-medium border border-[rgba(12,8,0,0.15)] text-[#0c0800] rounded-[12px] shadow-[0_1px_2px_rgba(10,30,63,0.08),0_2px_4px_rgba(10,30,63,0.06)] hover:bg-[rgba(12,8,0,0.05)] transition-all duration-200">Donate</a>
+        <a href="/join" class="flex-1 text-center px-3 py-2 font-medium border border-downriver bg-footer-bg text-white rounded-[12px] shadow-[0_1px_2px_rgba(10,30,63,0.08),0_2px_4px_rgba(10,30,63,0.06)] hover:bg-[#081832] transition-all duration-200">Join</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop MegaNav panel -->
+  <div id="meganav-panel" class="hidden absolute left-0 right-0 bg-background border-b-2 border-secondary shadow-[0_8px_32px_rgba(0,0,0,0.08)] z-40" role="region" aria-label="Site navigation submenu" aria-hidden="true">
+    <div class="px-[5%] py-4 pb-5">
+      <div class="flex justify-between items-start">
+        <!-- Nav columns -->
+        <div class="flex gap-6">
+          <div class="flex flex-col gap-3" data-meganav-section="research">
+            <a href="/research" class="block text-[0.6875rem] font-semibold text-accent uppercase tracking-[0.08em] pb-1.5 border-b border-secondary mb-1 hover:text-accent-hover transition-colors">Research</a>
+            <ul class="space-y-1.5">
+              <li><a href="/research#Job-guarantee" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Job Guarantee</a></li>
+              <li><a href="/research#ZIRP" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Zero Interest Rate Policy</a></li>
+              <li><a href="/research/briefings" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">MMT Briefings</a></li>
+              <li><a href="/research#our-approach" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Our Approach</a></li>
+            </ul>
+          </div>
+          <div class="flex flex-col gap-3" data-meganav-section="education">
+            <a href="/education" class="block text-[0.6875rem] font-semibold text-accent uppercase tracking-[0.08em] pb-1.5 border-b border-secondary mb-1 hover:text-accent-hover transition-colors">Education</a>
+            <ul class="space-y-1.5">
+              <li><a href="/education#WhatIsMMT" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">What is MMT?</a></li>
+              <li><a href="/education#mmt-core-insights" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">MMT Core Insights</a></li>
+              <li><a href="/education#but-what-about" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">But what about...?</a></li>
+              <li><a href="/education#AdvisoryServices" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Advisory Services</a></li>
+            </ul>
+          </div>
+          <div class="flex flex-col gap-3" data-meganav-section="community">
+            <a href="/community" class="block text-[0.6875rem] font-semibold text-accent uppercase tracking-[0.08em] pb-1.5 border-b border-secondary mb-1 hover:text-accent-hover transition-colors">Community</a>
+            <ul class="space-y-1.5">
+              <li><a href="/community#Network" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Local Groups</a></li>
+              <li><a href="/community#Events" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Upcoming Events</a></li>
+              <li><a href="/community#discord" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Discord Server</a></li>
+            </ul>
+          </div>
+          <div class="flex flex-col gap-3" data-meganav-section="about-us">
+            <a href="/about-us" class="block text-[0.6875rem] font-semibold text-accent uppercase tracking-[0.08em] pb-1.5 border-b border-secondary mb-1 hover:text-accent-hover transition-colors">About Us</a>
+            <ul class="space-y-1.5">
+              <li><a href="/about-us#MMTUKNews" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">MMTUK News</a></li>
+              <li><a href="/about-us#MMTUKEvents" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">MMTUK Events</a></li>
+              <li><a href="/about-us#SteeringGroup" class="block text-sm font-normal text-[#1a1a1a] px-2 py-0.5 rounded-md hover:bg-accent/[0.06] hover:text-accent transition-colors">Steering Group</a></li>
+            </ul>
+          </div>
+        </div>
+        <!-- Featured event card -->
+        <div class="w-[250px] flex-shrink-0 border-l border-secondary pl-5">
+          <div class="text-[0.6875rem] font-semibold text-accent uppercase tracking-[0.08em] mb-2">Featured Event</div>
+          <a href="/job-guarantee" class="block group rounded-lg overflow-hidden bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 transition-all duration-200">
+            <div class="aspect-video overflow-hidden bg-secondary">
+              <img loading="lazy" src="/Research/Job_Guarantee/JG_paper_cover.webp" alt="Job Guarantee Policy Paper" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500">
+            </div>
+            <div class="p-2.5 px-3">
+              <div class="text-[0.8125rem] font-semibold text-downriver leading-snug">A Counter-Inflationary Job Guarantee for the UK</div>
+              <div class="text-xs text-shuttle-gray mt-1">Published 25 February 2026</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* Nav link underline animation */
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: currentColor;
+    transition: width 0.3s ease;
+  }
+  .nav-link:hover::after,
+  .nav-link.meganav-trigger--active::after {
+    width: 100%;
+  }
+
+  /* Hamburger animation */
+  #mobile-menu-btn[aria-expanded="true"] .hamburger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  #mobile-menu-btn[aria-expanded="true"] .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+  #mobile-menu-btn[aria-expanded="true"] .hamburger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Mobile chevron rotation */
+  [data-mobile-trigger][aria-expanded="true"] .mobile-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Active mobile heading underline */
+  [data-mobile-trigger][aria-expanded="true"] {
+    color: var(--color-accent);
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  /* Force meganav hidden on mobile */
+  @media (max-width: 1023px) {
+    #meganav-panel {
+      display: none !important;
+    }
+  }
+
+  /* Scroll offset for anchor links */
+  html {
+    scroll-padding-top: 80px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-link::after,
+    .hamburger-line,
+    [data-mobile-trigger] svg {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+(function() {
+  // --- Mobile menu toggle ---
+  var menuBtn = document.getElementById('mobile-menu-btn');
+  var mobileMenu = document.getElementById('mobile-menu');
+
+  if (menuBtn && mobileMenu) {
+    menuBtn.addEventListener('click', function() {
+      var isOpen = menuBtn.getAttribute('aria-expanded') === 'true';
+      menuBtn.setAttribute('aria-expanded', String(!isOpen));
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+
+  // --- Mobile accordion ---
+  var mobileTriggers = document.querySelectorAll('[data-mobile-trigger]');
+  mobileTriggers.forEach(function(trigger) {
+    trigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      var sectionId = this.getAttribute('data-mobile-trigger');
+      var submenu = document.querySelector('[data-mobile-section="' + sectionId + '"]');
+      if (!submenu) return;
+
+      var isOpen = !submenu.classList.contains('hidden');
+
+      // Close all
+      document.querySelectorAll('.mobile-submenu').forEach(function(s) {
+        s.classList.add('hidden');
+      });
+      mobileTriggers.forEach(function(t) {
+        t.setAttribute('aria-expanded', 'false');
+      });
+
+      // Open clicked (if was closed)
+      if (!isOpen) {
+        submenu.classList.remove('hidden');
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // --- Desktop MegaNav ---
+  var panel = document.getElementById('meganav-panel');
+  var triggers = document.querySelectorAll('[data-meganav-trigger]');
+  var closeTimer = null;
+  var activeTrigger = null;
+  var CLOSE_DELAY = 100;
+  var isMobile = function() { return window.innerWidth < 1024; }; // lg breakpoint
+  var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  function panelIsOpen() {
+    return panel && panel.getAttribute('aria-hidden') === 'false';
+  }
+
+  function openPanel(trigger) {
+    if (isMobile()) return;
+    clearTimeout(closeTimer);
+    panel.classList.remove('hidden');
+    panel.setAttribute('aria-hidden', 'false');
+    activeTrigger = trigger;
+    triggers.forEach(function(t) {
+      if (t === trigger) {
+        t.classList.add('meganav-trigger--active');
+        t.setAttribute('aria-expanded', 'true');
+      } else {
+        t.classList.remove('meganav-trigger--active');
+        t.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  function scheduleClose() {
+    if (isMobile()) return;
+    closeTimer = setTimeout(closePanel, CLOSE_DELAY);
+  }
+
+  function closePanel() {
+    if (isMobile() || !panel) return;
+    panel.classList.add('hidden');
+    panel.setAttribute('aria-hidden', 'true');
+    triggers.forEach(function(t) {
+      t.classList.remove('meganav-trigger--active');
+      t.setAttribute('aria-expanded', 'false');
+    });
+    activeTrigger = null;
+  }
+
+  if (panel) {
+    // Touch: first tap opens panel, second tap navigates
+    triggers.forEach(function(trigger) {
+      trigger.addEventListener('click', function(e) {
+        if (isMobile()) return;
+        if (isTouch) {
+          if (panelIsOpen() && activeTrigger === trigger) {
+            closePanel();
+            return;
+          }
+          e.preventDefault();
+          openPanel(trigger);
+        }
+      });
+    });
+
+    // Hover (mouse only)
+    triggers.forEach(function(trigger) {
+      trigger.addEventListener('mouseenter', function() {
+        if (isTouch || isMobile()) return;
+        openPanel(trigger);
+      });
+      trigger.addEventListener('mouseleave', function() {
+        if (isTouch) return;
+        scheduleClose();
+      });
+    });
+
+    panel.addEventListener('mouseenter', function() {
+      if (!isMobile() && !isTouch) clearTimeout(closeTimer);
+    });
+    panel.addEventListener('mouseleave', function() {
+      if (!isTouch) scheduleClose();
+    });
+
+    // Close on outside click (touch)
+    if (isTouch) {
+      document.addEventListener('click', function(e) {
+        if (isMobile() || !panelIsOpen()) return;
+        var inPanel = panel.contains(e.target);
+        var inTrigger = false;
+        triggers.forEach(function(t) {
+          if (t === e.target || t.contains(e.target)) inTrigger = true;
+        });
+        if (!inPanel && !inTrigger) closePanel();
+      });
+    }
+
+    // Keyboard
+    triggers.forEach(function(trigger) {
+      trigger.addEventListener('keydown', function(e) {
+        if (isMobile()) return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          openPanel(trigger);
+          var firstLink = panel.querySelector('.space-y-1\\.5 a');
+          if (firstLink) firstLink.focus();
+        }
+        if (e.key === 'Escape') {
+          closePanel();
+          trigger.focus();
+        }
+      });
+    });
+
+    panel.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var returnTarget = activeTrigger;
+        closePanel();
+        if (returnTarget) returnTarget.focus();
+      }
+    });
+
+    // Close on focus leaving
+    document.addEventListener('focusin', function(e) {
+      if (isMobile() || isTouch || !panelIsOpen()) return;
+      var inPanel = panel.contains(e.target);
+      var inTrigger = false;
+      triggers.forEach(function(t) {
+        if (t === e.target || t.contains(e.target)) inTrigger = true;
+      });
+      if (!inPanel && !inTrigger) closePanel();
+    });
+
+    // Close on sub-link click
+    panel.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        closePanel();
+      });
+    });
+  }
+})();
+</script>
