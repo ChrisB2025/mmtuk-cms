@@ -1,17 +1,276 @@
 {% extends "content/base.html" %}
 
-{% block title %}Home{% endblock %}
-{% block meta_description %}MMTUK promotes better public understanding of money, economics and government spending through Modern Monetary Theory.{% endblock %}
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
 
 {% block content %}
-<section class="py-24 md:py-32">
-  <div class="px-[5%] text-center">
-    <h1 class="text-4xl md:text-5xl font-bold text-downriver mb-6">MMTUK Policy Research Group</h1>
-    <p class="text-lg text-shuttle-gray max-w-2xl mx-auto mb-8">Promoting better public understanding of money, economics and government spending through Modern Monetary Theory.</p>
-    <div class="flex gap-4 justify-center">
-      <a href="/research" class="px-6 py-3 bg-accent text-white font-semibold rounded hover:bg-accent-hover transition-colors">Our Research</a>
-      <a href="/education" class="px-6 py-3 border border-downriver text-downriver font-semibold rounded hover:bg-downriver hover:text-white transition-colors">Learn More</a>
+
+<!-- Hero Section -->
+{% include "content/includes/_hero_slider.html" %}
+
+<!-- Research Section -->
+<header class="px-[5%] bg-background">
+  <div class="h-px w-full bg-secondary"></div>
+  <div class="w-full mx-auto">
+    <div class="py-16 lg:py-20">
+      <div class="max-w-4xl">
+        <div class="mb-4">
+          <h2 class="text-[1.75rem] sm:text-[2.25rem] lg:text-[3rem] font-medium uppercase leading-none tracking-tight text-left text-body-text">
+            {{ research.heading }}
+          </h2>
+        </div>
+        <p class="text-lg text-left text-body-text leading-relaxed">{{ research.description }}</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="px-[5%] bg-background">
+  <div class="w-full mx-auto">
+    <div class="pb-16 lg:pb-20">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-start">
+        {% for card in research.cards %}
+        <div class="reveal-on-scroll">
+          <div class="mb-6">
+            <div class="rounded-[12px] overflow-hidden w-full group">
+              {% if card.image.srcset %}
+              <img
+                sizes="{{ card.image.sizes }}"
+                srcset="{{ card.image.srcset }}"
+                src="{{ card.image.src }}"
+                alt="{{ card.image.alt }}"
+                loading="lazy"
+                class="aspect-video object-cover w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
+              >
+              {% else %}
+              <img
+                src="{{ card.image.src }}"
+                alt="{{ card.image.alt }}"
+                loading="lazy"
+                class="aspect-video object-cover w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
+              >
+              {% endif %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <h3 class="text-xl lg:text-[2rem] font-medium uppercase leading-tight tracking-tight text-body-text">{{ card.heading }}</h3>
+          </div>
+          <p class="text-body-text leading-relaxed">{{ card.body }}</p>
+          <div class="mt-6">
+            <a href="{{ card.href }}" class="inline-flex items-center gap-2 py-1 text-body-text hover:underline font-medium">
+              <span>{{ card.button_label }}</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 </section>
+
+<!-- Education Section -->
+<header class="px-[5%] bg-white/50">
+  <div class="h-px w-full bg-secondary"></div>
+  <div class="w-full mx-auto">
+    <div class="py-16 lg:py-20">
+      <div class="max-w-4xl">
+        <div class="mb-4">
+          <h2 class="text-[1.75rem] sm:text-[2.25rem] lg:text-[3rem] font-medium uppercase leading-none tracking-tight text-left text-body-text">
+            {{ education.heading }}
+          </h2>
+        </div>
+        <p class="text-lg text-left text-body-text leading-relaxed">{{ education.description }}</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="px-[5%] bg-white/50">
+  <div class="w-full mx-auto">
+    <div class="pb-16 lg:pb-20">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-start">
+        {% for card in education.cards %}
+        <div class="reveal-on-scroll">
+          <div class="mb-6">
+            <div class="rounded-[12px] overflow-hidden w-full group">
+              {% if card.image.srcset %}
+              <img
+                sizes="{{ card.image.sizes }}"
+                srcset="{{ card.image.srcset }}"
+                src="{{ card.image.src }}"
+                alt="{{ card.image.alt }}"
+                loading="lazy"
+                class="aspect-video object-cover w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
+              >
+              {% else %}
+              <img
+                src="{{ card.image.src }}"
+                alt="{{ card.image.alt }}"
+                loading="lazy"
+                class="aspect-video object-cover w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
+              >
+              {% endif %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <h3 class="text-xl lg:text-[2rem] font-medium uppercase leading-tight tracking-tight text-body-text">{{ card.heading }}</h3>
+          </div>
+          <p class="text-body-text leading-relaxed">{{ card.body }}</p>
+          <div class="mt-6">
+            {% if card.disabled %}
+            <span class="inline-flex items-center gap-2 py-1 text-body-text font-medium opacity-60 cursor-default">
+              <span>{{ card.button_label }}</span>
+            </span>
+            {% else %}
+            <a href="{{ card.href }}" class="inline-flex items-center gap-2 py-1 text-body-text hover:underline font-medium">
+              <span>{{ card.button_label }}</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"></path>
+              </svg>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Community Section -->
+<header class="px-[5%] bg-white/50">
+  <div class="h-px w-full bg-secondary"></div>
+  <div class="w-full mx-auto">
+    <div class="py-16 lg:py-20">
+      <div class="max-w-4xl">
+        <div class="mb-4">
+          <h2 class="text-[1.75rem] sm:text-[2.25rem] lg:text-[3rem] font-medium uppercase leading-none tracking-tight text-left text-body-text">
+            {{ community.heading }}
+          </h2>
+        </div>
+        <p class="text-lg text-left text-body-text leading-relaxed">{{ community.description }}</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="px-[5%] bg-white/50">
+  <div class="w-full mx-auto">
+    <div class="pb-16 lg:pb-20">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for card in community.cards %}
+        <div class="reveal-on-scroll">
+          <div class="mb-6">
+            <div class="rounded-[12px] overflow-hidden w-full group">
+              {% if card.image.srcset %}
+              <img
+                sizes="{{ card.image.sizes }}"
+                srcset="{{ card.image.srcset }}"
+                src="{{ card.image.src }}"
+                alt="{{ card.image.alt }}"
+                loading="lazy"
+                class="aspect-video object-cover w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
+              >
+              {% else %}
+              <img
+                src="{{ card.image.src }}"
+                alt="{{ card.image.alt }}"
+                loading="lazy"
+                class="aspect-video object-cover w-full transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-[1.03]"
+              >
+              {% endif %}
+            </div>
+          </div>
+          <div class="mb-4">
+            <h3 class="text-xl lg:text-[2rem] font-medium uppercase leading-tight tracking-tight text-body-text">{{ card.heading }}</h3>
+          </div>
+          <p class="text-body-text leading-relaxed">{{ card.body }}</p>
+          <div class="mt-6">
+            <a href="{{ card.href }}" class="inline-flex items-center gap-2 py-1 text-body-text hover:underline font-medium">
+              <span>{{ card.button_label }}</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials Section -->
+{% include "content/includes/_testimonials.html" %}
+
+<!-- Contact Section -->
+{% include "content/includes/_contact.html" %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  // Hero Slider
+  var slider = document.getElementById('hero-slider');
+  if (!slider) return;
+
+  var track = document.getElementById('slider-track');
+  var slides = slider.querySelectorAll('.slide');
+  var dotsContainer = slider.querySelector('.slider-dots');
+  var currentIndex = 0;
+  var intervalId;
+
+  // Build dots
+  slides.forEach(function(_, i) {
+    var dot = document.createElement('button');
+    dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    dot.addEventListener('click', function() { goToSlide(i); });
+    dotsContainer.appendChild(dot);
+  });
+
+  var navDots = dotsContainer.querySelectorAll('.slider-dot');
+
+  function goToSlide(index) {
+    if (index < 0) index = slides.length - 1;
+    if (index >= slides.length) index = 0;
+    currentIndex = index;
+    track.style.marginLeft = '-' + (currentIndex * 100) + '%';
+    navDots.forEach(function(dot, i) {
+      dot.classList.toggle('active', i === currentIndex);
+    });
+  }
+
+  // Arrow navigation
+  slider.querySelector('.slider-prev').addEventListener('click', function() { goToSlide(currentIndex - 1); });
+  slider.querySelector('.slider-next').addEventListener('click', function() { goToSlide(currentIndex + 1); });
+
+  // Autoplay (4s)
+  intervalId = setInterval(function() { goToSlide(currentIndex + 1); }, 4000);
+  slider.addEventListener('mouseenter', function() { clearInterval(intervalId); });
+  slider.addEventListener('mouseleave', function() {
+    intervalId = setInterval(function() { goToSlide(currentIndex + 1); }, 4000);
+  });
+})();
+
+// Scroll reveal
+(function() {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+  document.querySelectorAll('.reveal-on-scroll').forEach(function(el) {
+    observer.observe(el);
+  });
+})();
+</script>
 {% endblock %}

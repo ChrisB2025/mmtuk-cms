@@ -1,0 +1,32 @@
+<section class="px-[5%] bg-background">
+  <div class="h-px w-full bg-secondary"></div>
+  <div class="w-full mx-auto">
+    <div class="py-16 lg:py-20">
+      <div class="mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_0.75fr] gap-x-20 gap-y-12 items-start">
+          <div>
+            <div class="mb-4">
+              <h2 class="text-[1.75rem] sm:text-[2.25rem] lg:text-[3rem] font-medium uppercase leading-none tracking-tight text-body-text">
+                {{ contact.heading }}
+              </h2>
+            </div>
+            <p class="text-lg text-body-text leading-relaxed">{{ contact.tagline }}</p>
+          </div>
+          <div class="py-2">
+            <a href="mailto:contact@mmtuk.org" class="flex items-start gap-4 p-4 rounded-lg hover:bg-black/[0.02] transition-colors">
+              <div class="flex-none text-body-text mt-0.5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 4H4C2.897 4 2 4.897 2 6V18C2 19.103 2.897 20 4 20H20C21.103 20 22 19.103 22 18V6C22 4.897 21.103 4 20 4ZM20 6V6.511L12 12.734L4 6.512V6H20ZM4 18V9.044L11.386 14.789C11.5611 14.9265 11.7773 15.0013 12 15.0013C12.2227 15.0013 12.4389 14.9265 12.614 14.789L20 9.044L20.002 18H4Z" fill="currentColor"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-[1rem] lg:text-[1.25rem] font-medium uppercase leading-tight tracking-tight text-body-text mb-1">Email</h3>
+                <span class="text-body-text hover:underline">contact@mmtuk.org</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

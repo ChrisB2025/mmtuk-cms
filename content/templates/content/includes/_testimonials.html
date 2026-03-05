@@ -1,0 +1,20 @@
+<section class="px-[5%] bg-background">
+  <div class="h-px w-full bg-secondary"></div>
+  <div class="w-full mx-auto">
+    <div class="py-16 lg:py-20">
+      <div class="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-8">
+        {% for t in testimonials %}
+        <div class="testimonial-card reveal-on-scroll relative bg-white rounded-2xl p-8 shadow-sm flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(10,30,63,0.08)]">
+          <p class="text-[1.0625rem] leading-relaxed text-body-text pt-6">"{{ t.quote }}"</p>
+          <div class="flex items-center gap-4 mt-auto pt-6 border-t border-black/5">
+            <div class="flex flex-col">
+              <span class="font-semibold text-[0.9375rem] text-body-text">{{ t.name }}</span>
+              <span class="text-[0.8125rem] text-neutral">{{ t.title }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "title": "Home",
+    "description": "MMTUK is an independent research organisation producing evidence-based economic analysis informed by Modern Monetary Theory. Explore our articles, education resources and community."
+  },
+  "hero": {
+    "heading": "Driving Economic Change",
+    "tagline": "MMTUK is an independent research organisation dedicated to producing high-quality, evidence-based analysis informed by Modern Monetary Theory (MMT).",
+    "slides": [
+      {
+        "tag": "Policy research",
+        "text": "A Counter-Inflationary Job Guarantee for the UK — now published",
+        "link_href": "/job-guarantee",
+        "link_label": "A Counter-Inflationary Job Guarantee for the UK",
+        "image": {
+          "src": "JG_paper_cover.webp",
+          "alt": "A Counter-Inflationary Job Guarantee for the UK",
+          "linked": true
+        }
+      },
+      {
+        "tag": "Education & training",
+        "text": "Courses and workshops equipping citizens and leaders with modern money literacy skills.",
+        "link_href": "",
+        "link_label": "",
+        "image": {
+          "src": "hands-up.avif",
+          "alt": "",
+          "srcset": "marcos-luiz-photograph-R6xx6fnvPT8-unsplash-p-500.avif 500w, marcos-luiz-photograph-R6xx6fnvPT8-unsplash-p-800.avif 800w, marcos-luiz-photograph-R6xx6fnvPT8-unsplash-p-1080.avif 1080w, marcos-luiz-photograph-R6xx6fnvPT8-unsplash-p-1600.avif 1600w, hands-up.avif 2400w",
+          "sizes": "(max-width: 2400px) 100vw, 2400px"
+        }
+      },
+      {
+        "tag": "Community outreach",
+        "text": "Events, collaborations, and campaigns connecting research with real community priorities across Britain.",
+        "link_href": "",
+        "link_label": "",
+        "image": {
+          "src": "yp-hero.avif",
+          "alt": ""
+        }
+      }
+    ]
+  },
+  "research_section": {
+    "heading": "Academic Research",
+    "description": "Strategic research and targeted advocacy to transform Britain's economic landscape through innovative policy frameworks",
+    "cards": [
+      {
+        "heading": "The Job Guarantee",
+        "body": "Our UK-focused proposal is in advanced draft form. It demonstrates how MMT can achieve full employment and price stability.",
+        "href": "/job-guarantee",
+        "button_label": "Read more",
+        "disabled": false,
+        "image": {
+          "src": "adult-education.avif",
+          "alt": "Adult education college",
+          "srcset": "desola-lanre-ologun-IgUR1iX0mqM-unsplash-p-500.avif 500w, desola-lanre-ologun-IgUR1iX0mqM-unsplash-p-800.avif 800w, desola-lanre-ologun-IgUR1iX0mqM-unsplash-p-1080.avif 1080w, adult-education.avif 2400w",
+          "sizes": "(max-width: 2400px) 100vw, 2400px"
+        }
+      },
+      {
+        "heading": "Zero Interest Rate Policy (ZIRP)",
+        "body": "A UK framework for a standing 0% policy rate, with fiscal stabilisers managing demand and prices.",
+        "href": "/research",
+        "button_label": "Read more",
+        "disabled": false,
+        "image": {
+          "src": "central-london-banks.avif",
+          "alt": "Central London banks",
+          "srcset": "francais-a-londres-ZdUeSMxgSoo-unsplash-p-500.avif 500w, francais-a-londres-ZdUeSMxgSoo-unsplash-p-800.avif 800w, francais-a-londres-ZdUeSMxgSoo-unsplash-p-1080.avif 1080w, francais-a-londres-ZdUeSMxgSoo-unsplash-p-1600.avif 1600w, central-london-banks.avif 2400w",
+          "sizes": "(max-width: 2400px) 100vw, 2400px"
+        }
+      }
+    ]
+  },
+  "education_section": {
+    "heading": "Education & Training",
+    "description": "Explore our library and briefings for clear, practical guides to UK macro-economic policy.",
+    "cards": [
+      {
+        "heading": "The MMTUK library",
+        "body": "Searchable library of papers, podcasts, articles and more on economics through the lens of MMT.",
+        "href": "",
+        "button_label": "Coming soon",
+        "disabled": true,
+        "image": {
+          "src": "Library.avif",
+          "alt": "",
+          "srcset": "Library-p-500.avif 500w, Library-p-800.avif 800w, Library-p-1080.avif 1080w, Library.avif 2400w",
+          "sizes": "(max-width: 2400px) 100vw, 2400px"
+        }
+      },
+      {
+        "heading": "Our Briefings",
+        "body": "Concise briefings from MMTUK and our guests explaining UK macro policy with practical, actionable insights.",
+        "href": "/research/briefings",
+        "button_label": "Read more",
+        "disabled": false,
+        "image": {
+          "src": "briefing-room.avif",
+          "alt": "Briefing room",
+          "srcset": "briefing-room-p-500.avif 500w, briefing-room-p-800.avif 800w, briefing-room.avif 1920w",
+          "sizes": "(max-width: 1920px) 100vw, 1920px"
+        }
+      }
+    ]
+  },
+  "community_section": {
+    "heading": "Community & Network",
+    "description": "Connect with other people interested in MMT by joining local groups, public events and active online discussions.",
+    "cards": [
+      {
+        "heading": "Local Groups",
+        "body": "Join or start local MMT groups, supported and connected nationwide.",
+        "href": "/community#Network",
+        "button_label": "Read more",
+        "disabled": false,
+        "image": {
+          "src": "Local-events.avif",
+          "alt": "",
+          "srcset": "Local-events-p-500.avif 500w, Local-events-p-800.avif 800w, Local-events-p-1080.avif 1080w, Local-events.avif 1920w",
+          "sizes": "(max-width: 1920px) 100vw, 1920px"
+        }
+      },
+      {
+        "heading": "Events",
+        "body": "Join talks, workshops, and conferences we host and attend nationwide.",
+        "href": "/community#Events",
+        "button_label": "Read more",
+        "disabled": false,
+        "image": {
+          "src": "events-lecture.avif",
+          "alt": ""
+        }
+      },
+      {
+        "heading": "Online",
+        "body": "Debate, learn, and organise together in our moderated online community.",
+        "href": "/community#discord",
+        "button_label": "Read more",
+        "disabled": false,
+        "image": {
+          "src": "events-online-workshop.avif",
+          "alt": ""
+        }
+      }
+    ]
+  },
+  "testimonials": {
+    "items": [
+      {
+        "quote": "MMTUK turns complex monetary operations into plain English, empowering people to see policy choices clearly and demand better, more humane economics.",
+        "name": "Patricia Pino",
+        "title": "Executive Director & Academic Researcher, MMTUK"
+      },
+      {
+        "quote": "A rare mix of heterodox depth and public pedagogy. MMTUK elevates debate and equips citizens to challenge harmful myths.",
+        "name": "Dr Phil Armstrong",
+        "title": "Founder, MMTUK"
+      },
+      {
+        "quote": "MMTUK marries rigorous scholarship with practical organising. It's a hub where democratic priorities and monetary reality finally meet.",
+        "name": "Dr David Merrill",
+        "title": "Founder, MMTUK"
+      }
+    ]
+  },
+  "contact": {
+    "heading": "Contact Us",
+    "tagline": "Be part of the economic transformation that challenges conventional thinking and drives meaningful policy change"
+  }
+}

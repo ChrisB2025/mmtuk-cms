@@ -41,6 +41,7 @@
   --color-footer-bg: #2f2c25;
   --color-orange-peel: #f0a202;
   --color-shuttle-gray: #5a6775;
+  --color-body-text: #0c0800;
 
   --font-body: 'Montserrat', sans-serif;
 }
@@ -76,4 +77,102 @@
 
 .prose h6 + p {
   margin-top: 1rem;
+}
+
+/* Hero slider */
+#slider-track {
+  transition: margin-left 0.5s ease;
+}
+
+.slider-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: rgba(10, 30, 63, 0.3);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.2s;
+}
+
+.slider-dot.active {
+  background-color: #0a1e3f;
+}
+
+.slider-arrow {
+  transition: transform 0.2s;
+}
+
+.slider-arrow:hover {
+  transform: scale(1.1);
+}
+
+/* Slider link animated underline */
+.slide-link {
+  position: relative;
+  display: inline-block;
+}
+
+.slide-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.slide-link:hover::after {
+  width: 100%;
+}
+
+/* Testimonial card quote mark */
+.testimonial-card::before {
+  content: '\201C';
+  font-size: 4rem;
+  color: var(--color-accent);
+  opacity: 0.15;
+  position: absolute;
+  top: 0.5rem;
+  left: 1.5rem;
+  line-height: 1;
+  font-family: Georgia, serif;
+}
+
+/* Scroll reveal animation */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-on-scroll:nth-child(2) {
+  transition-delay: 0.1s;
+}
+
+.reveal-on-scroll:nth-child(3) {
+  transition-delay: 0.2s;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  #slider-track {
+    transition: none;
+  }
+  .slider-arrow {
+    transition: none;
+  }
 }

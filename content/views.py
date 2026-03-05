@@ -1,10 +1,14 @@
 import json
+import re
 from pathlib import Path
 
 import markdown
 from django.shortcuts import render
+from django.templatetags.static import static
 
 DATA_DIR = Path(__file__).resolve().parent / 'data' / 'pages'
+
+IMG_PREFIX = 'content/images/homepage/'
 
 
 def _load_page_data(filename):
@@ -12,8 +16,38 @@ def _load_page_data(filename):
         return json.load(f)
 
 
+def _resolve_image(image):
+    """Add full static URL to image src and srcset fields."""
+    if not image:
+        return image
+    image = dict(image)
+    image['src'] = static(IMG_PREFIX + image['src'])
+    if 'srcset' in image:
+        image['srcset'] = re.sub(
+            r'([^\s,]+\.\w+)',
+            lambda m: static(IMG_PREFIX + m.group(1)),
+            image['srcset'],
+        )
+    return image
+
+
 def homepage(request):
-    return render(request, 'content/homepage.html')
+    data = _load_page_data('home.json')
+    hero = data['hero']
+    for slide in hero['slides']:
+        slide['image'] = _resolve_image(slide.get('image'))
+    for section_key in ('research_section', 'education_section', 'community_section'):
+        for card in data[section_key]['cards']:
+            card['image'] = _resolve_image(card.get('image'))
+    return render(request, 'content/homepage.html', {
+        'hero': hero,
+        'research': data['research_section'],
+        'education': data['education_section'],
+        'community': data['community_section'],
+        'testimonials': data['testimonials']['items'],
+        'contact': data['contact'],
+        'meta': data['meta'],
+    })
 
 
 def privacy_policy(request):

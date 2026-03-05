@@ -1,0 +1,85 @@
+<header class="grid grid-cols-1 lg:grid-cols-2 items-stretch bg-background">
+  <!-- Left: heading + tagline -->
+  <div class="flex items-center px-[5%] lg:pl-[5vw] lg:pr-16 py-12 lg:py-0">
+    <div class="max-w-[35rem]">
+      <div class="mb-4">
+        <h1 class="text-[2rem] sm:text-[2.75rem] md:text-[3.5rem] lg:text-[4.5rem] xl:text-[5.25rem] font-medium uppercase leading-[0.95] tracking-tight text-body-text">
+          {{ hero.heading }}
+        </h1>
+      </div>
+      <p class="text-base lg:text-[1.125rem] text-body-text leading-relaxed">
+        {{ hero.tagline }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Right: slider -->
+  <div id="hero-slider" class="relative w-full min-h-[420px] sm:min-h-[450px] lg:min-h-[90vh] lg:max-h-[60rem] bg-secondary overflow-hidden">
+    <div class="flex h-full" style="flex-wrap: nowrap;">
+      {% for slide in hero.slides %}
+      <div class="slide w-full flex-shrink-0 h-full flex flex-col"{% if forloop.first %} id="slider-track"{% endif %}>
+        <!-- Image area -->
+        <div class="relative flex-1 w-full overflow-hidden">
+          {% if slide.link_href %}
+          <a href="{{ slide.link_href }}" class="block w-full h-full">
+            <img
+              src="{{ slide.image.src }}"
+              alt="{{ slide.image.alt }}"
+              loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+              class="w-full h-full object-cover object-[left_center] transition-transform duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02]"
+            >
+          </a>
+          {% elif slide.image.srcset %}
+          <img
+            sizes="{{ slide.image.sizes }}"
+            srcset="{{ slide.image.srcset }}"
+            src="{{ slide.image.src }}"
+            alt="{{ slide.image.alt }}"
+            loading="lazy"
+            class="w-full h-full object-cover object-[left_center] transition-transform duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02]"
+          >
+          {% else %}
+          <img
+            src="{{ slide.image.src }}"
+            alt="{{ slide.image.alt }}"
+            loading="lazy"
+            class="w-full h-full object-cover object-[left_center] transition-transform duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02]"
+          >
+          {% endif %}
+        </div>
+
+        <!-- Content area -->
+        <div class="bg-secondary px-8 py-6 pb-20 sm:pb-16 lg:pb-20">
+          <div class="max-w-3xl">
+            <div class="mb-2">
+              <span class="text-[0.875rem] sm:text-[1rem] lg:text-[1.625rem] uppercase font-medium leading-tight tracking-tight text-body-text">
+                {{ slide.tag }}
+              </span>
+            </div>
+            {% if slide.link_href %}
+            <p><a href="{{ slide.link_href }}" class="slide-link text-body-text">{{ slide.link_label }}</a></p>
+            {% else %}
+            <p class="text-body-text">{{ slide.text }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Arrow navigation -->
+    <button class="slider-arrow slider-prev absolute bottom-6 right-20 lg:bottom-8 lg:right-24 w-10 h-10 lg:w-12 lg:h-12 rounded-full border border-black bg-transparent flex items-center justify-center text-black cursor-pointer z-10" aria-label="Previous slide">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.31066 8.75001L9.03033 14.4697L7.96967 15.5303L0.439339 8.00001L7.96967 0.469676L9.03033 1.53034L3.31066 7.25001L15.5 7.25L15.5 8.75L3.31066 8.75001Z" fill="currentColor"></path>
+      </svg>
+    </button>
+    <button class="slider-arrow slider-next absolute bottom-6 right-6 lg:bottom-8 lg:right-8 w-10 h-10 lg:w-12 lg:h-12 rounded-full border border-black bg-transparent flex items-center justify-center text-black cursor-pointer z-10" aria-label="Next slide">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.6893 7.25L6.96967 1.53033L8.03033 0.469666L15.5607 8L8.03033 15.5303L6.96967 14.4697L12.6893 8.75H0.5V7.25H12.6893Z" fill="currentColor"></path>
+      </svg>
+    </button>
+
+    <!-- Dot navigation (populated by JS) -->
+    <div class="slider-dots absolute bottom-7 left-8 lg:bottom-9 lg:left-8 flex gap-2 z-10"></div>
+  </div>
+</header>
