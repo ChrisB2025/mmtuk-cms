@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "title": "About Us",
+    "description": "Learn about MMTUK and our team."
+  },
+  "hero": {
+    "heading": "We Are Academics, Activists & Organisers",
+    "description": "We bring together leading minds from the UK MMT community to deliver rigorous research and accessible resources for policymakers, public institutions, civil society and the wider public."
+  },
+  "news": {
+    "heading": "MMTUK News",
+    "description": "Latest announcements from MMTUK",
+    "button_label": "Read more"
+  },
+  "events": {
+    "heading": "MMTUK Events",
+    "description": "Upcoming talks, meetups, and gatherings across the UK",
+    "button_label": "Learn more"
+  },
+  "steering_group": {
+    "heading": "Steering Group",
+    "description": "Dedicated minds driving economic and social research forward",
+    "order": [
+      "Dr Phil Armstrong",
+      "Dr Stephanie Linkogle",
+      "Patricia Pino",
+      "David Merrill",
+      "Andrew Berkeley",
+      "Richard Tye",
+      "Steve Laughton",
+      "Vincent Gomez",
+      "David McNab"
+    ]
+  },
+  "advisory_board": {
+    "heading": "Advisory Board",
+    "description": "Independent guidance from leading global MMT economists."
+  }
+}

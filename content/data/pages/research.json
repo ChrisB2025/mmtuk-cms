@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Research",
+    "description": "Explore MMTUK research and publications."
+  },
+  "hero": {
+    "heading": "Research",
+    "tagline": "Strategic research and targeted advocacy to transform Britain's economic landscape through innovative policy frameworks"
+  },
+  "policy_areas": {
+    "heading": "Our Priority Policy areas",
+    "description": "Strategic research and targeted advocacy to transform Britain's economic landscape through innovative policy frameworks"
+  },
+  "job_guarantee": {
+    "heading": "The Job Guarantee",
+    "description": "Our inaugural policy paper, published 25 February 2026, demonstrates how MMT can achieve full employment and price stability through a voluntary, counter-inflationary Job Guarantee.",
+    "feature_1": "Guarantee a paid public option at \u00a315 per hour, centrally funded and locally delivered, open to anyone willing and able to work, with additional, non-displacing roles that serve community, care and climate needs",
+    "feature_2": "Operate as a counter-inflation automatic stabiliser by converting unemployment into a buffer of paid employment, using the Job Guarantee wage as a nominal anchor with annual formula updates and a triennial review",
+    "feature_3": "Deliver strong net fiscal and social returns through lower benefit spend, higher tax and NI receipts, and health savings, with phased rollout, local project pipelines, and independent evaluation before national scale",
+    "button_label": "Read more here",
+    "button_href": "/job-guarantee"
+  },
+  "zirp": {
+    "heading": "Zero Interest Rate Policy (ZIRP)",
+    "description": "A permanent 0% Central Bank Interest rate, with fiscal policy doing the steering",
+    "feature_1": "Set Bank Rate at 0 percent, replace routine gilt issuance with reserves, cut interest costs and simplify debt management",
+    "feature_2": "Manage demand through automatic stabilisers and targeted fiscal measures, use prudential tools to guide credit and protect financial stability",
+    "feature_3": "Offer safe saving via NS&I and regulated products, publish a gilt market transition plan with clear timelines, risk controls, and reporting",
+    "wip_notice": "We are currently working on a draft for this policy"
+  },
+  "briefings": {
+    "heading": "MMT Briefings",
+    "description": "Our affiliated authors critique public economic commentary and rebut anti-MMT polemic with rigorous analysis.",
+    "tag_label": "Briefing",
+    "read_button_label": "Read briefing",
+    "view_all_label": "View All Briefings"
+  },
+  "approach": {
+    "heading": "Our Approach to policy Research",
+    "description": "Navigating complex economic and social landscapes through research and understanding informed by Modern Monetary Theory.",
+    "card_1_heading": "How we approach research",
+    "card_1_body": "We blend academic rigor with practical application. Our methodology cuts through theoretical noise to deliver actionable insights. We challenge assumptions and seek truth.",
+    "card_2_heading": "What makes our work unique",
+    "card_2_body": "We bridge academic theory and real-world impact. Our research goes beyond traditional boundaries, connecting scholarly analysis with grassroots movements. We transform knowledge into meaningful change.",
+    "card_3_heading": "Our research methodology",
+    "card_3_body": "We employ interdisciplinary approaches that challenge conventional thinking. Our team combines deep analytical skills with on-the-ground experience. We don't just study problems, we seek solutions.",
+    "card_4_heading": "Impact of our work",
+    "card_4_body": "Our research influences policy, challenges economic paradigms, and supports social transformation. We provide clear, evidence-based insights that drive meaningful dialogue and action.",
+    "card_5_heading": "Collaboration and transparency",
+    "card_5_body": "We believe in open research and collaborative knowledge creation. Our work is transparent, peer-reviewed, and designed to empower communities and policymakers alike."
+  }
+}

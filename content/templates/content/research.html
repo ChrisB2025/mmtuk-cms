@@ -1,0 +1,183 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{# 1. Hero header #}
+{% with hero_heading=hero.heading hero_description=hero.tagline hero_layout="standard" hero_text_class="text-[#2E2C25]" %}
+  {% include "content/includes/_hero_header.html" %}
+{% endwith %}
+
+{# 2. Policy areas header #}
+<div class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="h-px bg-secondary"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16">
+        <div class="max-w-full">
+          <div class="mb-6">
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ policy_areas.heading }}</h2>
+          </div>
+          <p class="text-xl text-body-text leading-relaxed">{{ policy_areas.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 3. Job Guarantee section #}
+<div id="Job-guarantee" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="h-px bg-secondary"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16">
+        <div class="grid grid-cols-1 lg:grid-cols-[2.75fr_1.5fr] gap-16 items-center">
+          <div>
+            <div class="mb-6">
+              <h2 class="font-body text-[1.5rem] md:text-[2rem] lg:text-[3rem] font-medium uppercase leading-none tracking-[-0.03rem] text-body-text">{{ jg.heading }}</h2>
+            </div>
+            <div class="mb-6">
+              <p class="text-xl text-body-text leading-relaxed">{{ jg.description }}</p>
+            </div>
+            <div class="space-y-4 py-2">
+              {% include "content/includes/_policy_feature.html" with icon="flag" text=jg.feature_1 %}
+              {% include "content/includes/_policy_feature.html" with icon="faces" text=jg.feature_2 %}
+              {% include "content/includes/_policy_feature.html" with icon="shield" text=jg.feature_3 %}
+            </div>
+            <div class="mt-8">
+              <a href="{{ jg.button_href }}" class="inline-flex items-center gap-2 text-body-text font-medium hover:opacity-70 transition-opacity">
+                {{ jg.button_label }}
+                <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="overflow-hidden rounded-2xl">
+            <img src="{{ jg_image }}" alt="The Job Guarantee" loading="eager" class="w-full aspect-square object-cover">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 4. ZIRP section #}
+<div id="ZIRP" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="h-px bg-secondary"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16">
+        <div class="grid grid-cols-1 lg:grid-cols-[2.75fr_1.5fr] gap-16 items-center">
+          <div>
+            <div class="mb-6">
+              <h2 class="font-body text-[1.5rem] md:text-[2rem] lg:text-[3rem] font-medium uppercase leading-none tracking-[-0.03rem] text-body-text">{{ zirp.heading }}</h2>
+            </div>
+            <div class="mb-6">
+              <p class="text-xl text-body-text leading-relaxed">{{ zirp.description }}</p>
+            </div>
+            <div class="space-y-4 py-2">
+              {% include "content/includes/_policy_feature.html" with icon="flag" text=zirp.feature_1 %}
+              {% include "content/includes/_policy_feature.html" with icon="faces" text=zirp.feature_2 %}
+              {% include "content/includes/_policy_feature.html" with icon="shield" text=zirp.feature_3 %}
+            </div>
+            <div class="mt-8">
+              <p class="text-body-text">{{ zirp.wip_notice }}</p>
+            </div>
+          </div>
+          <div class="overflow-hidden rounded-2xl">
+            <img src="{{ zirp_image }}" alt="Central London banks" loading="eager" class="w-full aspect-square object-cover">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 5. Featured briefings #}
+{% if has_briefings %}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16">
+        <div class="mb-20">
+          <div class="mb-6">
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ briefings_data.heading }}</h2>
+          </div>
+          <p class="text-xl text-body-text leading-relaxed">{{ briefings_data.description }}</p>
+        </div>
+
+        {% if hero_briefing %}
+        <div class="mb-16">
+          {% with briefing=hero_briefing featured=True %}
+            {% include "content/includes/_briefing_card.html" %}
+          {% endwith %}
+        </div>
+        {% endif %}
+
+        {% if smaller_briefings %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          {% for briefing in smaller_briefings %}
+            {% with featured=False %}
+              {% include "content/includes/_briefing_card.html" %}
+            {% endwith %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+          <a href="{% url 'website:briefings_index' %}" class="inline-block px-8 py-2 bg-transparent text-body-text font-medium rounded-[12px] border border-body-text/15 hover:bg-body-text/[0.03] transition-colors">
+            {{ briefings_data.view_all_label }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 6. Our Approach #}
+<div id="our-approach" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="h-px bg-secondary"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16">
+        <div class="mb-20">
+          <div class="mb-6">
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ approach.heading }}</h2>
+          </div>
+          <p class="text-xl text-body-text leading-relaxed">{{ approach.description }}</p>
+        </div>
+        <div class="space-y-12">
+          {% for card in approach_cards %}
+          <div>
+            <div class="mb-4">
+              <div class="font-body text-[1.5rem] lg:text-[2rem] font-medium uppercase leading-tight tracking-[-0.02rem] text-body-text">{{ card.heading }}</div>
+            </div>
+            <p class="text-body-text leading-relaxed">{{ card.body }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,68 @@
+{# Briefing card - normal (vertical) and featured (horizontal) variants #}
+{# Variables: briefing (model instance), featured (bool, default False) #}
+
+{% if featured %}
+<a href="/research/briefings/{{ briefing.slug }}" class="featured-briefing block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden">
+  <div class="grid grid-cols-1 md:grid-cols-2">
+    <div class="overflow-hidden aspect-[8/6] md:aspect-auto">
+      <img
+        src="{{ briefing.thumbnail_url }}"
+        loading="lazy"
+        alt="{{ briefing.title }}"
+        class="w-full h-full object-cover"
+      >
+    </div>
+    <div class="p-12 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-4 mb-4">
+          <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-body-text/[0.02] text-body-text border border-body-text/[0.02] rounded-md">Briefing</span>
+          <div class="flex items-center gap-1">
+            <span class="text-base font-semibold text-body-text">{{ briefing.read_time }}</span>
+            <span class="text-base font-semibold text-body-text"> min read</span>
+          </div>
+        </div>
+        <div class="mb-4">
+          <h3 class="font-body text-[2rem] lg:text-[2.5rem] font-medium uppercase leading-none tracking-[-0.025rem] text-body-text">{{ briefing.title }}</h3>
+        </div>
+        <p class="text-lg text-body-text leading-relaxed">{{ briefing.summary }}</p>
+      </div>
+      <div class="mt-6">
+        <span class="inline-flex items-center gap-2 text-body-text font-medium hover:opacity-70 transition-opacity">
+          Read more
+          <svg class="link-arrow w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+</a>
+{% else %}
+<a href="/research/briefings/{{ briefing.slug }}" class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
+  <div class="overflow-hidden aspect-[16/9]">
+    <img
+      src="{{ briefing.thumbnail_url }}"
+      loading="lazy"
+      alt="{{ briefing.title }}"
+      class="content-card-img w-full h-full object-cover"
+    >
+  </div>
+  <div class="p-5">
+    <div class="flex items-center gap-4 mb-4">
+      <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-body-text/[0.02] text-body-text border border-body-text/[0.02] rounded-md">Briefing</span>
+      <div class="flex items-center gap-1">
+        <span class="text-base font-semibold text-body-text">{{ briefing.read_time }}</span>
+        <span class="text-base font-semibold text-body-text"> min read</span>
+      </div>
+    </div>
+    <div class="mb-2">
+      <h3 class="font-body text-[1.5rem] lg:text-[2rem] font-medium uppercase leading-tight tracking-[-0.02rem] text-body-text">{{ briefing.title }}</h3>
+    </div>
+    <p class="text-lg text-body-text leading-relaxed">{{ briefing.summary }}</p>
+    <div class="mt-4">
+      <span class="inline-flex items-center gap-2 text-body-text font-medium hover:opacity-70 transition-opacity">
+        Read more
+        <svg class="link-arrow w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+      </span>
+    </div>
+  </div>
+</a>
+{% endif %}

@@ -1,0 +1,188 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{# 1. Hero header — split variant #}
+{% with hero_heading=hero.heading hero_description=hero.description hero_layout="split" hero_text_class="text-[#2E2C25]" %}
+  {% include "content/includes/_hero_header.html" %}
+{% endwith %}
+
+{# 2. MMTUK News accordion #}
+{% if news_items %}
+<div id="MMTUKNews" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ news_data.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ news_data.description }}</p>
+        </div>
+        <div class="border border-secondary/30 rounded-xl overflow-hidden divide-y divide-secondary/30">
+          {% for entry in news_items %}
+          <div>
+            <button
+              class="accordion-trigger w-full flex items-center justify-between p-5 text-left hover:bg-black/[0.02] transition-colors"
+              aria-expanded="false"
+              aria-controls="news-{{ forloop.counter }}"
+            >
+              <div>
+                <div class="font-bold text-body-text">{{ entry.item.title }}</div>
+                <div class="text-sm text-body-text/50 mt-1">{{ entry.item.date|date:"j F Y" }}</div>
+              </div>
+              <svg class="accordion-icon w-5 h-5 text-body-text/40 flex-shrink-0 ml-4" viewBox="0 0 32 32" fill="none">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5303 20.8839C16.2374 21.1768 15.7626 21.1768 15.4697 20.8839L7.82318 13.2374C7.53029 12.9445 7.53029 12.4697 7.82318 12.1768L8.17674 11.8232C8.46963 11.5303 8.9445 11.5303 9.2374 11.8232L16 18.5858L22.7626 11.8232C23.0555 11.5303 23.5303 11.5303 23.8232 11.8232L24.1768 12.1768C24.4697 12.4697 24.4697 12.9445 24.1768 13.2374L16.5303 20.8839Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <div id="news-{{ forloop.counter }}" class="accordion-content">
+              <div class="px-5 pb-5">
+                <p class="text-body-text/70 leading-relaxed mb-3">{{ entry.item.summary }}</p>
+                {% if entry.has_body %}
+                <a href="/news/{{ entry.item.slug }}" class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity">
+                  {{ news_data.button_label }}
+                  <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 3. MMTUK Events #}
+{% if upcoming_events %}
+<div id="MMTUKEvents" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ events_data.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ events_data.description }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
+          {% for event in upcoming_events %}
+          <a href="{{ event.link|default:'#' }}" {% if event.link and not event.link|slice:":1" == "/" %}target="_blank" rel="noopener noreferrer"{% endif %} class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
+            <div class="relative overflow-hidden aspect-[3/2]">
+              <div class="absolute top-3 left-3 z-10 bg-white rounded-lg px-3 py-2 text-center shadow-sm">
+                <div class="text-xs font-semibold text-body-text/60">{{ event.date|date:"D" }}</div>
+                <div class="text-2xl font-bold text-body-text leading-none">{{ event.date|date:"j" }}</div>
+                <div class="text-xs text-body-text/60">{{ event.date|date:"M Y" }}</div>
+              </div>
+              <img loading="lazy" src="{{ event.image_url }}" alt="{{ event.title }}" class="content-card-img w-full h-full object-cover">
+            </div>
+            <div class="p-5">
+              <div class="mb-2">
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-body-text/[0.02] text-body-text border border-body-text/[0.02] rounded-md">{{ event.tag }}</span>
+              </div>
+              <h3 class="font-body text-[1.25rem] lg:text-[1.5rem] font-medium uppercase leading-tight text-body-text mb-1">{{ event.title }}</h3>
+              <div class="text-sm text-body-text/50 mb-2">{{ event.location }}</div>
+              <p class="text-sm text-body-text leading-relaxed">{{ event.description }}</p>
+              <div class="mt-4">
+                <span class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity">
+                  {{ events_data.button_label }}
+                  <svg class="link-arrow w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 4. Steering Group #}
+<div id="SteeringGroup" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ steering_data.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ steering_data.description }}</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+          {% for bio in steering_group %}
+            {% include "content/includes/_team_card.html" %}
+          {% empty %}
+            <div class="col-span-full text-center py-8">
+              <p class="text-body-text/50">No team members found.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 5. Advisory Board #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="border-t border-secondary/40"></div>
+    </div>
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ advisory_data.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ advisory_data.description }}</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+          {% for bio in advisory_board %}
+            {% include "content/includes/_team_card.html" %}
+          {% empty %}
+            <div class="col-span-full text-center py-8">
+              <p class="text-body-text/50">No advisory board members at this time.</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  document.querySelectorAll('.accordion-trigger').forEach(function(trigger) {
+    trigger.addEventListener('click', function() {
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      var content = document.getElementById(this.getAttribute('aria-controls'));
+      if (expanded) {
+        content.classList.remove('is-open');
+        this.setAttribute('aria-expanded', 'false');
+      } else {
+        content.classList.add('is-open');
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

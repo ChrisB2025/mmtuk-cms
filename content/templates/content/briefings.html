@@ -1,0 +1,65 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{% with hero_heading="The Briefing Room" hero_description="Cutting-edge economic analysis from leading modern monetary theorists. Our affiliated authors critique public economic commentary and rebut anti-MMT polemic." hero_image=hero_image hero_srcset=hero_srcset hero_layout="standard" hero_text_class="text-[#2E2C25]" %}
+  {% include "content/includes/_hero_header.html" %}
+{% endwith %}
+
+{% if featured_briefing %}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="pt-16 lg:pt-20">
+        <div class="mb-2">
+          <span class="text-sm font-semibold text-body-text">Featured Briefing</span>
+        </div>
+        <div class="mt-6">
+          {% with briefing=featured_briefing featured=True %}
+            {% include "content/includes/_briefing_card.html" %}
+          {% endwith %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if briefings %}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-12 lg:py-16">
+        <div class="mb-2">
+          <span class="text-sm font-semibold text-body-text">All Briefings</span>
+        </div>
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+          {% for briefing in briefings %}
+            {% with featured=False %}
+              {% include "content/includes/_briefing_card.html" %}
+            {% endwith %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if not has_briefings %}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20 text-center">
+        <p class="text-lg text-body-text/60">No briefings available yet. Check back soon for our latest economic analysis.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
