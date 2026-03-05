@@ -104,6 +104,7 @@ CONTENT_TYPES = {
             "thumbnail": {"type": "string", "optional": True},
             "mainImage": {"type": "string", "optional": True},
             "registrationLink": {"type": "string", "optional": True, "description": "External registration URL"},
+            "headerVideo": {"type": "string", "optional": True, "description": "Vimeo embed URL for header video (displays top-right next to title)"},
         },
         "appears_on": ["/about-us"],
         "route": "/news/{slug}",
