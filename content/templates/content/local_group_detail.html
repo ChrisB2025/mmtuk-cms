@@ -1,0 +1,215 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ group.name }}{% endblock %}
+{% block meta_description %}{{ group.tagline }}{% endblock %}
+{% block og_title %}{{ group.title }}{% endblock %}
+{% block og_description %}{{ group.tagline }}{% endblock %}
+
+{% block content %}
+{# 1. Full-bleed Hero with dark overlay #}
+<header class="relative w-full overflow-hidden">
+  <div class="relative z-10 px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div>
+          <div class="mb-4">
+            <h1 class="font-body text-[1.75rem] md:text-[2.5rem] lg:text-[3.25rem] xl:text-[5.25rem] font-medium uppercase leading-none tracking-[-0.0525rem] text-[#2E2C25]">MMTUK | {{ group.name|upper }}</h1>
+          </div>
+          <p class="text-lg lg:text-xl text-[#2E2C25] leading-relaxed">{{ group.tagline }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="absolute inset-0 bg-background opacity-75 z-[1]"></div>
+  <img loading="eager" src="{{ group.header_image_url }}" alt="" class="absolute inset-0 w-full h-full object-cover object-center z-0">
+</header>
+
+{# 2. Welcome section #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div>
+          <div class="mb-6">
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">Welcome</h2>
+          </div>
+          <div class="text-lg text-body-text leading-relaxed">
+            {% if group.leader_name %}
+            <p class="mb-4"><strong>MMTUK {{ group.name }} Local Group</strong><br>
+            <em>From {{ group.leader_name }}, {{ group.name }} Local Group Leader</em></p>
+            {% endif %}
+            {% if leader_paragraphs %}
+              {% for para in leader_paragraphs %}
+              <p class="mb-4">{{ para }}</p>
+              {% endfor %}
+            {% else %}
+            <p class="mb-4">Welcome to the MMTUK {{ group.name }} Local Group. We're building a community of people who want to understand Modern Monetary Theory and apply these insights to local issues.</p>
+            <p class="mb-4">Join us for discussions, learning, and community building.</p>
+            {% endif %}
+            <p><a href="#discord" class="text-body-text underline hover:text-body-text/70 transition-colors">Get involved via our Discord server</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 3. Local News accordion (conditional) #}
+{% if has_news %}
+<div class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section id="LocalNews" class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">Local News</h2>
+          <p class="text-xl text-body-text leading-relaxed">Latest updates from your local group</p>
+        </div>
+        <div class="border border-secondary/30 rounded-xl overflow-hidden divide-y divide-secondary/30">
+          {% for entry in news_items %}
+          <div>
+            <button class="accordion-trigger w-full flex items-center justify-between p-5 text-left hover:bg-black/[0.02] transition-colors" aria-expanded="false" aria-controls="local-news-{{ forloop.counter }}">
+              <div class="flex items-center gap-4 flex-1">
+                {% if entry.image_url %}
+                <img src="{{ entry.image_url }}" alt="" class="w-[60px] h-[60px] object-cover rounded flex-shrink-0">
+                {% endif %}
+                <div>
+                  <div class="font-bold text-body-text">{{ entry.item.heading }}</div>
+                  <div class="text-sm text-body-text/50 mt-1">{{ entry.item.date|date:"j F Y" }}</div>
+                </div>
+              </div>
+              <svg class="accordion-icon w-5 h-5 text-body-text/40 flex-shrink-0 ml-4 transition-transform" viewBox="0 0 32 32" fill="none">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5303 20.8839C16.2374 21.1768 15.7626 21.1768 15.4697 20.8839L7.82318 13.2374C7.53029 12.9445 7.53029 12.4697 7.82318 12.1768L8.17674 11.8232C8.46963 11.5303 8.9445 11.5303 9.2374 11.8232L16 18.5858L22.7626 11.8232C23.0555 11.5303 23.5303 11.5303 23.8232 11.8232L24.1768 12.1768C24.4697 12.4697 24.4697 12.9445 24.1768 13.2374L16.5303 20.8839Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <div id="local-news-{{ forloop.counter }}" class="accordion-content">
+              <div class="px-5 pb-5">
+                <p class="text-body-text/70 leading-relaxed mb-3">{{ entry.item.text }}</p>
+                {% if entry.has_body %}
+                <a href="/local-group/{{ group.slug }}/{{ entry.item.slug }}/" class="inline-flex items-center gap-1 bg-body-text text-background font-medium text-sm px-5 py-2 rounded-[12px] hover:bg-body-text/90 transition-colors">
+                  Read more
+                  <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </a>
+                {% elif entry.item.link %}
+                <a href="{{ entry.item.link }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-body-text text-background font-medium text-sm px-5 py-2 rounded-[12px] hover:bg-body-text/90 transition-colors">
+                  Read more
+                  <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 4. Upcoming Events grid (conditional) #}
+{% if has_events %}
+<div id="Events" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">Upcoming events</h2>
+          <p class="text-xl text-body-text leading-relaxed">Discover critical conversations shaping economic understanding</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
+          {% for event in upcoming_events %}
+          <a href="{{ event.link|default:'#' }}" {% if event.link and not event.link|slice:":1" == "/" %}target="_blank" rel="noopener noreferrer"{% endif %} class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
+            <div class="relative overflow-hidden aspect-[3/2]">
+              <div class="absolute top-3 left-3 z-10 bg-white rounded-lg px-3 py-2 text-center shadow-sm">
+                <div class="text-xs font-semibold text-body-text/60">{{ event.date|date:"D" }}</div>
+                <div class="text-2xl font-bold text-body-text leading-none">{{ event.date|date:"j" }}</div>
+                <div class="text-xs text-body-text/60">{{ event.date|date:"M Y" }}</div>
+              </div>
+              <img loading="lazy" src="{{ event.image_url }}" alt="{{ event.title }}" class="content-card-img w-full h-full object-cover">
+            </div>
+            <div class="p-5">
+              <div class="mb-2 flex flex-wrap gap-2">
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-body-text/[0.02] text-body-text border border-body-text/[0.02] rounded-md">{{ event.tag }}</span>
+                {% if event.partner_event %}
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-accent text-white rounded-md">Partner Event</span>
+                {% endif %}
+              </div>
+              <h3 class="font-body text-[1.25rem] lg:text-[1.5rem] font-medium uppercase leading-tight text-body-text mb-1">{{ event.title }}</h3>
+              <div class="text-sm text-body-text/50 mb-2">{{ event.location }}</div>
+              <p class="text-sm text-body-text leading-relaxed">{{ event.description }}</p>
+              <div class="mt-4">
+                <span class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity">
+                  {% if event.link %}Register now{% else %}Learn more{% endif %}
+                  <svg class="link-arrow w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 5. Discord CTA — 2-col layout #}
+<div id="discord" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          <div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">MMTUK Discord Server</h2>
+            <p class="text-lg text-body-text leading-relaxed">Meet up with local MMTers from {{ group.name }}<br><br>Join our moderated UK community on Discord for lively discussion, learning, events, and practical collaboration.<br><br>Then ask to join the MMTUK {{ group.name }} Local Group.</p>
+            <div class="mt-6">
+              <a href="{{ group.discord_link|default:'https://discord.gg/S3UbxFe4FR' }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">Join Discord here</a>
+            </div>
+          </div>
+          <div>
+            <img loading="lazy" src="{{ discord_image }}" alt="MMTUK Discord" class="w-full rounded-2xl">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if has_news %}
+<script>
+(function() {
+  document.querySelectorAll('.accordion-trigger').forEach(function(trigger) {
+    trigger.addEventListener('click', function() {
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      var content = document.getElementById(this.getAttribute('aria-controls'));
+      if (expanded) {
+        content.classList.remove('is-open');
+        this.setAttribute('aria-expanded', 'false');
+      } else {
+        content.classList.add('is-open');
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -15,6 +15,8 @@ urlpatterns = [
     path('founders/launch-event/', views.founders_launch_event, name='founders_launch_event'),
     path('founders/', views.founders, name='founders'),
     path('job-guarantee/', RedirectView.as_view(url='/research/job-guarantee/', permanent=True)),
+    path('local-group/<slug:group_slug>/<slug:news_slug>/', views.local_news_detail, name='local_news_detail'),
+    path('local-group/<slug:slug>/', views.local_group_detail, name='local_group_detail'),
     path('about-us/', views.about_us, name='about_us'),
     path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
     path('terms-of-engagement/', views.terms_of_engagement, name='terms_of_engagement'),

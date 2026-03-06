@@ -7,7 +7,7 @@ import markdown
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 
-from content.models import Bio, Briefing, LocalEvent, LocalGroup, News
+from content.models import Bio, Briefing, LocalEvent, LocalGroup, LocalNews, News
 
 DATA_DIR = Path(__file__).resolve().parent / 'data' / 'pages'
 
@@ -343,6 +343,58 @@ def job_guarantee(request):
         'contributors': contributors,
         'paper_cover': static('content/images/research/JG_pic.webp'),
         'download_url': static('content/images/research/20260222-A_counter-inflationary_job_guarantee_for_the_UK-v1.pdf'),
+    })
+
+
+def local_group_detail(request, slug):
+    group = get_object_or_404(LocalGroup, slug=slug, status='published', active=True)
+    group.header_image_url = _static_image_url(group.header_image)
+
+    local_news = LocalNews.objects.filter(
+        local_group=group, status='published'
+    ).order_by('-date')[:4]
+    news_items = [
+        {
+            'item': n,
+            'has_body': bool(n.body and n.body.strip()),
+            'image_url': _static_image_url(n.image) if n.image else '',
+        }
+        for n in local_news
+    ]
+
+    upcoming_events = LocalEvent.objects.filter(
+        local_group=group, status='published', date__gt=date.today()
+    ).order_by('date')[:6]
+    for e in upcoming_events:
+        e.image_url = _static_image_url(e.image)
+
+    leader_paragraphs = []
+    if group.leader_intro:
+        leader_paragraphs = [p.strip() for p in group.leader_intro.split('\n\n') if p.strip()]
+
+    return render(request, 'content/local_group_detail.html', {
+        'group': group,
+        'group_url': f'/local-group/{group.slug}/',
+        'leader_paragraphs': leader_paragraphs,
+        'news_items': news_items,
+        'has_news': bool(news_items),
+        'upcoming_events': upcoming_events,
+        'has_events': bool(upcoming_events),
+        'discord_image': static('content/images/pages/MMTUK-Discord-2.avif'),
+    })
+
+
+def local_news_detail(request, group_slug, news_slug):
+    news_item = get_object_or_404(
+        LocalNews, slug=news_slug, local_group__slug=group_slug, status='published'
+    )
+    group = news_item.local_group
+    body_html = markdown.markdown(news_item.body, extensions=['extra', 'smarty'])
+    return render(request, 'content/local_news_detail.html', {
+        'news': news_item,
+        'group': group,
+        'group_url': f'/local-group/{group.slug}/',
+        'body_html': body_html,
     })
 
 

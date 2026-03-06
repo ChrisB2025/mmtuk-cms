@@ -1,0 +1,48 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ news.heading }}{% endblock %}
+{% block meta_description %}{{ news.text }}{% endblock %}
+{% block og_title %}{{ news.heading }}{% endblock %}
+{% block og_description %}{{ news.text }}{% endblock %}
+
+{% block content %}
+<article>
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-14">
+        {# Breadcrumb: Group Name > News #}
+        {% with crumb_parent_url=group_url crumb_parent_label=group.name crumb_child_label="News" %}
+          {% include "content/includes/_breadcrumb.html" %}
+        {% endwith %}
+
+        <div class="mt-6">
+          <h1 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ news.heading }}</h1>
+          <div class="text-sm text-body-text/70 mt-4">{{ news.date|date:"j F Y" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="pb-16">
+        <div style="max-width: 65ch;">
+          <div class="prose text-body-text">
+            {{ body_html|safe }}
+          </div>
+
+          <div class="mt-12 pt-6 border-t border-body-text/10">
+            <a href="{{ group_url }}" class="inline-flex items-center gap-2 px-6 py-3 border border-body-text/20 rounded-[12px] text-body-text font-medium hover:bg-primary transition-colors">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="rotate-180">
+                <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+              Back to {{ group.name }}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+{% endblock %}

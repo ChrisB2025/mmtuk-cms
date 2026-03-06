@@ -29,7 +29,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {% for group in local_groups %}
-          <a href="/local-group/{{ group.slug }}" class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
+          <a href="/local-group/{{ group.slug }}/" class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
             <div class="overflow-hidden aspect-[3/2]">
               <img loading="lazy" src="{{ group.header_image_url }}" alt="{{ group.name }}" class="content-card-img w-full h-full object-cover">
             </div>
