@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "title": "Community",
+    "description": "Connect with the MMTUK community. Find local groups across the UK, join our Discord server, attend events, and engage with others interested in Modern Monetary Theory."
+  },
+  "hero": {
+    "heading": "Community",
+    "tagline": "Meet, learn and organise with people building a better UK economy."
+  },
+  "local_groups": {
+    "heading": "Local Groups",
+    "description": "Connect with MMT supporters in your area to share knowledge, discuss regional issues and coordinate local campaigns together.",
+    "button_label": "Get involved"
+  },
+  "events": {
+    "heading": "Upcoming events",
+    "description": "Discover critical conversations shaping economic understanding",
+    "button_label": "Learn more"
+  },
+  "discord": {
+    "heading": "MMTUK Discord Server",
+    "description": "Join our moderated UK community on Discord for lively discussion, learning, events, and practical collaboration. Connect with MMT advocates across the UK and find your local group.",
+    "button_label": "Join Discord here"
+  }
+}

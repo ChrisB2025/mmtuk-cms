@@ -1,0 +1,136 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{# 1. Hero header #}
+{% with hero_heading=hero.heading hero_description=hero.tagline hero_image=hero_image hero_srcset=hero_srcset hero_text_class="text-[#2E2C25]" %}
+  {% include "content/includes/_hero_header.html" %}
+{% endwith %}
+
+{# 2. Local Groups #}
+{% if local_groups %}
+<div id="Network" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ local_groups_data.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ local_groups_data.description }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {% for group in local_groups %}
+          <a href="/local-group/{{ group.slug }}" class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
+            <div class="overflow-hidden aspect-[3/2]">
+              <img loading="lazy" src="{{ group.header_image_url }}" alt="{{ group.name }}" class="content-card-img w-full h-full object-cover">
+            </div>
+            <div class="p-5">
+              <h3 class="font-body text-[1.25rem] lg:text-[1.5rem] font-medium uppercase leading-tight text-body-text mb-1">{{ group.title }}</h3>
+              <p class="text-sm text-body-text leading-relaxed">{{ group.tagline }}</p>
+              <div class="mt-4">
+                <span class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity">
+                  {{ local_groups_data.button_label }}
+                  <svg class="link-arrow w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 3. Upcoming Events #}
+{% if upcoming_events %}
+<div id="Events" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ events_data.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ events_data.description }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
+          {% for event in upcoming_events %}
+          <a href="{{ event.link|default:'#' }}" {% if event.link and not event.link|slice:":1" == "/" %}target="_blank" rel="noopener noreferrer"{% endif %} class="content-card block rounded-2xl bg-primary border border-body-text/[0.02] overflow-hidden group">
+            <div class="relative overflow-hidden aspect-[3/2]">
+              <div class="absolute top-3 left-3 z-10 bg-white rounded-lg px-3 py-2 text-center shadow-sm">
+                <div class="text-xs font-semibold text-body-text/60">{{ event.date|date:"D" }}</div>
+                <div class="text-2xl font-bold text-body-text leading-none">{{ event.date|date:"j" }}</div>
+                <div class="text-xs text-body-text/60">{{ event.date|date:"M Y" }}</div>
+              </div>
+              <img loading="lazy" src="{{ event.image_url }}" alt="{{ event.title }}" class="content-card-img w-full h-full object-cover">
+            </div>
+            <div class="p-5">
+              <div class="mb-2 flex flex-wrap gap-2">
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-body-text/[0.02] text-body-text border border-body-text/[0.02] rounded-md">{{ event.tag }}</span>
+                {% if not event.partner_event and event.group_name %}
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-secondary text-body-text rounded-md">{{ event.group_name }}</span>
+                {% endif %}
+                {% if event.partner_event %}
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-accent text-white rounded-md">Partner Event</span>
+                {% endif %}
+              </div>
+              <h3 class="font-body text-[1.25rem] lg:text-[1.5rem] font-medium uppercase leading-tight text-body-text mb-1">{{ event.title }}</h3>
+              <div class="text-sm text-body-text/50 mb-2">{{ event.location }}</div>
+              <p class="text-sm text-body-text leading-relaxed">{{ event.description }}</p>
+              <div class="mt-4">
+                <span class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity">
+                  {{ events_data.button_label }}
+                  <svg class="link-arrow w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# 4. Discord CTA — 2-col layout #}
+<div id="discord" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+          <div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ discord_data.heading }}</h2>
+            <p class="text-lg text-body-text leading-relaxed">{{ discord_data.description }}</p>
+            <div class="mt-6">
+              <a href="https://discord.gg/S3UbxFe4FR" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">{{ discord_data.button_label }}</a>
+            </div>
+          </div>
+          <div>
+            <img loading="lazy" src="{{ discord_image }}" alt="MMTUK Discord" class="w-full rounded-2xl">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

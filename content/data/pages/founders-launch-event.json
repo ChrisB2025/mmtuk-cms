@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "title": "Launch Event: A Counter-Inflationary Job Guarantee for Britain | MMTUK",
+    "description": "Recording and programme from the MMTUK launch event, 25 February 2026 at Friends House, London.",
+    "noindex": true
+  },
+  "header": {
+    "page_title": "Launch Event: A Counter-Inflationary Job Guarantee for Britain",
+    "subtitle": "25 February 2026 \u00b7 Friends House, London"
+  },
+  "sidebar": {
+    "label": "Founder Members",
+    "date": "25 February 2026",
+    "venue": "Friends House, London"
+  },
+  "video": {
+    "url": "https://player.vimeo.com/video/1169129147?h=897742445e&badge=0&autopause=0&player_id=0&app_id=58479",
+    "title": "MMTUK Launch Event \u2013 A Counter-Inflationary Job Guarantee for Britain"
+  },
+  "body": {
+    "intro": "Thank you for your support as a founder member. Below you will find the full video recording and transcript of our launch event.",
+    "programme_heading": "Programme",
+    "programme": [
+      {"speaker": "Randeep Ramesh, The Guardian", "topic": "Opening Remarks"},
+      {"speaker": "Prue Plumridge", "topic": "Statement from GIMMS"},
+      {"speaker": "Patricia Pino", "topic": "MMTUK Mission & Vision"},
+      {"speaker": "David Merrill", "topic": "Message from L. Randall Wray"},
+      {"speaker": "Patricia Pino", "topic": "A Counter-Inflationary Job Guarantee for Britain"},
+      {"speaker": "Prof Bill Mitchell", "topic": "Keynote Address"},
+      {"speaker": "All speakers", "topic": "Panel Q&A"}
+    ]
+  }
+}

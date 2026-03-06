@@ -7,7 +7,7 @@ import markdown
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 
-from content.models import Bio, Briefing, LocalEvent, News
+from content.models import Bio, Briefing, LocalEvent, LocalGroup, News
 
 DATA_DIR = Path(__file__).resolve().parent / 'data' / 'pages'
 
@@ -227,6 +227,122 @@ def news_detail(request, slug):
     return render(request, 'content/news_detail.html', {
         'news': news_item,
         'body_html': body_html,
+    })
+
+
+def education(request):
+    data = _load_page_data('education.json')
+    return render(request, 'content/education.html', {
+        'meta': data['meta'],
+        'hero': data['hero'],
+        'library': data['library'],
+        'what_is_mmt': data['what_is_mmt'],
+        'core_insights': data['core_insights'],
+        'objections': data['objections'],
+        'advisory_services': data['advisory_services'],
+        'hero_image': static('content/images/pages/hands-up.avif'),
+    })
+
+
+def community(request):
+    data = _load_page_data('community.json')
+
+    local_groups = LocalGroup.objects.filter(
+        status='published', active=True
+    ).order_by('name')
+    for g in local_groups:
+        g.header_image_url = _static_image_url(g.header_image)
+
+    upcoming_events = LocalEvent.objects.filter(
+        status='published', date__gt=date.today()
+    ).order_by('date')
+    for e in upcoming_events:
+        e.image_url = _static_image_url(e.image)
+        if e.local_group:
+            e.group_name = e.local_group.title
+        else:
+            e.group_name = ''
+
+    return render(request, 'content/community.html', {
+        'meta': data['meta'],
+        'hero': data['hero'],
+        'local_groups_data': data['local_groups'],
+        'local_groups': local_groups,
+        'events_data': data['events'],
+        'upcoming_events': upcoming_events,
+        'discord_data': data['discord'],
+        'hero_image': static('content/images/pages/Local-events.avif'),
+        'hero_srcset': ' '.join([
+            static('content/images/pages/Local-events-p-500.avif') + ' 500w,',
+            static('content/images/pages/Local-events-p-800.avif') + ' 800w,',
+            static('content/images/pages/Local-events-p-1080.avif') + ' 1080w,',
+            static('content/images/pages/Local-events.avif') + ' 1920w',
+        ]),
+        'discord_image': static('content/images/pages/MMTUK-Discord-2.avif'),
+    })
+
+
+def founders(request):
+    data = _load_page_data('founders.json')
+
+    exclusive_pages = [
+        {
+            'title': 'Launch Event',
+            'description': 'Full video recording and transcript from the MMTUK launch event at Friends House, London.',
+            'tag': 'Event',
+            'url': '/founders/launch-event/',
+            'image': static('content/images/pages/Donate-decoration.avif'),
+        },
+    ]
+
+    return render(request, 'content/founders.html', {
+        'meta': data['meta'],
+        'hero': data['hero'],
+        'perks': data['perks'],
+        'exclusive_content': data['exclusive_content'],
+        'exclusive_pages': exclusive_pages,
+        'cta': data['cta'],
+        'hero_image': static('content/images/pages/Donate-decoration.avif'),
+        'hero_srcset': ' '.join([
+            static('content/images/pages/matt-seymour-RI1x1DpqEH4-unsplash-p-500.avif') + ' 500w,',
+            static('content/images/pages/matt-seymour-RI1x1DpqEH4-unsplash-p-800.avif') + ' 800w,',
+            static('content/images/pages/Donate-decoration.avif') + ' 2400w',
+        ]),
+    })
+
+
+def founders_launch_event(request):
+    data = _load_page_data('founders-launch-event.json')
+    return render(request, 'content/founders_launch_event.html', {
+        'meta': data['meta'],
+        'header': data['header'],
+        'sidebar': data['sidebar'],
+        'video': data['video'],
+        'body': data['body'],
+        'transcript_url': static('content/docs/launch-event-transcript.pdf'),
+    })
+
+
+def job_guarantee(request):
+    data = _load_page_data('job-guarantee.json')
+    body_html = markdown.markdown(data['body']['content'], extensions=['extra', 'smarty'])
+
+    contributors = []
+    for name in ['Patricia Pino', 'Dr Phil Armstrong', 'Steve Laughton']:
+        photo_path = f'/images/bios/{name}.avif'
+        contributors.append({
+            'name': name,
+            'photo_url': _static_image_url(photo_path),
+        })
+
+    return render(request, 'content/job_guarantee.html', {
+        'meta': data['meta'],
+        'header': data['header'],
+        'metadata': data['metadata'],
+        'body_html': body_html,
+        'contributors': contributors,
+        'paper_cover': static('content/images/research/JG_pic.webp'),
+        'download_url': static('content/images/research/20260222-A_counter-inflationary_job_guarantee_for_the_UK-v1.pdf'),
     })
 
 

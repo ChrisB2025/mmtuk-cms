@@ -1,0 +1,197 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{# 1. Hero header #}
+{% with hero_heading=hero.heading hero_description=hero.tagline hero_image=hero_image hero_text_class="text-[#2E2C25]" %}
+  {% include "content/includes/_hero_header.html" %}
+{% endwith %}
+
+{# 2. MMTUK Library — 2-col layout #}
+<div class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+          <div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ library.heading }}</h2>
+            <p class="text-lg text-body-text leading-relaxed">{{ library.body }}</p>
+            <div class="mt-6">
+              <p class="text-lg font-semibold text-neutral">{{ library.coming_soon_label }}</p>
+            </div>
+          </div>
+          <div>
+            <img src="{% static 'content/images/pages/Ask-a-question.avif' %}" alt="MMTUK Library" loading="eager" class="w-full rounded-2xl">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 3. What is MMT? #}
+<div id="WhatIsMMT" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ what_is_mmt.heading }}</h2>
+        <p class="text-lg text-body-text leading-relaxed mb-6">{{ what_is_mmt.paragraph_1 }}</p>
+        <p class="text-lg text-body-text leading-relaxed">{{ what_is_mmt.paragraph_2 }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 4. MMT Core Insights — accordion #}
+<div id="mmt-core-insights" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ core_insights.heading }}</h2>
+        </div>
+        <div class="border border-secondary/30 rounded-xl overflow-hidden divide-y divide-secondary/30">
+          {% for item in core_insights.items %}
+          <div>
+            <button
+              class="accordion-trigger w-full flex items-center justify-between p-5 text-left hover:bg-black/[0.02] transition-colors"
+              aria-expanded="false"
+              aria-controls="insight-{{ forloop.counter }}"
+            >
+              <div class="font-bold text-body-text">{{ item.title }}</div>
+              <svg class="accordion-icon w-5 h-5 text-body-text/40 flex-shrink-0 ml-4" viewBox="0 0 32 32" fill="none">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5303 20.8839C16.2374 21.1768 15.7626 21.1768 15.4697 20.8839L7.82318 13.2374C7.53029 12.9445 7.53029 12.4697 7.82318 12.1768L8.17674 11.8232C8.46963 11.5303 8.9445 11.5303 9.2374 11.8232L16 18.5858L22.7626 11.8232C23.0555 11.5303 23.5303 11.5303 23.8232 11.8232L24.1768 12.1768C24.4697 12.4697 24.4697 12.9445 24.1768 13.2374L16.5303 20.8839Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <div id="insight-{{ forloop.counter }}" class="accordion-content">
+              <div class="px-5 pb-5 flex justify-between items-end gap-4">
+                <p class="text-body-text/70 leading-relaxed">{{ item.body }}</p>
+                <a href="{{ item.link_href }}" class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity flex-shrink-0">
+                  Read more
+                  <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 5. But what about...? — accordion #}
+<div id="but-what-about" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ objections.heading }}</h2>
+          <p class="text-xl text-body-text leading-relaxed">{{ objections.description }}</p>
+        </div>
+        <div class="border border-secondary/30 rounded-xl overflow-hidden divide-y divide-secondary/30">
+          {% for item in objections.items %}
+          <div>
+            <button
+              class="accordion-trigger w-full flex items-center justify-between p-5 text-left hover:bg-black/[0.02] transition-colors"
+              aria-expanded="false"
+              aria-controls="objection-{{ forloop.counter }}"
+            >
+              <div class="font-bold text-body-text">{{ item.title }}</div>
+              <svg class="accordion-icon w-5 h-5 text-body-text/40 flex-shrink-0 ml-4" viewBox="0 0 32 32" fill="none">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M16.5303 20.8839C16.2374 21.1768 15.7626 21.1768 15.4697 20.8839L7.82318 13.2374C7.53029 12.9445 7.53029 12.4697 7.82318 12.1768L8.17674 11.8232C8.46963 11.5303 8.9445 11.5303 9.2374 11.8232L16 18.5858L22.7626 11.8232C23.0555 11.5303 23.5303 11.5303 23.8232 11.8232L24.1768 12.1768C24.4697 12.4697 24.4697 12.9445 24.1768 13.2374L16.5303 20.8839Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <div id="objection-{{ forloop.counter }}" class="accordion-content">
+              <div class="px-5 pb-5 flex justify-between items-end gap-4">
+                <p class="text-body-text/70 leading-relaxed">{{ item.body }}</p>
+                <a href="{{ item.link_href }}" class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity flex-shrink-0">
+                  Read more
+                  <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 6. Advisory Services #}
+<div id="AdvisoryServices" class="px-[5%]">
+  <div class="mx-auto max-w-[80rem]">
+    <div class="border-t border-secondary/40"></div>
+  </div>
+</div>
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ advisory_services.heading }}</h2>
+        <p class="text-lg text-body-text leading-relaxed mb-6">{{ advisory_services.paragraph_1 }}</p>
+          <p class="text-lg text-body-text leading-relaxed">
+            Our services include workshops, training sessions, policy review and ongoing advisory relationships, each designed to build internal capacity and inform evidence-based decision-making. If you are interested in working with us, please email us at
+            <a href="#" class="obfuscated-email text-accent hover:underline" data-user="contact" data-domain="mmtuk.org"><span class="email-fallback">contact [at] mmtuk [dot] org</span></a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  document.querySelectorAll('.accordion-trigger').forEach(function(trigger) {
+    trigger.addEventListener('click', function() {
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      var content = document.getElementById(this.getAttribute('aria-controls'));
+      if (expanded) {
+        content.classList.remove('is-open');
+        this.setAttribute('aria-expanded', 'false');
+      } else {
+        content.classList.add('is-open');
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+  document.querySelectorAll('.obfuscated-email').forEach(function(el) {
+    var user = el.getAttribute('data-user');
+    var domain = el.getAttribute('data-domain');
+    if (user && domain) {
+      var email = user + '@' + domain;
+      el.href = 'mailto:' + email;
+      el.innerHTML = email;
+    }
+  });
+})();
+</script>
+{% endblock %}

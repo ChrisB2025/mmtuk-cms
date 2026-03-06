@@ -1,0 +1,115 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+{% block robots_meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+{# 1. Page title header #}
+<header class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="pt-12 pb-6">
+        <h1 class="font-body text-[1.75rem] md:text-[2.25rem] lg:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ header.page_title }}</h1>
+        <p class="text-lg text-body-text/70 mt-3">{{ header.subtitle }}</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+{# 2. Two-column layout: sidebar + content #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="pb-16 lg:pb-24">
+        <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 lg:gap-12">
+          {# Left sidebar #}
+          <div class="lg:sticky lg:top-8 lg:self-start">
+            <div class="space-y-6">
+              <div>
+                <h6 class="text-xs font-bold uppercase tracking-wider text-body-text/50 mb-2">{{ sidebar.label }}</h6>
+              </div>
+
+              {# Date #}
+              <div>
+                <div class="text-xs text-body-text/50">Date</div>
+                <div class="text-sm font-medium text-body-text">{{ sidebar.date }}</div>
+              </div>
+
+              {# Venue #}
+              <div>
+                <div class="text-xs text-body-text/50">Venue</div>
+                <div class="text-sm font-medium text-body-text">{{ sidebar.venue }}</div>
+              </div>
+
+              {# Transcript download #}
+              <div>
+                <a href="{{ transcript_url }}" download class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity" data-umami-event="launch-event-transcript-download">
+                  Download full transcript (PDF)
+                  <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                </a>
+              </div>
+
+              {# Divider #}
+              <div class="border-t border-secondary/40"></div>
+
+              {# Back to directory #}
+              <div>
+                <a href="{% url 'website:founders' %}" class="inline-flex items-center gap-1 text-body-text font-medium text-sm hover:opacity-70 transition-opacity">
+                  <svg class="w-4 h-4 rotate-180" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/></svg>
+                  Back to Founder Members
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {# Right content area #}
+          <div>
+            {# Vimeo video embed #}
+            <div class="mb-8" style="padding:56.25% 0 0 0;position:relative;">
+              <iframe
+                id="launch-event-video"
+                src="{{ video.url }}"
+                allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:8px;"
+                title="{{ video.title }}"
+              ></iframe>
+            </div>
+            <script src="https://player.vimeo.com/api/player.js"></script>
+
+            {# Prose body #}
+            <div class="prose max-w-none text-body-text">
+              <p>{{ body.intro }}</p>
+
+              <h3>{{ body.programme_heading }}</h3>
+              <ul>
+                {% for item in body.programme %}
+                <li><strong>{{ item.topic }}</strong> &mdash; {{ item.speaker }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var iframe = document.getElementById('launch-event-video');
+  if (!iframe || typeof Vimeo === 'undefined') return;
+  var player = new Vimeo.Player(iframe);
+  player.on('play', function() {
+    if (typeof umami !== 'undefined') umami.track('launch-event-video-play');
+    player.off('play');
+  });
+});
+</script>
+{% endblock %}

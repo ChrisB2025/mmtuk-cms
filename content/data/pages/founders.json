@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "Founder Members | MMTUK",
+    "description": "Welcome to the MMTUK Founder Members directory. Exclusive content, reports and events for our founding supporters."
+  },
+  "hero": {
+    "heading": "Founder Members",
+    "subtitle": "Thank you for being among the first to invest in MMTUK's mission. This is your home for exclusive content, reports and events."
+  },
+  "perks": {
+    "heading": "Your Founder Benefits",
+    "items": [
+      {
+        "icon": "report",
+        "title": "Quarterly Progress Reports",
+        "description": "Detailed updates on MMTUK's impact, research output and organisational growth, delivered directly to you every three months."
+      },
+      {
+        "icon": "meeting",
+        "title": "Private Meetings & Briefings",
+        "description": "Exclusive access to private meetings and briefings with MMTUK's steering group and invited speakers."
+      },
+      {
+        "icon": "early",
+        "title": "Early Access Content",
+        "description": "Be the first to see event recordings, transcripts and research papers before they are published publicly."
+      },
+      {
+        "icon": "recognition",
+        "title": "Founding Recognition",
+        "description": "Your support is acknowledged as part of the pioneering group who made MMTUK's launch possible."
+      }
+    ]
+  },
+  "exclusive_content": {
+    "heading": "Exclusive Content"
+  },
+  "cta": {
+    "heading": "Become a Founder Member",
+    "description": "Join the founding group of supporters building the UK's leading MMT advocacy organisation. The founder member offer of 100 days ends 17 May 2026.",
+    "button_label": "Donate Now"
+  }
+}
