@@ -92,6 +92,7 @@ class News(models.Model):
     summary = models.TextField(blank=True, default='')
     thumbnail = models.CharField(max_length=500, blank=True, default='')
     main_image = models.CharField(max_length=500, blank=True, default='')
+    header_video = models.URLField(max_length=500, blank=True, default='')
     registration_link = models.URLField(max_length=500, blank=True, default='')
     body = models.TextField(blank=True, default='')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='published')

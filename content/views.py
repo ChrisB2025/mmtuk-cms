@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import markdown
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 
 from content.models import Bio, Briefing, LocalEvent, News
@@ -204,6 +204,29 @@ def about_us(request):
             static('content/images/pages/UK-Sectoral-balances-clipped-p-500.avif') + ' 500w,',
             static('content/images/pages/UK-Sectoral-balances-clipped.avif') + ' 989w',
         ]),
+    })
+
+
+def briefing_detail(request, slug):
+    briefing = get_object_or_404(Briefing, slug=slug, status='published', draft=False)
+    briefing.hero_image_url = _static_image_url(briefing.main_image or briefing.thumbnail)
+    body_html = markdown.markdown(briefing.body, extensions=['extra', 'smarty'])
+    has_source = bool(briefing.source_title or briefing.source_url)
+    return render(request, 'content/briefing_detail.html', {
+        'briefing': briefing,
+        'body_html': body_html,
+        'has_source': has_source,
+    })
+
+
+def news_detail(request, slug):
+    news_item = get_object_or_404(News, slug=slug, status='published')
+    raw_image = news_item.main_image or news_item.thumbnail
+    news_item.hero_image_url = _static_image_url(raw_image) if raw_image else ''
+    body_html = markdown.markdown(news_item.body, extensions=['extra', 'smarty'])
+    return render(request, 'content/news_detail.html', {
+        'news': news_item,
+        'body_html': body_html,
     })
 
 

@@ -1,0 +1,105 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ briefing.title }}{% endblock %}
+{% block meta_description %}{{ briefing.summary }}{% endblock %}
+{% block og_title %}{{ briefing.title }}{% endblock %}
+{% block og_description %}{{ briefing.summary }}{% endblock %}
+{% if briefing.hero_image_url %}{% block og_image %}{{ briefing.hero_image_url }}{% endblock %}{% endif %}
+
+{% block content %}
+<article>
+  <!-- Header -->
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-14">
+        <!-- Breadcrumb -->
+        {% with crumb_parent_label="Research" crumb_parent_url="/research/" crumb_child_label="Briefings" crumb_child_url="/research/briefings/" %}
+          {% include "content/includes/_breadcrumb.html" %}
+        {% endwith %}
+
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          <!-- Title & meta column -->
+          <div>
+            <h1 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ briefing.title }}</h1>
+
+            <div class="mt-8">
+              <div class="flex items-center gap-1 text-body-text">
+                <span>By</span>
+                <span class="font-semibold">{{ briefing.author }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-body-text/70 mt-1">
+                <span>{{ briefing.pub_date|date:"j F Y" }}</span>
+                <span>&bull;</span>
+                <span>{{ briefing.read_time }} min read</span>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              {% with share_label="Share this briefing" %}
+                {% include "content/includes/_share_buttons.html" %}
+              {% endwith %}
+            </div>
+          </div>
+
+          <!-- Hero image column -->
+          {% if briefing.hero_image_url %}
+          <div class="overflow-hidden rounded-lg">
+            <img src="{{ briefing.hero_image_url }}" alt="{{ briefing.title }}" loading="eager" class="w-full max-h-[500px] object-contain object-center">
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source attribution + Body content -->
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      {% if has_source %}
+      <div class="source-attribution-box" style="max-width: 65ch;">
+        <div class="text-xs uppercase tracking-wider text-neutral mb-2">Originally Published</div>
+        <div class="text-lg font-semibold mb-2">
+          {% if briefing.source_url %}
+            <a href="{{ briefing.source_url }}" target="_blank" rel="noopener noreferrer" class="text-downriver hover:underline">
+              {{ briefing.source_title|default:"View original article" }}
+            </a>
+          {% else %}
+            {{ briefing.source_title }}
+          {% endif %}
+        </div>
+        <div class="text-sm text-neutral">
+          {% if briefing.source_author %}By {{ briefing.source_author }}{% endif %}
+          {% if briefing.source_author and briefing.source_publication %} | {% endif %}
+          {% if briefing.source_publication %}{{ briefing.source_publication }}{% endif %}
+          {% if briefing.source_date %} | {{ briefing.source_date|date:"j F Y" }}{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="pb-16">
+        <div style="max-width: 65ch;">
+          <div class="prose text-body-text">
+            {{ body_html|safe }}
+          </div>
+
+          <!-- Author footer -->
+          <div class="mt-12 pt-6 border-t border-body-text/10">
+            <p class="font-semibold text-body-text">{{ briefing.author }}</p>
+            {% if briefing.author_title %}
+              <p class="text-sm text-body-text/70">{{ briefing.author_title }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Bottom share -->
+          <div class="mt-8 pt-6 border-t border-body-text/10">
+            {% with share_label="Share this briefing" %}
+              {% include "content/includes/_share_buttons.html" %}
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+{% endblock %}

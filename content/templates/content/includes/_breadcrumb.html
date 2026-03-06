@@ -1,0 +1,22 @@
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-sm text-body-text/70">
+  {% if crumb_parent_url %}
+    <a href="{{ crumb_parent_url }}" class="hover:text-accent transition-colors">{{ crumb_parent_label }}</a>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0">
+      <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  {% endif %}
+  {% if crumb_child_url %}
+    <a href="{{ crumb_child_url }}" class="hover:text-accent transition-colors">{{ crumb_child_label }}</a>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0">
+      <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  {% elif crumb_child_label %}
+    <span>{{ crumb_child_label }}</span>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0">
+      <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
+  {% endif %}
+  {% if crumb_current %}
+    <span class="text-body-text/50 truncate">{{ crumb_current }}</span>
+  {% endif %}
+</nav>

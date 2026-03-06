@@ -1,0 +1,82 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ news.title }}{% endblock %}
+{% block meta_description %}{{ news.summary }}{% endblock %}
+{% block og_title %}{{ news.title }}{% endblock %}
+{% block og_description %}{{ news.summary }}{% endblock %}
+{% if news.hero_image_url %}{% block og_image %}{{ news.hero_image_url }}{% endblock %}{% endif %}
+
+{% block content %}
+<article>
+  <!-- Header -->
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-14">
+        <!-- Breadcrumb -->
+        {% with crumb_parent_label="News" crumb_parent_url="/about-us#MMTUKNews" crumb_child_label=news.category %}
+          {% include "content/includes/_breadcrumb.html" %}
+        {% endwith %}
+
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          <!-- Title & meta column -->
+          <div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ news.title }}</h2>
+
+            <div class="flex items-center gap-2 text-sm text-body-text/70 mt-4">
+              <span>{{ news.date|date:"j F Y" }}</span>
+              <span>&bull;</span>
+              <span>{{ news.category }}</span>
+            </div>
+
+            <div class="mt-6">
+              {% with share_label="Share this news" %}
+                {% include "content/includes/_share_buttons.html" %}
+              {% endwith %}
+            </div>
+          </div>
+
+          <!-- Right column: video or hero image -->
+          {% if news.header_video %}
+          <div class="overflow-hidden rounded-lg">
+            <div style="position: relative; padding-bottom: 56.25%; height: 0;">
+              <iframe src="{{ news.header_video }}"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px;"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowfullscreen title="{{ news.title }}"></iframe>
+            </div>
+          </div>
+          {% elif news.hero_image_url %}
+          <div class="overflow-hidden rounded-lg">
+            <img src="{{ news.hero_image_url }}" alt="{{ news.title }}" loading="eager" class="w-full max-h-[500px] object-contain object-center">
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body content -->
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="pb-16">
+        <div style="max-width: 65ch;">
+          <div class="prose text-body-text">
+            {{ body_html|safe }}
+          </div>
+
+          <!-- Back to News -->
+          <div class="mt-12 pt-6 border-t border-body-text/10">
+            <a href="/about-us#MMTUKNews" class="inline-flex items-center gap-2 px-6 py-3 border border-body-text/20 rounded-[12px] text-body-text font-medium hover:bg-primary transition-colors">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="rotate-180">
+                <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+              Back to News
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+{% endblock %}
