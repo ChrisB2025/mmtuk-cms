@@ -1,5 +1,5 @@
 """
-Read, search, and list existing content from the MMTUK Astro repo.
+Read, search, and list content from the Django database.
 """
 
 import logging
@@ -7,208 +7,90 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-import yaml
 from django.conf import settings
-from django.core.cache import cache
+from django.db.models import Q
 
-from content_schema.schemas import CONTENT_TYPES
-from .git_service import ensure_repo, read_file_from_repo, list_files_in_directory
+from .field_mapping import (
+    MODEL_MAP, get_model_class, get_title_field, instance_to_frontmatter,
+)
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL = 60  # seconds
-CACHE_KEY_PREFIX = 'content_reader'
+# Human-readable names for content types
+CONTENT_TYPE_NAMES = {
+    'article': 'Article',
+    'briefing': 'Briefing',
+    'news': 'News',
+    'bio': 'Bio',
+    'ecosystem': 'Ecosystem Entry',
+    'local_event': 'Local Event',
+    'local_news': 'Local News',
+    'local_group': 'Local Group',
+}
 
 
-def _cache_key(name, *args):
-    parts = [CACHE_KEY_PREFIX, name] + [str(a) for a in args if a]
-    return ':'.join(parts)
+def _instance_to_list_item(content_type, instance):
+    """Convert a model instance to the standard list item dict."""
+    title_field = get_title_field(content_type)
+    title = getattr(instance, title_field, 'Untitled')
 
-
-def invalidate_cache():
-    """Invalidate all content reader cache entries."""
-    # LocMemCache doesn't support wildcard delete, so we clear the whole cache.
-    # This is acceptable because the cache is only used for content reader data
-    # and rate limiting (which has its own TTL and recovers quickly).
-    cache.clear()
-
-
-def _ensure_repo_available():
-    """Ensure the repo clone directory exists. Does NOT fetch — read ops use whatever is on disk."""
-    clone_dir = Path(settings.REPO_CLONE_DIR)
-    if clone_dir.exists():
-        return  # fast path — already have a clone, use it as-is
-    # First time only: do a full clone
-    try:
-        ensure_repo()
-    except Exception:
-        logger.warning('Could not clone repo; reads may return empty results')
-
-
-def _get_content_dir(content_type):
-    """Get the repo directory for a content type."""
-    schema = CONTENT_TYPES.get(content_type)
-    if not schema:
-        return None
-    return schema['directory']
-
-
-def _parse_frontmatter(raw_text):
-    """
-    Parse YAML frontmatter from a markdown file.
-    Returns (frontmatter_dict, body_text) or (None, raw_text) if no frontmatter found.
-    """
-    if not raw_text or not raw_text.startswith('---'):
-        return None, raw_text
-
-    # Find the closing ---
-    end_idx = raw_text.find('---', 3)
-    if end_idx == -1:
-        return None, raw_text
-
-    yaml_str = raw_text[3:end_idx].strip()
-    body = raw_text[end_idx + 3:].strip()
-
-    try:
-        frontmatter = yaml.safe_load(yaml_str)
-        if not isinstance(frontmatter, dict):
-            return None, raw_text
-        # Strip keys with None values (bare "key:" in YAML) to prevent
-        # stale nulls from round-tripping through the CMS
-        frontmatter = {k: v for k, v in frontmatter.items() if v is not None}
-        return frontmatter, body
-    except yaml.YAMLError:
-        logger.warning('Failed to parse YAML frontmatter')
-        return None, raw_text
-
-
-def _get_title_from_frontmatter(frontmatter, content_type):
-    """Extract the display title from frontmatter based on content type."""
-    if not frontmatter:
-        return 'Untitled'
-    # Different content types use different title fields
-    return (
-        frontmatter.get('title')
-        or frontmatter.get('heading')  # local_news uses 'heading'
-        or frontmatter.get('name')  # bio and ecosystem use 'name'
-        or 'Untitled'
+    # Get the date for sorting/display
+    date_val = (
+        getattr(instance, 'pub_date', None)
+        or getattr(instance, 'date', None)
     )
 
-
-def _file_modified_date(relative_path):
-    """Get the modification date of a file in the repo clone."""
-    clone_dir = Path(settings.REPO_CLONE_DIR)
-    full_path = clone_dir / relative_path
-    if full_path.exists():
-        ts = os.path.getmtime(str(full_path))
-        return datetime.fromtimestamp(ts)
-    return None
+    return {
+        'content_type': content_type,
+        'slug': instance.slug,
+        'title': title,
+        'frontmatter': instance_to_frontmatter(content_type, instance),
+        'file_path': None,
+        'modified_date': instance.updated_at,
+    }
 
 
 def list_content(content_type=None):
     """
-    List all content files, optionally filtered by type.
+    List all content, optionally filtered by type.
     Returns a list of dicts: [{content_type, slug, title, frontmatter, file_path, modified_date}]
     """
-    cache_k = _cache_key('list', content_type or 'all')
-    cached = cache.get(cache_k)
-    if cached is not None:
-        return cached
-
-    _ensure_repo_available()
-
     results = []
-    types_to_scan = [content_type] if content_type else list(CONTENT_TYPES.keys())
+    types_to_scan = [content_type] if content_type else list(MODEL_MAP.keys())
 
     for ct in types_to_scan:
-        directory = _get_content_dir(ct)
-        if not directory:
+        try:
+            Model = get_model_class(ct)
+        except ValueError:
             continue
 
-        files = list_files_in_directory(directory)
-        for file_path in files:
-            raw = read_file_from_repo(file_path)
-            if raw is None:
-                continue
+        for instance in Model.objects.all():
+            results.append(_instance_to_list_item(ct, instance))
 
-            frontmatter, body = _parse_frontmatter(raw)
-            slug = frontmatter.get('slug', '') if frontmatter else ''
-            if not slug:
-                # Derive slug from filename
-                slug = Path(file_path).stem
-
-            title = _get_title_from_frontmatter(frontmatter, ct)
-            modified = _file_modified_date(file_path)
-
-            results.append({
-                'content_type': ct,
-                'slug': slug,
-                'title': title,
-                'frontmatter': frontmatter or {},
-                'file_path': file_path,
-                'modified_date': modified,
-            })
-
-    cache.set(cache_k, results, CACHE_TTL)
     return results
-
-
-def _find_file_path_by_slug(content_type, slug):
-    """
-    Find the actual file path for a content item by its frontmatter slug.
-    Handles cases where the filename doesn't match the slug.
-    Returns the file_path string or None.
-    """
-    # First try direct path (fast path for when filename == slug)
-    schema = CONTENT_TYPES.get(content_type)
-    if not schema:
-        return None
-
-    direct_path = schema['directory'] + schema['filename_pattern'].format(slug=slug)
-    raw = read_file_from_repo(direct_path)
-    if raw is not None:
-        return direct_path
-
-    # Fallback: scan directory and match by frontmatter slug
-    all_items = list_content(content_type)
-    for item in all_items:
-        if item['slug'] == slug:
-            return item['file_path']
-
-    return None
 
 
 def read_content(content_type, slug):
     """
-    Read a single content file.
+    Read a single content item.
     Returns {frontmatter, body, raw_markdown, file_path} or None if not found.
     """
-    cache_k = _cache_key('read', content_type, slug)
-    cached = cache.get(cache_k)
-    if cached is not None:
-        return cached
-
-    _ensure_repo_available()
-
-    file_path = _find_file_path_by_slug(content_type, slug)
-    if not file_path:
+    try:
+        Model = get_model_class(content_type)
+    except ValueError:
         return None
 
-    raw = read_file_from_repo(file_path)
-    if raw is None:
+    try:
+        instance = Model.objects.get(slug=slug)
+    except Model.DoesNotExist:
         return None
 
-    frontmatter, body = _parse_frontmatter(raw)
-
-    result = {
-        'frontmatter': frontmatter or {},
-        'body': body,
-        'raw_markdown': raw,
-        'file_path': file_path,
+    return {
+        'frontmatter': instance_to_frontmatter(content_type, instance),
+        'body': instance.body,
+        'raw_markdown': None,
+        'file_path': None,
     }
-
-    cache.set(cache_k, result, CACHE_TTL)
-    return result
 
 
 def search_content(query, content_type=None):
@@ -219,134 +101,140 @@ def search_content(query, content_type=None):
     if not query or not query.strip():
         return []
 
-    query_lower = query.lower().strip()
-    all_content = list_content(content_type)
+    query = query.strip()
+    results = []
+    types_to_scan = [content_type] if content_type else list(MODEL_MAP.keys())
 
-    matches = []
-    for item in all_content:
-        fm = item.get('frontmatter', {})
-        searchable = ' '.join([
-            str(item.get('title', '')),
-            str(fm.get('summary', '')),
-            str(fm.get('description', '')),
-            str(fm.get('text', '')),  # local_news text field
-            str(fm.get('author', '')),
-            str(fm.get('category', '')),
-            str(item.get('slug', '')),
-        ]).lower()
+    for ct in types_to_scan:
+        try:
+            Model = get_model_class(ct)
+        except ValueError:
+            continue
 
-        if query_lower in searchable:
-            matches.append(item)
+        title_field = get_title_field(ct)
 
-    return matches
+        # Build Q filter for searchable fields
+        q = Q(**{f'{title_field}__icontains': query})
+        q |= Q(slug__icontains=query)
+        q |= Q(body__icontains=query)
+
+        # Add type-specific search fields
+        if hasattr(Model, 'summary'):
+            q |= Q(summary__icontains=query)
+        if hasattr(Model, 'author'):
+            q |= Q(author__icontains=query)
+        if hasattr(Model, 'category'):
+            q |= Q(category__icontains=query)
+        if hasattr(Model, 'text'):
+            q |= Q(text__icontains=query)
+        if hasattr(Model, 'description'):
+            q |= Q(description__icontains=query)
+
+        for instance in Model.objects.filter(q):
+            results.append(_instance_to_list_item(ct, instance))
+
+    return results
 
 
 def get_content_stats():
     """
     Get aggregate statistics about site content.
-    Returns {total, by_type: {type: {count, recent_title, recent_date, draft_count}}}
+    Returns {total, by_type: {type: {count, name, recent_title, recent_date, draft_count}}}
     """
-    cache_k = _cache_key('stats')
-    cached = cache.get(cache_k)
-    if cached is not None:
-        return cached
-
-    all_content = list_content()
-
     stats = {
-        'total': len(all_content),
+        'total': 0,
         'by_type': {},
     }
 
-    # Group by content type
-    by_type = {}
-    for item in all_content:
-        ct = item['content_type']
-        if ct not in by_type:
-            by_type[ct] = []
-        by_type[ct].append(item)
+    for ct, Model in MODEL_MAP.items():
+        count = Model.objects.count()
+        if count == 0:
+            continue
 
-    for ct, items in by_type.items():
-        # Sort by date (most recent first)
-        def sort_key(x):
-            fm = x.get('frontmatter', {})
-            d = fm.get('pubDate') or fm.get('date') or ''
-            if isinstance(d, datetime):
-                return d.isoformat()
-            return str(d)
+        stats['total'] += count
 
-        items_sorted = sorted(items, key=sort_key, reverse=True)
+        # Find most recent item
+        title_field = get_title_field(ct)
+        date_field = 'pub_date' if hasattr(Model, 'pub_date') else 'date'
 
-        # Count drafts (briefings with draft: true)
-        draft_count = sum(
-            1 for i in items
-            if i.get('frontmatter', {}).get('draft') is True
-        )
+        try:
+            recent = Model.objects.order_by(f'-{date_field}').first()
+        except Exception:
+            recent = Model.objects.first()
 
-        recent = items_sorted[0] if items_sorted else None
-        schema = CONTENT_TYPES.get(ct, {})
+        recent_title = getattr(recent, title_field, None) if recent else None
+        recent_date = getattr(recent, date_field, None) if recent else None
+        if recent_date:
+            recent_date = recent_date.isoformat()
+
+        # Count drafts
+        draft_count = Model.objects.filter(status='draft').count()
+        # For briefings, also count the 'draft' boolean flag
+        if ct == 'briefing':
+            draft_count += Model.objects.filter(draft=True, status='published').count()
 
         stats['by_type'][ct] = {
-            'count': len(items),
-            'name': schema.get('name', ct),
-            'recent_title': recent['title'] if recent else None,
-            'recent_date': sort_key(recent) if recent else None,
+            'count': count,
+            'name': CONTENT_TYPE_NAMES.get(ct, ct),
+            'recent_title': recent_title,
+            'recent_date': recent_date,
             'draft_count': draft_count,
         }
 
-    cache.set(cache_k, stats, CACHE_TTL)
     return stats
 
 
 def check_slug_exists(content_type, slug):
-    """
-    Check if a content file with this slug already exists.
-    Returns True if it exists, False otherwise.
-    """
-    return _find_file_path_by_slug(content_type, slug) is not None
+    """Check if a content item with this slug already exists."""
+    try:
+        Model = get_model_class(content_type)
+    except ValueError:
+        return False
+    return Model.objects.filter(slug=slug).exists()
 
 
 def list_images(directory=None):
     """
-    Scan public/images/ for image files.
-    Returns [{path, filename, size, modified_date}]
+    Scan image directories for image files.
+    Checks both MEDIA_ROOT/images/ and content/static/content/images/.
+    Returns [{path, web_path, filename, size, modified_date}]
     """
-    cache_k = _cache_key('images', directory or 'all')
-    cached = cache.get(cache_k)
-    if cached is not None:
-        return cached
-
-    _ensure_repo_available()
-
-    clone_dir = Path(settings.REPO_CLONE_DIR)
-    base_dir = clone_dir / 'public' / 'images'
-
-    if directory:
-        base_dir = base_dir / directory
-
-    if not base_dir.exists():
-        return []
-
     image_extensions = {'.png', '.jpg', '.jpeg', '.webp', '.avif', '.svg', '.gif', '.heic'}
     results = []
 
-    for f in sorted(base_dir.rglob('*')):
-        if not f.is_file():
-            continue
-        if f.suffix.lower() not in image_extensions:
-            continue
+    # Scan directories
+    scan_dirs = []
 
-        rel_path = str(f.relative_to(clone_dir)).replace('\\', '/')
-        # Path as used in frontmatter (relative to public/)
-        web_path = '/' + str(f.relative_to(clone_dir / 'public')).replace('\\', '/')
+    # Media directory (CMS uploads)
+    media_images = Path(settings.MEDIA_ROOT) / 'images'
+    if directory:
+        media_images = media_images / directory
+    if media_images.exists():
+        scan_dirs.append(('media', media_images, Path(settings.MEDIA_ROOT)))
 
-        results.append({
-            'path': rel_path,
-            'web_path': web_path,
-            'filename': f.name,
-            'size': f.stat().st_size,
-            'modified_date': datetime.fromtimestamp(os.path.getmtime(str(f))),
-        })
+    # Static directory (Phase 1/2 imported images)
+    static_images = Path(settings.BASE_DIR) / 'content' / 'static' / 'content' / 'images'
+    if directory:
+        static_images = static_images / directory
+    if static_images.exists():
+        scan_dirs.append(('static', static_images, Path(settings.BASE_DIR) / 'content' / 'static' / 'content'))
 
-    cache.set(cache_k, results, CACHE_TTL)
+    for source, base_dir, root_dir in scan_dirs:
+        for f in sorted(base_dir.rglob('*')):
+            if not f.is_file():
+                continue
+            if f.suffix.lower() not in image_extensions:
+                continue
+
+            rel_path = str(f.relative_to(root_dir)).replace('\\', '/')
+            web_path = '/images/' + str(f.relative_to(base_dir.parent if base_dir.name == 'images' else base_dir)).replace('\\', '/') if source == 'media' else '/' + rel_path
+
+            results.append({
+                'path': str(f.relative_to(root_dir)).replace('\\', '/'),
+                'web_path': '/' + str(f.relative_to(base_dir.parent)).replace('\\', '/') if base_dir.name != 'images' else f'/images/{f.relative_to(base_dir)}'.replace('\\', '/'),
+                'filename': f.name,
+                'size': f.stat().st_size,
+                'modified_date': datetime.fromtimestamp(os.path.getmtime(str(f))),
+            })
+
     return results

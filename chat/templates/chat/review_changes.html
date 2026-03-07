@@ -1,99 +1,12 @@
 {% extends "chat/base.html" %}
 
-{% block title %}Review &amp; Publish — MMTUK CMS{% endblock %}
+{% block title %}Activity Log — MMTUK CMS{% endblock %}
 
 {% block content %}
 <div class="review-container">
-  <h2 class="page-title">Review &amp; Publish</h2>
+  <h2 class="page-title">Activity Log</h2>
 
-  {# --- Section 1: Unpushed Changes --- #}
-  <section class="review-section">
-    <div class="section-header">
-      <h3 class="section-title">Unpublished Changes</h3>
-      {% if unpushed_count > 0 %}
-      <span class="section-count">{{ unpushed_count }}</span>
-      {% endif %}
-    </div>
-
-    {% if unpushed %}
-    <div class="section-actions">
-      {% if can_publish %}
-      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-        <form method="post" action="{% url 'publish_changes' %}" class="publish-form-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-publish-large"
-                  onclick="return confirm('Publish all {{ unpushed_count }} change{{ unpushed_count|pluralize }} to the live site?')">
-            Publish All to Site
-          </button>
-        </form>
-        <form method="post" action="{% url 'discard_unpublished' %}" class="publish-form-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger"
-                  onclick="return confirm('Discard all {{ unpushed_count }} unpublished change{{ unpushed_count|pluralize }}? This cannot be undone.')">
-            Discard All
-          </button>
-        </form>
-      </div>
-      <p class="publish-hint">Pushes all staged commits (content edits, new images, deletions) to GitHub. The live site re-deploys automatically within ~2 minutes.</p>
-      {% endif %}
-    </div>
-
-    <table class="commits-table">
-      <thead>
-        <tr>
-          <th>SHA</th>
-          <th>Change</th>
-          <th>Author</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for commit in unpushed %}
-        <tr>
-          <td><code class="commit-sha">{{ commit.sha }}</code></td>
-          <td>
-            {% if commit.content_type and commit.slug %}
-              <a href="{% url 'content_detail' commit.content_type commit.slug %}" class="commit-link">{{ commit.message }}</a>
-            {% else %}
-              {{ commit.message }}
-            {% endif %}
-          </td>
-          <td>{{ commit.author }}</td>
-          <td>{{ commit.date|truncatechars:16 }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    {% if can_publish and unpushed_count > 3 %}
-    <div class="section-actions section-actions-bottom">
-      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-        <form method="post" action="{% url 'publish_changes' %}" class="publish-form-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-publish-large"
-                  onclick="return confirm('Publish all {{ unpushed_count }} change{{ unpushed_count|pluralize }} to the live site?')">
-            Publish All to Site
-          </button>
-        </form>
-        <form method="post" action="{% url 'discard_unpublished' %}" class="publish-form-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger"
-                  onclick="return confirm('Discard all {{ unpushed_count }} unpublished change{{ unpushed_count|pluralize }}? This cannot be undone.')">
-            Discard All
-          </button>
-        </form>
-      </div>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <div class="empty-state-section">
-      <p>No unpublished changes. All content is live.</p>
-    </div>
-    {% endif %}
-  </section>
-
-  {# --- Section 2: Pending Approvals --- #}
+  {# --- Section 1: Pending Approvals --- #}
   <section class="review-section">
     <div class="section-header">
       <h3 class="section-title">Pending Approvals</h3>
@@ -132,7 +45,7 @@
     {% endif %}
   </section>
 
-  {# --- Section 3: Recent Activity --- #}
+  {# --- Section 2: Recent Activity --- #}
   <section class="review-section">
     <div class="section-header">
       <h3 class="section-title">Recent Activity</h3>

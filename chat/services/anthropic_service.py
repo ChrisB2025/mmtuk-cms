@@ -10,8 +10,6 @@ from datetime import date
 import anthropic
 from django.conf import settings
 
-from content_schema.schemas import build_full_schema_prompt
-
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT_TEMPLATE = """\
@@ -42,10 +40,12 @@ The system will scrape the URL and provide you with the extracted content. Then 
   "frontmatter": {{ ... }},
   "body": "markdown content here",
   "images": [
-    {{"url": "source_url", "save_as": "path/in/public/images/filename.webp"}}
+    {{"url": "source_url", "save_as": "images/briefings/slug-thumbnail.webp"}}
   ]
 }}
 ```
+
+Content is saved directly to the database. Published content is live on the website immediately — there is no separate publish step.
 
 ## Reading existing content
 
@@ -53,7 +53,7 @@ To load and view existing content, emit a read action:
 ```json
 {{"action": "read", "content_type": "<type>", "slug": "<slug>"}}
 ```
-The system will load the file and inject its content into the conversation. You can then discuss the content with the user or prepare an edit.
+The system will load the content from the database and inject it into the conversation. You can then discuss the content with the user or prepare an edit.
 
 ## Editing existing content
 
@@ -110,8 +110,8 @@ The user's local group (if group lead): {local_group}
 - For articles, auto-set the layout based on category: "Core Ideas" and "Core Insights" get "simplified", "But what about...?" gets "rebuttal", others get "default"
 - For briefings imported from URLs, always populate the source fields (sourceUrl, sourceTitle, sourceAuthor, sourcePublication, sourceDate)
 - For local events and local news, the localGroup must be one of: brighton, london, oxford, pennines, scotland, solent
-- Date format in frontmatter should be YYYY-MM-DDT00:00:00.000Z for dates, YYYY-MM-DDTHH:MM:SS.000Z for datetimes
-- Image paths in frontmatter should be relative to public/, e.g. /images/my-image.webp
+- Date format should be YYYY-MM-DD or YYYY-MM-DDT00:00:00.000Z
+- Image paths should be relative, e.g. /images/my-image.webp
 - Never invent or hallucinate content. If you need information, ask the user.
 - Only emit a scrape action when the user explicitly wants to IMPORT an article or briefing from a URL. If they mention a URL as a link to include inside the content body (e.g. registration links, reference links), use it as a markdown hyperlink — do NOT scrape it.
 - If the user wants to do something outside your capabilities, let them know and suggest they contact an admin.
@@ -134,10 +134,167 @@ When working with uploaded document content:
 ```
    The "index" corresponds to the image number listed in the document extraction summary (0-based).
 
-## Content schema details
+## Content type reference
 
 {schema_details}
 """
+
+
+def _build_schema_details():
+    """Build a hand-written schema description for the system prompt."""
+    return """\
+### Article (`article`)
+Required: title, slug, category, author, pubDate
+Fields:
+  - **title** (string) — Article title
+  - **slug** (string) — URL path segment, lowercase with hyphens
+  - **category** (enum) Options: ["Article", "Commentary", "Research", "Core Ideas", "Core Insights", "But what about...?"] — Determines layout and page grouping
+  - **layout** (enum) Options: ["default", "simplified", "rebuttal"] Default: `default` — Auto-set from category
+  - **sector** (string) Default: "Economics"
+  - **author** (string) Default: "MMTUK"
+  - **authorTitle** (string, optional)
+  - **pubDate** (date) — Publication date YYYY-MM-DD
+  - **readTime** (number) Default: 5 — Read time in minutes
+  - **summary** (string, optional) — Used in cards and meta descriptions
+  - **thumbnail** (string, optional) — Image path, e.g. /images/my-article.webp
+  - **mainImage** (string, optional) — Larger hero image path
+  - **featured** (boolean) Default: false
+  - **color** (string, optional)
+
+Route: /articles/{slug} or /education/articles/{slug}
+
+---
+
+### Briefing (`briefing`)
+Required: title, slug, author, pubDate
+Fields:
+  - **title** (string)
+  - **slug** (string)
+  - **author** (string)
+  - **authorTitle** (string, optional)
+  - **pubDate** (date)
+  - **readTime** (number) Default: 5
+  - **summary** (string, optional)
+  - **thumbnail** (string, optional) — Card image path
+  - **mainImage** (string, optional)
+  - **featured** (boolean) Default: false
+  - **draft** (boolean) Default: false — Draft briefings are hidden from all pages
+  - **sourceUrl** (string, optional) — Original article URL (for Substack imports)
+  - **sourceTitle** (string, optional)
+  - **sourceAuthor** (string, optional)
+  - **sourcePublication** (string, optional)
+  - **sourceDate** (date, optional)
+
+Route: /research/briefings/{slug}
+Notes: Use only ## (h2) headings in body — never h3 or h1.
+
+---
+
+### News (`news`)
+Required: title, slug, date, category
+Fields:
+  - **title** (string)
+  - **slug** (string)
+  - **date** (date)
+  - **category** (enum) Options: ["Announcement", "Event", "Press Release", "Update"]
+  - **summary** (string, optional)
+  - **thumbnail** (string, optional)
+  - **mainImage** (string, optional)
+  - **registrationLink** (string, optional) — External registration URL
+  - **headerVideo** (string, optional) — Vimeo embed URL
+
+Route: /news/{slug}
+Notes: News items appear as accordion items on /about-us.
+
+---
+
+### Local Event (`local_event`)
+Required: title, slug, localGroup, date, tag, location, description
+Fields:
+  - **title** (string)
+  - **slug** (string)
+  - **localGroup** (enum) Options: ["brighton", "london", "oxford", "pennines", "scotland", "solent"] — Must match an existing local group slug
+  - **date** (date) — Event date
+  - **endDate** (date, optional) — Event end date
+  - **tag** (string) — Category label, e.g. Lecture, Meetup, Festival, Workshop
+  - **location** (string) — Venue name and address
+  - **description** (string) — Short description for card display
+  - **link** (string, optional) — URL, internal or external
+  - **image** (string, optional) — Event card image path
+  - **partnerEvent** (boolean, optional)
+  - **archived** (boolean) Default: false — Auto-set 7 days after endDate
+
+Appears on: /community, /local-group/{localGroup}
+
+---
+
+### Local News (`local_news`)
+Required: heading, slug, text, localGroup, date
+Fields:
+  - **heading** (string) — Note: this field is called 'heading' not 'title'
+  - **slug** (string)
+  - **text** (string) — Summary text for card display
+  - **localGroup** (enum) Options: ["brighton", "london", "oxford", "pennines", "scotland", "solent"]
+  - **date** (date)
+  - **link** (string, optional)
+  - **image** (string, optional)
+
+Route: /local-group/{localGroup}/{slug}
+
+---
+
+### Bio (`bio`)
+Required: name, slug, role
+Fields:
+  - **name** (string) — Full name with title, e.g. Dr Phil Armstrong
+  - **slug** (string)
+  - **role** (string) — Use 'Advisory Board Member' for advisory board. Other roles go to Steering Committee.
+  - **photo** (string, optional) — Path like /images/bios/Name.avif
+  - **linkedin** (string, optional)
+  - **twitter** (string, optional)
+  - **website** (string, optional)
+  - **advisoryBoard** (boolean) Default: false
+
+Appears on: /about-us (split into Steering Committee and Advisory Board)
+Notes: Admin only.
+
+---
+
+### Ecosystem Entry (`ecosystem`)
+Required: name, slug
+Fields:
+  - **name** (string)
+  - **slug** (string)
+  - **country** (string) Default: "UK"
+  - **types** (string array, optional) — Taxonomy tags, e.g. ["all", "offline-events"]
+  - **summary** (string, optional)
+  - **logo** (string, optional)
+  - **website** (string, optional)
+  - **twitter** (string, optional)
+  - **facebook** (string, optional)
+  - **youtube** (string, optional)
+  - **discord** (string, optional)
+  - **activityStatus** (enum) Options: ["Active", "Inactive", "Archived"] Default: "Active"
+
+Route: /ecosystem/{slug} (deferred — not yet live)
+
+---
+
+### Local Group (`local_group`)
+Required: name, slug, title, tagline
+Fields:
+  - **name** (string) — Group name (e.g., "Brighton")
+  - **slug** (string) — URL slug (e.g., "brighton")
+  - **title** (string) — Page title
+  - **tagline** (string) — Short description
+  - **headerImage** (string, optional) — Hero image path
+  - **leaderName** (string, optional) — Group leader name
+  - **leaderIntro** (string, optional) — Leader bio/intro text
+  - **discordLink** (string, optional) — Discord invite URL
+  - **active** (boolean) Default: true
+
+Route: /local-group/{slug}
+Notes: Local groups are geographic chapters. Each has a dedicated page showing their events and news."""
 
 
 def _build_content_inventory():
@@ -178,7 +335,7 @@ def build_system_prompt(profile):
         user_name=profile.user.get_full_name() or profile.user.username,
         role=profile.get_role_display(),
         local_group=profile.local_group or 'N/A',
-        schema_details=build_full_schema_prompt(),
+        schema_details=_build_schema_details(),
         content_inventory=_build_content_inventory(),
     )
 

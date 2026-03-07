@@ -1,21 +1,14 @@
 """
-Pre-warm expensive resources at startup to avoid slow first requests.
-
-Clones the GitHub repo (if not already present) so that content creation
-doesn't need to clone during an HTTP request.
+Pre-warm expensive resources at startup.
 """
 
 from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = 'Pre-warm repo clone and schema cache for faster first requests.'
+    help = 'Pre-warm resources for faster first requests.'
 
     def handle(self, *args, **options):
-        # Pre-clone the repo (persists on disk across gunicorn workers)
-        try:
-            from chat.services.git_service import ensure_repo
-            ensure_repo()
-            self.stdout.write(self.style.SUCCESS('Repo clone ready.'))
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f'Repo warmup failed (non-fatal): {e}'))
+        # Content is now in the database — no repo to clone.
+        # Keep this command as a no-op for backward compatibility with start.sh.
+        self.stdout.write(self.style.SUCCESS('Warmup complete (no-op — content is in the database).'))

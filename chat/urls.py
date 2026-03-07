@@ -20,7 +20,7 @@ urlpatterns = [
     path('content/<str:content_type>/<str:slug>/', views.content_detail, name='content_detail'),
     path('content/<str:content_type>/<str:slug>/edit/', views.edit_in_chat, name='edit_in_chat'),
     path('content/<str:content_type>/<str:slug>/quick-edit/', views.quick_edit, name='quick_edit'),
-    path('content/<str:content_type>/<str:slug>/delete/', views.delete_content, name='delete_content'),
+    path('content/<str:content_type>/<str:slug>/delete/', views.delete_content_view, name='delete_content'),
     path('content/<str:content_type>/<str:slug>/toggle-featured/', views.toggle_featured, name='toggle_featured'),
     # Event archive
     path('events/archive/', views.event_archive, name='event_archive'),
@@ -34,15 +34,8 @@ urlpatterns = [
     path('api/delete-image/', views.delete_image, name='delete_image'),
     path('api/images/', views.images_api, name='images_api'),
     path('api/content/bulk/', views.bulk_action, name='bulk_action'),
-    path('api/pending-publish/', views.pending_publish, name='pending_publish'),
-    # Review & Publish
-    path('review/', views.review_changes, name='review_changes'),
-    path('review/discard/', views.discard_unpublished, name='discard_unpublished'),
-    path('publish/', views.publish_changes, name='publish_changes'),
-    # Redirect Management (SEO)
-    path('redirects/', views.redirect_management, name='redirect_management'),
-    path('redirects/edit/', views.edit_redirect, name='edit_redirect'),
-    path('redirects/remove/', views.remove_redirect, name='remove_redirect'),
+    # Activity log (pending drafts + audit trail)
+    path('activity/', views.review_changes, name='review_changes'),
     # Page management
     path('pages/', views.page_manager, name='page_manager'),
     path('pages/<str:page_key>/', views.page_editor, name='page_editor'),

@@ -55,15 +55,6 @@
           <kbd>Ctrl K</kbd>
         </button>
       </div>
-      <div class="publish-bar" id="publishBar" style="display:none;">
-        <a href="{% url 'review_changes' %}" class="publish-bar-link">
-          <div class="publish-bar-inner">
-            <span class="publish-count" id="publishCount">0</span>
-            <span class="publish-label">unpublished changes</span>
-          </div>
-          <span class="publish-bar-cta">Review &amp; Publish &rarr;</span>
-        </a>
-      </div>
       <nav class="sidebar-nav">
         <ul class="conversation-list">
           {% for c in conversations %}
@@ -96,7 +87,7 @@
         <a href="/admin/" class="sidebar-link">Django Admin</a>
         {% endif %}
         {% if profile.can_approve %}
-        <a href="{% url 'review_changes' %}" class="sidebar-link">Review &amp; Publish</a>
+        <a href="{% url 'review_changes' %}" class="sidebar-link">Activity Log</a>
         <a href="{% url 'pending_list' %}" class="sidebar-link">Pending Approvals</a>
         <a href="{% url 'content_health' %}" class="sidebar-link">Health Check</a>
         {% endif %}
@@ -204,7 +195,7 @@
       { label: 'Site Config',       icon: '⚙',  url: '{% url "site_config_editor" %}', section: 'Navigate' },
       {% endif %}
       {% if profile.can_approve %}
-      { label: 'Review & Publish',  icon: '🚀',  url: '{% url "review_changes" %}',    section: 'Navigate' },
+      { label: 'Activity Log',      icon: '📋',  url: '{% url "review_changes" %}',    section: 'Navigate' },
       { label: 'Pending Approvals', icon: '⏳',  url: '{% url "pending_list" %}',      section: 'Navigate' },
       { label: 'Health Check',      icon: '❤',   url: '{% url "content_health" %}',    section: 'Navigate' },
       {% endif %}
@@ -422,51 +413,5 @@
     });
   })();
   </script>
-  {% if user.is_authenticated %}
-  <script>
-  (function() {
-    var bar = document.getElementById('publishBar');
-    var countEl = document.getElementById('publishCount');
-    if (!bar || !countEl) return;
-
-    function updatePublishCount() {
-      fetch('{% url "pending_publish" %}')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          var n = data.count || 0;
-          countEl.textContent = n;
-          bar.style.display = n > 0 ? '' : 'none';
-        })
-        .catch(function() {});
-    }
-
-    // Poll every 30 seconds
-    updatePublishCount();
-    setInterval(updatePublishCount, 30000);
-
-    // Also update after any fetch that might mutate content
-    var origFetch = window.fetch;
-    window.fetch = function(url) {
-      var args = arguments;
-      return origFetch.apply(this, args).then(function(response) {
-        if (typeof url === 'string' && (
-          url.indexOf('/send/') !== -1 ||
-          url.indexOf('/quick-edit/') !== -1 ||
-          url.indexOf('/delete/') !== -1 ||
-          url.indexOf('/toggle-featured/') !== -1 ||
-          url.indexOf('/upload-image/') !== -1 ||
-          url.indexOf('/bulk/') !== -1
-        )) {
-          setTimeout(updatePublishCount, 1000);
-        }
-        return response;
-      });
-    };
-
-    // Expose for manual refresh
-    window.updatePublishCount = updatePublishCount;
-  })();
-  </script>
-  {% endif %}
 </body>
 </html>

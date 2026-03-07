@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .models import Conversation, Message, ContentDraft, ContentAuditLog, DeploymentLog
+from .models import Conversation, Message, ContentDraft, ContentAuditLog
 from .services.anthropic_service import (
     build_system_prompt,
     get_conversation_messages,
@@ -25,25 +25,23 @@ from .services.anthropic_service import (
     extract_action_block,
     strip_action_block,
 )
-from .services.content_service import generate_markdown, get_file_path, get_image_path
+from .services.content_service import (
+    create_content, update_content, delete_content as delete_content_orm,
+    get_image_save_path, estimate_read_time,
+)
 from .services.content_reader_service import (
-    check_slug_exists, invalidate_cache, list_content, read_content,
+    check_slug_exists, list_content, read_content,
     search_content, get_content_stats, list_images,
 )
-from .services.image_catalog import categorise_images
-from .services.git_service import (
-    ensure_repo, prepare_repo_for_write, write_file_to_repo, write_file_to_output,
-    commit_locally, push_to_remote, get_unpushed_changes,
-    read_file_from_repo, delete_file_from_repo, reset_unpushed_commits,
-    discard_all_unpushed,
+from .services.field_mapping import (
+    get_model_class, get_title_field, get_title,
+    instance_to_frontmatter, generate_slug, MODEL_MAP,
 )
+from .services.image_catalog import categorise_images
 from .services.scraper_service import scrape_url
 from .services.image_service import process_image
 from .services.pdf_service import extract_pdf, save_pdf_images, get_pdf_image
 from .services.docx_service import extract_docx
-from .services.astro_validator import validate_against_astro_schema
-from .services.railway_service import get_latest_deployment, is_railway_configured
-from .services.redirect_service import write_redirects_to_repo, get_redirect_summary
 
 logger = logging.getLogger(__name__)
 
@@ -316,7 +314,7 @@ def _handle_scrape_action(action_data, profile, conv):
 
 def _handle_content_action(action_data, profile, conv, user):
     """
-    Handle a create action: validate, generate markdown, handle images,
+    Handle a create action: validate, save to DB, handle images,
     and either publish directly or save as draft.
     Returns (response_text, action_result_dict).
     """
@@ -343,23 +341,10 @@ def _handle_content_action(action_data, profile, conv, user):
             {'type': 'error', 'message': 'Permission denied'},
         )
 
-    # Validate against Astro schema (pre-commit validation)
-    t0 = time.monotonic()
-    is_valid, astro_error = validate_against_astro_schema(content_type, frontmatter)
-    logger.info('content_action timing: schema_validation=%.1fs', time.monotonic() - t0)
-    if not is_valid:
-        error_msg = f'Content does not match Astro schema:\n{astro_error}'
-        return error_msg, {'type': 'error', 'message': error_msg}
-
-    # Generate markdown
-    markdown, errors = generate_markdown(content_type, frontmatter, body)
-    if errors:
-        error_msg = 'There were validation errors:\n' + '\n'.join(f'- {e}' for e in errors)
-        return error_msg, {'type': 'error', 'message': error_msg}
-
     # Process images
     image_bytes = None
-    image_repo_path = None
+    image_save_path = None
+    image_web_path = None
     if images:
         img_info = images[0]
 
@@ -371,9 +356,10 @@ def _handle_content_action(action_data, profile, conv, user):
                 image_bytes = pdf_bytes
                 save_as = img_info.get('save_as', '')
                 if save_as:
-                    image_repo_path = 'public/' + save_as.lstrip('/')
+                    ext = save_as.rsplit('.', 1)[-1] if '.' in save_as else 'webp'
+                    image_save_path, image_web_path = get_image_save_path(content_type, slug, ext)
                 else:
-                    image_repo_path = get_image_path(content_type, slug)
+                    image_save_path, image_web_path = get_image_save_path(content_type, slug)
         else:
             # Image from URL
             img_url = img_info.get('url', '')
@@ -383,40 +369,30 @@ def _handle_content_action(action_data, profile, conv, user):
                 logger.info('content_action timing: image_download=%.1fs', time.monotonic() - t1)
                 if img_bytes:
                     image_bytes = img_bytes
-                    save_as = img_info.get('save_as', '')
-                    if save_as:
-                        image_repo_path = 'public/' + save_as.lstrip('/')
-                    else:
-                        image_repo_path = get_image_path(content_type, slug)
+                    image_save_path, image_web_path = get_image_save_path(content_type, slug)
                 else:
                     logger.warning('content_action: process_image returned None for url=%.80s', img_url)
 
     # Check if user can publish directly
     can_publish = profile.can_publish_directly(content_type, local_group)
-    file_path = get_file_path(content_type, slug)
 
     if can_publish:
-        # Direct publish via git
+        # Direct publish to database
         try:
-            files_written = []
+            status = 'published'
+            instance, errors = create_content(content_type, frontmatter, body, status)
+            if errors:
+                error_msg = 'There were validation errors:\n' + '\n'.join(f'- {e}' for e in errors)
+                return error_msg, {'type': 'error', 'message': error_msg}
 
-            if settings.DEBUG:
-                write_file_to_output(file_path, markdown)
-                if image_bytes and image_repo_path:
-                    write_file_to_output(image_repo_path, image_bytes)
-                sha = 'debug-mode'
-            else:
-                t2 = time.monotonic()
-                prepare_repo_for_write()
-                logger.info('content_action timing: repo_prep=%.1fs', time.monotonic() - t2)
-                write_file_to_repo(file_path, markdown)
-                files_written.append(file_path)
-                if image_bytes and image_repo_path:
-                    write_file_to_repo(image_repo_path, image_bytes)
-                    files_written.append(image_repo_path)
-
-                commit_msg = f'Add {content_type}: {title} — via MMTUK CMS ({user.username})'
-                sha = commit_locally(files_written, commit_msg, user.get_full_name() or user.username)
+            # Save image to filesystem and update model's image field
+            if image_bytes and image_save_path:
+                image_save_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(image_save_path, 'wb') as f:
+                    f.write(image_bytes)
+                # Update the image field on the model if applicable
+                if image_web_path:
+                    _update_image_field(instance, content_type, image_web_path)
 
             # Save as published draft for record keeping
             ContentDraft.objects.create(
@@ -428,14 +404,13 @@ def _handle_content_action(action_data, profile, conv, user):
                 frontmatter_json=frontmatter,
                 body_markdown=body,
                 status='published',
-                git_commit_sha=sha,
+                git_commit_sha='',
             )
 
-            _log_audit(content_type, slug, 'create', user, sha)
-            invalidate_cache()
+            _log_audit(content_type, slug, 'create', user, '')
 
             return (
-                f'Content published successfully! **{title}** has been committed and will be live shortly after deployment.',
+                f'Content published successfully! **{title}** is now live.',
                 {'type': 'content_created', 'title': title, 'content_type': content_type},
             )
 
@@ -451,7 +426,7 @@ def _handle_content_action(action_data, profile, conv, user):
                 frontmatter_json=frontmatter,
                 body_markdown=body,
                 image_data=image_bytes,
-                image_path=image_repo_path or '',
+                image_path=str(image_save_path) if image_save_path else '',
                 status='pending',
             )
             return (
@@ -470,13 +445,32 @@ def _handle_content_action(action_data, profile, conv, user):
             frontmatter_json=frontmatter,
             body_markdown=body,
             image_data=image_bytes,
-            image_path=image_repo_path or '',
+            image_path=str(image_save_path) if image_save_path else '',
             status='pending',
         )
         return (
             f'Your {content_type} "{title}" has been saved as a draft and is awaiting approval from an editor or admin.',
             {'type': 'draft_pending', 'draft_id': str(draft.id)},
         )
+
+
+def _update_image_field(instance, content_type, web_path):
+    """Update the appropriate image field on a model instance after saving an image."""
+    field_name = None
+    if content_type == 'briefing' and hasattr(instance, 'thumbnail'):
+        instance.thumbnail = web_path
+        field_name = 'thumbnail'
+    elif content_type == 'bio' and hasattr(instance, 'photo'):
+        instance.photo = web_path
+        field_name = 'photo'
+    elif hasattr(instance, 'thumbnail'):
+        instance.thumbnail = web_path
+        field_name = 'thumbnail'
+    elif hasattr(instance, 'image'):
+        instance.image = web_path
+        field_name = 'image'
+    if field_name:
+        instance.save(update_fields=[field_name])
 
 
 def _handle_read_action(action_data, profile, conv):
@@ -527,7 +521,7 @@ def _handle_read_action(action_data, profile, conv):
 
 def _handle_edit_action(action_data, profile, conv, user):
     """
-    Handle an edit action: merge frontmatter, regenerate markdown, commit.
+    Handle an edit action: update content in the database.
     Returns (response_text, action_result_dict).
     """
     content_type = action_data.get('content_type', '')
@@ -550,38 +544,10 @@ def _handle_edit_action(action_data, profile, conv, user):
             {'type': 'error', 'message': 'Permission denied'},
         )
 
-    # Read existing content
-    existing = read_content(content_type, slug)
-    if not existing:
-        return (
-            f'Could not find {content_type} with slug "{slug}" to edit.',
-            {'type': 'error', 'message': 'Content not found'},
-        )
-
-    # Merge frontmatter (new values override existing)
-    merged_fm = dict(existing['frontmatter'])
-    merged_fm.update(new_frontmatter)
-
-    # Use new body or keep existing
-    body = new_body if new_body is not None else existing['body']
-
-    title = merged_fm.get('title') or merged_fm.get('heading') or merged_fm.get('name', 'Untitled')
-
-    # Validate against Astro schema (pre-commit validation)
-    is_valid, astro_error = validate_against_astro_schema(content_type, merged_fm)
-    if not is_valid:
-        error_msg = f'Content does not match Astro schema:\n{astro_error}'
-        return error_msg, {'type': 'error', 'message': error_msg}
-
-    # Generate markdown
-    markdown, errors = generate_markdown(content_type, merged_fm, body)
-    if errors:
-        error_msg = 'Validation errors:\n' + '\n'.join(f'- {e}' for e in errors)
-        return error_msg, {'type': 'error', 'message': error_msg}
-
     # Process images if provided
     image_bytes = None
-    image_repo_path = None
+    image_save_path = None
+    image_web_path = None
     if images:
         img_info = images[0]
         img_url = img_info.get('url', '')
@@ -589,32 +555,28 @@ def _handle_edit_action(action_data, profile, conv, user):
             img_bytes, img_filename = process_image(img_url, slug)
             if img_bytes:
                 image_bytes = img_bytes
-                save_as = img_info.get('save_as', '')
-                if save_as:
-                    image_repo_path = 'public/' + save_as.lstrip('/')
-                else:
-                    image_repo_path = get_image_path(content_type, slug)
-
-    file_path = get_file_path(content_type, slug)
+                image_save_path, image_web_path = get_image_save_path(content_type, slug)
 
     try:
-        files_written = []
+        # Update content via ORM
+        instance, errors = update_content(content_type, slug, new_frontmatter, new_body)
+        if errors:
+            error_msg = 'Validation errors:\n' + '\n'.join(f'- {e}' for e in errors)
+            return error_msg, {'type': 'error', 'message': error_msg}
 
-        if settings.DEBUG:
-            write_file_to_output(file_path, markdown)
-            if image_bytes and image_repo_path:
-                write_file_to_output(image_repo_path, image_bytes)
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            write_file_to_repo(file_path, markdown)
-            files_written.append(file_path)
-            if image_bytes and image_repo_path:
-                write_file_to_repo(image_repo_path, image_bytes)
-                files_written.append(image_repo_path)
+        title = get_title(content_type, instance)
 
-            commit_msg = f'Edit {content_type}: {title} — via MMTUK CMS ({user.username})'
-            sha = commit_locally(files_written, commit_msg, user.get_full_name() or user.username)
+        # Save image to filesystem and update model
+        if image_bytes and image_save_path:
+            image_save_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(image_save_path, 'wb') as f:
+                f.write(image_bytes)
+            if image_web_path:
+                _update_image_field(instance, content_type, image_web_path)
+
+        # Merge frontmatter for the draft record
+        existing = read_content(content_type, slug)
+        merged_fm = existing['frontmatter'] if existing else new_frontmatter
 
         # Record the edit
         ContentDraft.objects.create(
@@ -624,32 +586,30 @@ def _handle_edit_action(action_data, profile, conv, user):
             title=title,
             slug=slug,
             frontmatter_json=merged_fm,
-            body_markdown=body,
+            body_markdown=new_body or (existing['body'] if existing else ''),
             status='published',
-            git_commit_sha=sha,
+            git_commit_sha='',
         )
 
         # Log to audit trail
-        _log_audit(content_type, slug, 'edit', user, sha)
-
-        invalidate_cache()
+        _log_audit(content_type, slug, 'edit', user, '')
 
         return (
-            f'Content updated successfully! **{title}** has been committed and will be live shortly.',
+            f'Content updated successfully! **{title}** is now live.',
             {'type': 'content_edited', 'title': title, 'content_type': content_type},
         )
 
     except Exception:
         logger.exception('Failed to edit content')
         return (
-            f'There was an error saving the edits to "{title}". Please try again.',
+            f'There was an error saving the edits. Please try again.',
             {'type': 'error', 'message': 'Failed to save edits'},
         )
 
 
 def _handle_delete_action(action_data, profile, conv, user):
     """
-    Handle a delete action: remove file from repo and commit.
+    Handle a delete action: remove content from the database.
     Returns (response_text, action_result_dict).
     """
     content_type = action_data.get('content_type', '')
@@ -668,7 +628,7 @@ def _handle_delete_action(action_data, profile, conv, user):
             {'type': 'error', 'message': 'Permission denied'},
         )
 
-    # Verify content exists
+    # Verify content exists and get title before deleting
     existing = read_content(content_type, slug)
     if not existing:
         return (
@@ -683,31 +643,19 @@ def _handle_delete_action(action_data, profile, conv, user):
         or 'Untitled'
     )
 
-    file_path = get_file_path(content_type, slug)
-
     try:
-        if settings.DEBUG:
-            logger.info('DEBUG mode: would delete %s', file_path)
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            deleted = delete_file_from_repo(file_path)
-            if not deleted:
-                return (
-                    f'The file for "{title}" was not found in the repo.',
-                    {'type': 'error', 'message': 'File not found in repo'},
-                )
-
-            commit_msg = f'Delete {content_type}: {title} — via MMTUK CMS ({user.username})'
-            sha = commit_locally([file_path], commit_msg, user.get_full_name() or user.username)
+        success, error = delete_content_orm(content_type, slug)
+        if not success:
+            return (
+                f'Failed to delete "{title}": {error}',
+                {'type': 'error', 'message': error},
+            )
 
         # Log to audit trail
-        _log_audit(content_type, slug, 'delete', user, sha)
-
-        invalidate_cache()
+        _log_audit(content_type, slug, 'delete', user, '')
 
         return (
-            f'**{title}** ({content_type}) has been deleted and the change committed.',
+            f'**{title}** ({content_type}) has been deleted.',
             {'type': 'content_deleted', 'title': title, 'content_type': content_type},
         )
 
@@ -1360,12 +1308,13 @@ def pending_detail(request, draft_id):
 
     draft = get_object_or_404(ContentDraft, id=draft_id, status='pending')
 
-    # Generate the markdown preview
-    markdown_preview, _ = generate_markdown(draft.content_type, draft.frontmatter_json, draft.body_markdown)
+    # Build a preview from the draft's frontmatter and body
+    fm_lines = '\n'.join(f'{k}: {v}' for k, v in draft.frontmatter_json.items())
+    markdown_preview = f'---\n{fm_lines}\n---\n\n{draft.body_markdown or ""}'
 
     return render(request, 'chat/pending_detail.html', {
         'draft': draft,
-        'markdown_preview': markdown_preview or '',
+        'markdown_preview': markdown_preview,
         'profile': profile,
     })
 
@@ -1381,41 +1330,40 @@ def approve_draft(request, draft_id):
     if not profile.can_approve(draft.content_type, local_group):
         return HttpResponseForbidden('You do not have permission to approve this content.')
 
-    # Generate markdown
-    markdown, errors = generate_markdown(draft.content_type, draft.frontmatter_json, draft.body_markdown)
-    if errors:
-        return JsonResponse({'error': 'Validation errors: ' + '; '.join(errors)}, status=400)
-
-    file_path = get_file_path(draft.content_type, draft.slug)
-    title = draft.title
-
     try:
-        files_written = []
-
-        if settings.DEBUG:
-            write_file_to_output(file_path, markdown)
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            write_file_to_repo(file_path, markdown)
-            files_written.append(file_path)
-
-            # Write image if present
-            if draft.image_data and draft.image_path:
-                write_file_to_repo(draft.image_path, bytes(draft.image_data))
-                files_written.append(draft.image_path)
-
-            commit_msg = f'Add {draft.content_type}: {title} — via MMTUK CMS (approved by {request.user.username})'
-            sha = commit_locally(
-                files_written, commit_msg,
-                request.user.get_full_name() or request.user.username,
+        # Check if this is an edit (slug already exists) or a new creation
+        if check_slug_exists(draft.content_type, draft.slug):
+            instance, errors = update_content(
+                draft.content_type, draft.slug,
+                draft.frontmatter_json, draft.body_markdown,
             )
+        else:
+            instance, errors = create_content(
+                draft.content_type, draft.frontmatter_json,
+                draft.body_markdown, status='published',
+            )
+
+        if errors:
+            return JsonResponse({'error': 'Validation errors: ' + '; '.join(errors)}, status=400)
+
+        # Write image if present
+        if draft.image_data and draft.image_path:
+            image_save_path, image_web_path = get_image_save_path(
+                draft.content_type, draft.slug,
+            )
+            image_save_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(image_save_path, 'wb') as f:
+                f.write(bytes(draft.image_data))
+            if image_web_path and instance:
+                _update_image_field(instance, draft.content_type, image_web_path)
 
         draft.status = 'approved'
         draft.reviewer = request.user
         draft.reviewed_at = timezone.now()
-        draft.git_commit_sha = sha
+        draft.git_commit_sha = ''
         draft.save()
+
+        _log_audit(draft.content_type, draft.slug, 'approve', request.user, '')
 
         return redirect('pending_list')
 
@@ -1492,11 +1440,8 @@ def content_browser(request):
 
     stats = get_content_stats()
 
-    from content_schema.schemas import CONTENT_TYPES
-    type_choices = [(k, v['name']) for k, v in CONTENT_TYPES.items()]
-
-    # Get latest deployment status for dashboard widget
-    latest_deployment = DeploymentLog.objects.order_by('-started_at').first()
+    from .services.content_reader_service import CONTENT_TYPE_NAMES
+    type_choices = [(k, CONTENT_TYPE_NAMES.get(k, k)) for k in MODEL_MAP.keys()]
 
     return render(request, 'chat/content_browser.html', {
         'conversations': conversations,
@@ -1509,7 +1454,6 @@ def content_browser(request):
         'view_mode': view_mode,
         'profile': profile,
         'active_tab': 'content',
-        'latest_deployment': latest_deployment,
     })
 
 
@@ -1594,48 +1538,23 @@ def unarchive_event(request, content_type, slug):
         messages.info(request, 'Event is already active (not archived).')
         return redirect('content_detail', content_type=content_type, slug=slug)
 
-    # Update frontmatter
-    frontmatter = item['frontmatter']
-    frontmatter['archived'] = False
+    # Update via ORM
+    try:
+        instance, errors = update_content(content_type, slug, {'archived': False})
+        if errors:
+            messages.error(request, f'Failed to unarchive: {"; ".join(errors)}')
+            return redirect('content_detail', content_type=content_type, slug=slug)
+    except Exception:
+        logger.exception('Failed to unarchive event %s', slug)
+        messages.error(request, 'Failed to unarchive event.')
+        return redirect('content_detail', content_type=content_type, slug=slug)
 
-    # Generate markdown
-    from chat.services.content_service import generate_markdown
-    markdown_content = generate_markdown(frontmatter, item['body'])
-
-    # Get file path
-    from content_schema.schemas import CONTENT_TYPES
-    schema = CONTENT_TYPES[content_type]
-    directory = schema['directory']
-    filename_pattern = schema['filename_pattern']
-    filename = filename_pattern.format(slug=slug)
-    file_path = f'{directory}{filename}'
-
-    # Write to repo
-    from chat.services.git_service import write_file_to_repo, commit_locally
-    write_file_to_repo(file_path, markdown_content)
-
-    # Commit
-    commit_locally(
-        files=[file_path],
-        commit_message=f'chore: Unarchive event "{frontmatter.get("title", slug)}"',
-        author_name=f'{request.user.username} (via CMS)'
-    )
-
-    # Invalidate cache
-    from chat.services.content_reader_service import invalidate_cache
-    invalidate_cache()
+    title = item.get('frontmatter', {}).get('title', slug)
 
     # Log audit
-    from chat.models import ContentAuditLog
-    ContentAuditLog.objects.create(
-        user=request.user,
-        action='unarchive',
-        content_type=content_type,
-        slug=slug,
-        details=f'Unarchived event: {frontmatter.get("title", slug)}'
-    )
+    _log_audit(content_type, slug, 'unarchive', request.user, '')
 
-    messages.success(request, f'✓ Event unarchived: {frontmatter.get("title", slug)}')
+    messages.success(request, f'Event unarchived: {title}')
     return redirect('content_detail', content_type=content_type, slug=slug)
 
 
@@ -1647,34 +1566,19 @@ def content_detail(request, content_type, slug):
 
     item = read_content(content_type, slug)
     if not item:
-        # File missing from repo clone (lost on redeploy) — try to restore from ContentDraft DB record
-        from chat.models import ContentDraft
-        from chat.services.content_reader_service import invalidate_cache
-        draft = ContentDraft.objects.filter(
-            content_type=content_type, slug=slug, status='pending',
-        ).order_by('-created_at').first()
-        if draft:
-            try:
-                markdown, _ = generate_markdown(draft.content_type, draft.frontmatter_json, draft.body_markdown)
-                file_path = get_file_path(draft.content_type, draft.slug)
-                ensure_repo()
-                write_file_to_repo(file_path, markdown)
-                files = [file_path]
-                if draft.image_data and draft.image_path:
-                    write_file_to_repo(draft.image_path, bytes(draft.image_data))
-                    files.append(draft.image_path)
-                commit_locally(files, f'Restore {draft.content_type}: {draft.title}', 'system')
-                invalidate_cache()
-                item = read_content(content_type, slug)
-                logger.info('content_detail: restored %s/%s from ContentDraft', content_type, slug)
-            except Exception:
-                logger.exception('content_detail: failed to restore %s/%s from ContentDraft', content_type, slug)
-        if not item:
-            from django.http import Http404
-            raise Http404(f'Content not found: {content_type}/{slug}')
+        from django.http import Http404
+        raise Http404(f'Content not found: {content_type}/{slug}')
 
-    from content_schema.schemas import CONTENT_TYPES
-    schema = CONTENT_TYPES.get(content_type, {})
+    # Build route info for site URL
+    _CONTENT_ROUTES = {
+        'article': '/articles/{slug}',
+        'briefing': '/research/briefings/{slug}',
+        'news': '/news/{slug}',
+        'ecosystem': '/ecosystem/{slug}',
+        'local_group': '/local-group/{slug}',
+        'local_event': '/local-group/{localGroup}/{slug}',
+    }
+
     title = (
         item['frontmatter'].get('title')
         or item['frontmatter'].get('heading')
@@ -1683,7 +1587,7 @@ def content_detail(request, content_type, slug):
     )
 
     # Build site URL
-    route = schema.get('route', '')
+    route = _CONTENT_ROUTES.get(content_type, '')
     site_url = ''
     if route and '{slug}' in route:
         site_url = 'https://mmtuk.org' + route.format(slug=slug)
@@ -1714,7 +1618,6 @@ def content_detail(request, content_type, slug):
         'content_type': content_type,
         'slug': slug,
         'title': title,
-        'schema': schema,
         'site_url': site_url,
         'is_published': is_published,
         'profile': profile,
@@ -1810,71 +1713,37 @@ def quick_edit(request, content_type, slug):
         from django.http import Http404
         raise Http404(f'Content not found: {content_type}/{slug}')
 
-    # Collect frontmatter from form fields (prefixed with fm_)
-    from content_schema.schemas import CONTENT_TYPES as CT_SCHEMAS
-    schema = CT_SCHEMAS.get(content_type, {})
-    required_fields = set(schema.get('required_fields', []))
-
-    schema_fields = schema.get('fields', {})
-    merged_fm = dict(existing['frontmatter'])
+    # Collect frontmatter updates from form fields (prefixed with fm_)
+    updated_fm = {}
     for key in list(existing['frontmatter'].keys()):
         form_key = f'fm_{key}'
         if form_key in request.POST:
             value = request.POST[form_key]
-            # Convert empty optional fields to None (sanitize_frontmatter will strip them)
-            if value == '' and key not in required_fields:
+            if value == '':
                 value = None
             else:
-                # Coerce form string values back to schema types
-                field_type = schema_fields.get(key, {}).get('type', 'string')
-                if field_type == 'boolean' and isinstance(value, str):
+                # Coerce boolean and number types
+                if isinstance(value, str) and value.lower() in ('true', 'false'):
                     value = value.lower() == 'true'
-                elif field_type == 'number' and isinstance(value, str):
+                elif isinstance(value, str):
                     try:
                         value = int(value) if '.' not in value else float(value)
                     except (ValueError, TypeError):
-                        pass  # leave as string, validation will catch it
-            merged_fm[key] = value
+                        pass  # leave as string
+            if value is not None:
+                updated_fm[key] = value
 
     # Get body
-    new_body = request.POST.get('body', existing['body'])
-
-    title = merged_fm.get('title') or merged_fm.get('heading') or merged_fm.get('name', 'Untitled')
-
-    # Validate against Astro schema (pre-commit validation)
-    is_valid, astro_error = validate_against_astro_schema(content_type, merged_fm)
-    if not is_valid:
-        # Show error via Django messages
-        from django.contrib import messages
-        messages.error(request, f'Validation error: {astro_error}')
-        return redirect('content_detail', content_type=content_type, slug=slug)
-
-    # Generate markdown
-    markdown, errors = generate_markdown(content_type, merged_fm, new_body)
-    if errors:
-        # Redirect back with error (simple approach)
-        from django.contrib import messages
-        messages.error(request, f'Validation errors: {"; ".join(errors)}')
-        return redirect('content_detail', content_type=content_type, slug=slug)
-
-    file_path = get_file_path(content_type, slug)
+    new_body = request.POST.get('body', None)
 
     try:
-        files_written = []
+        instance, errors = update_content(content_type, slug, updated_fm, new_body)
+        if errors:
+            from django.contrib import messages
+            messages.error(request, f'Validation errors: {"; ".join(errors)}')
+            return redirect('content_detail', content_type=content_type, slug=slug)
 
-        if settings.DEBUG:
-            write_file_to_output(file_path, markdown)
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            write_file_to_repo(file_path, markdown)
-            files_written.append(file_path)
-
-            commit_msg = f'Quick edit {content_type}: {title} — via MMTUK CMS ({request.user.username})'
-            sha = commit_locally(files_written, commit_msg, request.user.get_full_name() or request.user.username)
-
-        _log_audit(content_type, slug, 'edit', request.user, sha)
-        invalidate_cache()
+        _log_audit(content_type, slug, 'edit', request.user, '')
 
     except Exception:
         logger.exception('Quick edit failed')
@@ -1884,7 +1753,7 @@ def quick_edit(request, content_type, slug):
 
 @login_required
 @require_POST
-def delete_content(request, content_type, slug):
+def delete_content_view(request, content_type, slug):
     """Delete content from the content browser with redirect tracking."""
     profile = request.user.profile
 
@@ -1906,33 +1775,24 @@ def delete_content(request, content_type, slug):
     # Get redirect target from form (empty string means intentional 404)
     redirect_target = request.POST.get('redirect_target', '').strip()
 
-    file_path = get_file_path(content_type, slug)
-
     try:
-        if settings.DEBUG:
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            deleted = delete_file_from_repo(file_path)
-            if not deleted:
-                return redirect('content_browser')
-
-            commit_msg = f'Delete {content_type}: {title} — via MMTUK CMS ({request.user.username})'
-            sha = commit_locally([file_path], commit_msg, request.user.get_full_name() or request.user.username)
+        success, error = delete_content_orm(content_type, slug)
+        if not success:
+            from django.contrib import messages
+            messages.error(request, f'Failed to delete: {error}')
+            return redirect('content_browser')
 
         # Log deletion with redirect tracking
-        audit_log = ContentAuditLog.objects.create(
+        ContentAuditLog.objects.create(
             content_type=content_type,
             slug=slug,
             action='delete',
             user=request.user,
-            git_commit_sha=sha,
+            git_commit_sha='',
             changes_summary=f'Deleted: {title}',
             deleted_at=timezone.now(),
             redirect_target=redirect_target,
         )
-
-        invalidate_cache()
 
         # Show success message with redirect info
         from django.contrib import messages
@@ -2026,26 +1886,21 @@ def upload_image(request):
         except Exception:
             pass  # Keep original format
 
-    repo_path = f'public/{save_dir.strip("/")}/{filename}'
+    # Save to MEDIA_ROOT/images/
+    from pathlib import Path
+    save_path = Path(settings.MEDIA_ROOT) / save_dir.strip('/') / filename
+    save_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        if settings.DEBUG:
-            write_file_to_output(repo_path, image_bytes)
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            write_file_to_repo(repo_path, image_bytes)
-            commit_msg = f'Upload image: {filename} — via MMTUK CMS ({request.user.username})'
-            sha = commit_locally([repo_path], commit_msg, request.user.get_full_name() or request.user.username)
-
-        invalidate_cache()
+        with open(save_path, 'wb') as f:
+            f.write(image_bytes)
 
         # Web path for use in frontmatter
-        web_path = '/' + repo_path.replace('public/', '', 1)
+        web_path = '/' + save_dir.strip('/') + '/' + filename
 
         return JsonResponse({
             'success': True,
-            'path': repo_path,
+            'path': str(save_path),
             'web_path': web_path,
             'filename': filename,
         })
@@ -2091,23 +1946,25 @@ def delete_image(request):
         if refs:
             return JsonResponse({'warning': True, 'references': refs})
 
-    rel_path = 'public' + web_path  # e.g. public/images/news/foo.png
-    filename = rel_path.rsplit('/', 1)[-1]
+    filename = web_path.rsplit('/', 1)[-1]
 
     try:
-        if settings.DEBUG:
-            import pathlib
-            full = pathlib.Path(settings.OUTPUT_DIR) / rel_path
-            if full.exists():
-                full.unlink()
-        else:
-            from .services.git_service import delete_file_from_repo, commit_locally
-            if not delete_file_from_repo(rel_path):
-                return JsonResponse({'error': 'Image not found'}, status=404)
-            commit_msg = f'Delete image: {filename} — via MMTUK CMS ({request.user.username})'
-            commit_locally([rel_path], commit_msg, request.user.get_full_name() or request.user.username)
+        from pathlib import Path
 
-        invalidate_cache()
+        # Try MEDIA_ROOT first, then static images dir
+        media_path = Path(settings.MEDIA_ROOT) / web_path.lstrip('/')
+        static_path = Path(settings.BASE_DIR) / 'content' / 'static' / 'content' / web_path.lstrip('/')
+
+        deleted = False
+        for full_path in (media_path, static_path):
+            if full_path.exists():
+                full_path.unlink()
+                deleted = True
+                break
+
+        if not deleted:
+            return JsonResponse({'error': 'Image not found'}, status=404)
+
         return JsonResponse({'success': True})
 
     except Exception:
@@ -2130,7 +1987,7 @@ def images_api(request):
 
 @login_required
 def repo_image(request, image_path):
-    """Serve an image from the repo clone's public/ directory."""
+    """Serve an image from MEDIA_ROOT or static content images."""
     import mimetypes
     from pathlib import Path
 
@@ -2139,15 +1996,14 @@ def repo_image(request, image_path):
     if '..' in clean:
         raise Http404
 
-    clone_dir = Path(settings.REPO_CLONE_DIR)
-    full_path = clone_dir / 'public' / clean
+    # Try MEDIA_ROOT first
+    full_path = Path(settings.MEDIA_ROOT) / clean
 
     if not full_path.exists() or not full_path.is_file():
-        # Fallback to output dir in DEBUG mode
-        if settings.DEBUG:
-            full_path = Path(settings.OUTPUT_DIR) / 'public' / clean
+        # Fallback to static content images
+        full_path = Path(settings.BASE_DIR) / 'content' / 'static' / 'content' / clean
         if not full_path.exists() or not full_path.is_file():
-            logger.warning('repo_image: 404 path=%s full=%s', image_path, full_path)
+            logger.warning('repo_image: 404 path=%s', image_path)
             raise Http404
 
     # Fallback MIME types for formats Python's mimetypes may not know
@@ -2168,40 +2024,21 @@ def toggle_featured(request, content_type, slug):
     if not profile.can_edit(content_type):
         return JsonResponse({'error': 'Permission denied'}, status=403)
 
-    existing = read_content(content_type, slug)
-    if not existing:
+    try:
+        Model = get_model_class(content_type)
+        instance = Model.objects.get(slug=slug)
+    except (ValueError, Model.DoesNotExist):
         return JsonResponse({'error': 'Content not found'}, status=404)
 
-    fm = dict(existing['frontmatter'])
-    fm['featured'] = not fm.get('featured', False)
+    if not hasattr(instance, 'featured'):
+        return JsonResponse({'error': 'This content type does not support featured.'}, status=400)
 
-    title = fm.get('title') or fm.get('heading') or fm.get('name', 'Untitled')
+    instance.featured = not instance.featured
+    instance.save(update_fields=['featured'])
 
-    markdown, errors = generate_markdown(content_type, fm, existing['body'])
-    if errors:
-        return JsonResponse({'error': '; '.join(errors)}, status=400)
+    _log_audit(content_type, slug, 'edit', request.user, '', f'featured={instance.featured}')
 
-    file_path = get_file_path(content_type, slug)
-
-    try:
-        if settings.DEBUG:
-            write_file_to_output(file_path, markdown)
-            sha = 'debug-mode'
-        else:
-            ensure_repo()
-            write_file_to_repo(file_path, markdown)
-            action_word = 'Set' if fm['featured'] else 'Unset'
-            commit_msg = f'{action_word} featured on {content_type}: {title} — via MMTUK CMS ({request.user.username})'
-            sha = commit_locally([file_path], commit_msg, request.user.get_full_name() or request.user.username)
-
-        _log_audit(content_type, slug, 'edit', request.user, sha, f'featured={fm["featured"]}')
-        invalidate_cache()
-
-        return JsonResponse({'success': True, 'featured': fm['featured']})
-
-    except Exception:
-        logger.exception('Toggle featured failed')
-        return JsonResponse({'error': 'Failed to update.'}, status=500)
+    return JsonResponse({'success': True, 'featured': instance.featured})
 
 
 # --- Content Health Check ---
@@ -2299,117 +2136,55 @@ def bulk_action(request):
             continue
 
         if action == 'delete':
-            existing = read_content(ct, slug)
-            if not existing:
-                results['errors'] += 1
-                continue
-
-            title = (
-                existing['frontmatter'].get('title')
-                or existing['frontmatter'].get('heading')
-                or existing['frontmatter'].get('name')
-                or 'Untitled'
-            )
-            file_path = get_file_path(ct, slug)
-
             try:
-                if settings.DEBUG:
-                    logger.info('DEBUG mode: would delete %s', file_path)
+                success, error = delete_content_orm(ct, slug)
+                if success:
+                    _log_audit(ct, slug, 'delete', request.user)
+                    results['success'] += 1
                 else:
-                    ensure_repo()
-                    delete_file_from_repo(file_path)
-                    commit_locally(
-                        [file_path],
-                        f'Bulk delete {ct}: {title} — via MMTUK CMS ({request.user.username})',
-                        request.user.get_full_name() or request.user.username,
-                    )
-
-                _log_audit(ct, slug, 'delete', request.user)
-                results['success'] += 1
+                    results['errors'] += 1
             except Exception:
                 logger.exception('Bulk delete failed for %s/%s', ct, slug)
                 results['errors'] += 1
 
         elif action == 'set_draft':
-            existing = read_content(ct, slug)
-            if not existing:
-                results['errors'] += 1
-                continue
-
-            fm = dict(existing['frontmatter'])
-            fm['draft'] = True
-            markdown, errors = generate_markdown(ct, fm, existing['body'])
-            if errors:
-                results['errors'] += 1
-                continue
-
-            file_path = get_file_path(ct, slug)
             try:
-                if settings.DEBUG:
-                    write_file_to_output(file_path, markdown)
-                else:
-                    ensure_repo()
-                    write_file_to_repo(file_path, markdown)
-                    commit_locally(
-                        [file_path],
-                        f'Set draft on {ct}: {slug} — via MMTUK CMS ({request.user.username})',
-                        request.user.get_full_name() or request.user.username,
-                    )
+                Model = get_model_class(ct)
+                instance = Model.objects.get(slug=slug)
+                if hasattr(instance, 'draft'):
+                    instance.draft = True
+                    instance.save(update_fields=['draft'])
+                elif hasattr(instance, 'status'):
+                    instance.status = 'draft'
+                    instance.save(update_fields=['status'])
                 results['success'] += 1
             except Exception:
                 results['errors'] += 1
 
         elif action == 'unset_draft':
-            existing = read_content(ct, slug)
-            if not existing:
-                results['errors'] += 1
-                continue
-
-            fm = dict(existing['frontmatter'])
-            fm['draft'] = False
-            markdown, errors = generate_markdown(ct, fm, existing['body'])
-            if errors:
-                results['errors'] += 1
-                continue
-
-            file_path = get_file_path(ct, slug)
             try:
-                if settings.DEBUG:
-                    write_file_to_output(file_path, markdown)
-                else:
-                    ensure_repo()
-                    write_file_to_repo(file_path, markdown)
-                    commit_locally(
-                        [file_path],
-                        f'Unset draft on {ct}: {slug} — via MMTUK CMS ({request.user.username})',
-                        request.user.get_full_name() or request.user.username,
-                    )
+                Model = get_model_class(ct)
+                instance = Model.objects.get(slug=slug)
+                if hasattr(instance, 'draft'):
+                    instance.draft = False
+                    instance.save(update_fields=['draft'])
+                elif hasattr(instance, 'status'):
+                    instance.status = 'published'
+                    instance.save(update_fields=['status'])
                 results['success'] += 1
             except Exception:
                 results['errors'] += 1
 
-    invalidate_cache()
     return JsonResponse(results)
 
 
-# --- Review & Publish ---
+# --- Activity Log ---
 
 @login_required
 def review_changes(request):
-    """Review all pending changes before publishing."""
+    """Review pending drafts and recent audit activity."""
     profile = request.user.profile
     conversations = Conversation.objects.filter(user=request.user)[:20]
-
-    unpushed = get_unpushed_changes()
-
-    # Enrich each commit with content_type + slug from audit log so we can link to the item
-    for commit in unpushed:
-        log = ContentAuditLog.objects.filter(
-            git_commit_sha__startswith=commit['sha']
-        ).first()
-        if log:
-            commit['content_type'] = log.content_type
-            commit['slug'] = log.slug
 
     pending_drafts = ContentDraft.objects.filter(status='pending')
 
@@ -2422,311 +2197,12 @@ def review_changes(request):
     recent_audit = ContentAuditLog.objects.select_related('user')[:20]
 
     return render(request, 'chat/review_changes.html', {
-        'unpushed': unpushed,
-        'unpushed_count': len(unpushed),
         'pending_drafts': pending_drafts,
         'pending_count': pending_drafts.count(),
         'recent_audit': recent_audit,
-        'can_publish': profile.role in ('admin', 'editor'),
         'conversations': conversations,
         'profile': profile,
     })
-
-
-# --- Publish (batched push) ---
-
-@login_required
-@require_POST
-def publish_changes(request):
-    """Push all unpushed local commits to the remote (triggers site deploy)."""
-    from django.contrib import messages
-
-    profile = request.user.profile
-    if profile.role not in ('admin', 'editor'):
-        return HttpResponseForbidden('You do not have permission to publish changes.')
-
-    # Generate redirects config for deleted content (SEO preservation)
-    redirect_count = 0
-    try:
-        redirect_summary = get_redirect_summary()
-        redirect_count = redirect_summary['total_count']
-        if redirect_count > 0:
-            logger.info(f'Generating {redirect_count} redirect(s) before publish')
-            write_redirects_to_repo()
-
-            # Build a descriptive commit message from pending content commits
-            from .services.git_service import commit_locally
-            pending = get_unpushed_changes()
-            content_msgs = [
-                c['message'] for c in pending
-                if not c['message'].startswith(('Update redirects:', 'chore:'))
-            ]
-
-            if len(content_msgs) == 1:
-                # Single content change — show it prominently
-                redirect_msg = f'{content_msgs[0]} (+{redirect_count} redirect)'
-            elif content_msgs:
-                # Multiple content changes — summarise
-                redirect_msg = (
-                    f'Publish: {len(content_msgs)} change(s) '
-                    f'(+{redirect_count} redirect) — via MMTUK CMS ({request.user.username})'
-                )
-            else:
-                # Redirects only — no content commits pending
-                redirect_msg = f'Update redirects: {redirect_count} redirect(s) — via MMTUK CMS'
-
-            commit_locally(['redirects.config.mjs'], redirect_msg, 'MMTUK CMS')
-    except Exception as e:
-        # Fail open - don't block publish if redirect generation fails
-        logger.exception(f'Failed to generate redirects: {e}')
-        messages.warning(request, 'Warning: Could not generate redirects config.')
-
-    # Get unpushed commits before push (for Railway tracking)
-    unpushed = get_unpushed_changes()
-    latest_commit_sha = unpushed[0]['sha'] if unpushed else ''
-
-    count = push_to_remote()
-    _log_audit('site', 'publish', 'publish', request.user, changes_summary=f'{count} commit(s) pushed')
-    logger.info('User %s published %d commit(s) to remote', request.user.username, count)
-
-    # Track Railway deployment if configured
-    if is_railway_configured() and count > 0:
-        try:
-            # Wait a moment for Railway to detect the push and create deployment
-            import time
-            time.sleep(2)
-
-            deployment_id = get_latest_deployment()
-            if deployment_id:
-                DeploymentLog.objects.create(
-                    deployment_id=deployment_id,
-                    commit_sha=latest_commit_sha,
-                    triggered_by=request.user,
-                    status='pending',
-                )
-                messages.success(
-                    request,
-                    f'{count} commit(s) published. Railway deployment {deployment_id[:8]}... is being monitored.'
-                )
-                logger.info('Created deployment log for %s', deployment_id[:8])
-            else:
-                messages.warning(
-                    request,
-                    f'{count} commit(s) published, but could not fetch Railway deployment ID.'
-                )
-        except Exception as e:
-            # Fail open - don't block publish if Railway tracking fails
-            logger.exception('Failed to create deployment log: %s', e)
-            messages.success(request, f'{count} commit(s) published successfully.')
-    else:
-        messages.success(request, f'{count} commit(s) published successfully.')
-
-    # Redirect back to referring page, or content browser
-    referer = request.META.get('HTTP_REFERER', '')
-    if referer:
-        return redirect(referer)
-    return redirect('content_browser')
-
-
-@login_required
-@require_POST
-def discard_unpublished(request):
-    """Discard all unpushed local commits (hard reset to remote)."""
-    from django.contrib import messages
-
-    profile = request.user.profile
-    if profile.role not in ('admin', 'editor'):
-        return HttpResponseForbidden('You do not have permission to discard changes.')
-
-    count = discard_all_unpushed()
-    if count > 0:
-        _log_audit('site', 'discard', 'discard', request.user,
-                   changes_summary=f'{count} commit(s) discarded')
-        messages.success(request, f'Discarded {count} unpublished change(s).')
-        logger.info('User %s discarded %d unpushed commit(s)', request.user.username, count)
-    else:
-        messages.info(request, 'No unpublished changes to discard.')
-
-    return redirect('review_changes')
-
-
-@login_required
-def pending_publish(request):
-    """JSON API returning the count and details of unpushed commits."""
-    changes = get_unpushed_changes()
-    return JsonResponse({
-        'count': len(changes),
-        'commits': changes,
-    })
-
-
-# --- Redirect Management (SEO) ---
-
-@login_required
-@permission_required('accounts.can_approve_content', raise_exception=True)
-def redirect_management(request):
-    """View and manage redirects for deleted content (admin/editor only)."""
-    profile = request.user.profile
-    conversations = Conversation.objects.filter(user=request.user)[:20]
-
-    # Get redirect summary
-    summary = get_redirect_summary()
-
-    # Count grouped targets
-    grouped_count = len(summary['grouped'])
-
-    # Get deleted content with no redirect (intentional 404s)
-    intentional_404s = ContentAuditLog.objects.filter(
-        action='delete',
-        deleted_at__isnull=False,
-        redirect_target='',
-    ).select_related('user').order_by('-deleted_at')[:50]
-
-    return render(request, 'chat/redirect_management.html', {
-        'summary': summary,
-        'grouped_count': grouped_count,
-        'deleted_no_redirect': intentional_404s.count(),
-        'intentional_404s': intentional_404s,
-        'conversations': conversations,
-        'profile': profile,
-    })
-
-
-@login_required
-@permission_required('accounts.can_approve_content', raise_exception=True)
-@require_POST
-def edit_redirect(request):
-    """Edit a redirect target for deleted content."""
-    from django.contrib import messages
-    from .services.redirect_service import validate_redirect_target
-
-    source_path = request.POST.get('source_path', '').strip()
-    redirect_target = request.POST.get('redirect_target', '').strip()
-
-    if not source_path:
-        messages.error(request, 'Invalid source path.')
-        return redirect('redirect_management')
-
-    # Validate redirect target
-    is_valid, error_message = validate_redirect_target(redirect_target)
-    if not is_valid:
-        messages.error(request, f'Invalid redirect target: {error_message}')
-        return redirect('redirect_management')
-
-    # Find the ContentAuditLog entry
-    # Parse source_path to extract content_type and slug
-    # Format: /articles/slug or /news/slug
-    parts = source_path.strip('/').split('/')
-    if len(parts) != 2:
-        messages.error(request, 'Invalid source path format.')
-        return redirect('redirect_management')
-
-    # Map URL paths back to content types
-    path_to_type = {
-        'articles': 'article',
-        'news': 'news',
-        'briefings': 'briefing',
-        'local-events': 'local_event',
-        'local-news': 'local_news',
-        'about': 'bio',
-        'ecosystem': 'ecosystem',
-        'local-groups': 'local_group',
-    }
-
-    content_type = path_to_type.get(parts[0])
-    slug = parts[1]
-
-    if not content_type:
-        messages.error(request, f'Unknown content type: {parts[0]}')
-        return redirect('redirect_management')
-
-    # Update the most recent delete log for this content
-    audit_log = ContentAuditLog.objects.filter(
-        action='delete',
-        content_type=content_type,
-        slug=slug,
-        deleted_at__isnull=False,
-    ).order_by('-deleted_at').first()
-
-    if not audit_log:
-        messages.error(request, 'Could not find deleted content record.')
-        return redirect('redirect_management')
-
-    audit_log.redirect_target = redirect_target
-    audit_log.save()
-
-    if redirect_target:
-        messages.success(
-            request,
-            f'Updated redirect: {source_path} → {redirect_target}'
-        )
-    else:
-        messages.success(
-            request,
-            f'Removed redirect for {source_path} (will return 404)'
-        )
-
-    return redirect('redirect_management')
-
-
-@login_required
-@permission_required('accounts.can_approve_content', raise_exception=True)
-@require_POST
-def remove_redirect(request):
-    """Remove a redirect (set target to empty, content will 404)."""
-    from django.contrib import messages
-
-    source_path = request.POST.get('source_path', '').strip()
-
-    if not source_path:
-        messages.error(request, 'Invalid source path.')
-        return redirect('redirect_management')
-
-    # Parse source_path to extract content_type and slug
-    parts = source_path.strip('/').split('/')
-    if len(parts) != 2:
-        messages.error(request, 'Invalid source path format.')
-        return redirect('redirect_management')
-
-    path_to_type = {
-        'articles': 'article',
-        'news': 'news',
-        'briefings': 'briefing',
-        'local-events': 'local_event',
-        'local-news': 'local_news',
-        'about': 'bio',
-        'ecosystem': 'ecosystem',
-        'local-groups': 'local_group',
-    }
-
-    content_type = path_to_type.get(parts[0])
-    slug = parts[1]
-
-    if not content_type:
-        messages.error(request, f'Unknown content type: {parts[0]}')
-        return redirect('redirect_management')
-
-    # Update audit log to remove redirect
-    audit_log = ContentAuditLog.objects.filter(
-        action='delete',
-        content_type=content_type,
-        slug=slug,
-        deleted_at__isnull=False,
-    ).order_by('-deleted_at').first()
-
-    if not audit_log:
-        messages.error(request, 'Could not find deleted content record.')
-        return redirect('redirect_management')
-
-    audit_log.redirect_target = ''
-    audit_log.save()
-
-    messages.success(
-        request,
-        f'Removed redirect for {source_path} (will return 404)'
-    )
-
-    return redirect('redirect_management')
 
 
 # --- Discard conversation ---
@@ -2768,26 +2244,6 @@ def discard_conversation(request, conversation_id):
             status='pending'
         )
 
-        # Collect commit SHAs from drafts that have them
-        commit_shas = [
-            draft.git_commit_sha
-            for draft in pending_drafts
-            if draft.git_commit_sha and draft.git_commit_sha != 'debug-no-push'
-        ]
-
-        # Reset unpushed commits (preserves file changes via soft reset)
-        reset_count = 0
-        if commit_shas:
-            try:
-                reset_count = reset_unpushed_commits(commit_shas)
-            except ValueError as e:
-                # Commits are already pushed - can't discard
-                messages.error(
-                    request,
-                    f'Cannot discard: some changes have already been published. {str(e)}'
-                )
-                return redirect('chat_index', conversation_id=conversation_id)
-
         # Delete pending drafts
         draft_count = pending_drafts.count()
         pending_drafts.delete()
@@ -2798,17 +2254,16 @@ def discard_conversation(request, conversation_id):
 
         # Log the action
         logger.info(
-            'User %s discarded conversation %s: deleted %d draft(s), reset %d commit(s)',
-            request.user.username, conversation_id, draft_count, reset_count
+            'User %s discarded conversation %s: deleted %d draft(s)',
+            request.user.username, conversation_id, draft_count,
         )
 
         # Success message
         messages.success(
             request,
-            f'Conversation discarded. Removed {draft_count} draft(s) and reset {reset_count} unpublished commit(s).'
+            f'Conversation discarded. Removed {draft_count} draft(s).'
         )
 
-        invalidate_cache()
         return redirect('content_browser')
 
     except Exception:
@@ -2896,9 +2351,7 @@ def page_editor(request, page_key):
     if page_key not in PAGE_TYPES:
         raise Http404
     page_meta = PAGE_TYPES[page_key]
-    from .services.git_service import ensure_repo
     from .services.page_service import read_page_data
-    ensure_repo()
     page_data = read_page_data(page_key)
     return render(request, 'chat/page_editor.html', {
         'page_key': page_key,
@@ -2921,9 +2374,7 @@ def page_section_editor(request, page_key, section_key):
     section_meta = PAGE_TYPES[page_key]['sections'].get(section_key)
     if not section_meta:
         raise Http404
-    from .services.git_service import ensure_repo
     from .services.page_service import read_page_data
-    ensure_repo()
     page_data = read_page_data(page_key)
     section_data = page_data.get(section_key, {})
     # Pre-build field list with current values so the template can iterate cleanly
@@ -3001,17 +2452,8 @@ def page_section_api(request, page_key, section_key):
 
     from .services.page_service import apply_page_patch
     try:
-        prepare_repo_for_write()
         patch = {section_key: body}
         updated = apply_page_patch(page_key, patch)
-        file_path = f"src/data/pages/{page_key}.json"
-        author = request.user.get_full_name() or request.user.username
-        commit_locally(
-            [file_path],
-            f"content: update {page_key}/{section_key} via CMS",
-            author,
-        )
-        push_to_remote()
         return JsonResponse({'status': 'ok', 'data': updated})
     except Exception as e:
         logger.exception("page_section_api error for %s/%s", page_key, section_key)
@@ -3125,7 +2567,6 @@ def site_config_api(request):
 
     from .services.page_service import read_page_data, write_page_data
     try:
-        prepare_repo_for_write()
         current = read_page_data('site-config')
 
         for field_name, value in body.items():
@@ -3141,14 +2582,6 @@ def site_config_api(request):
             _set_dotted(current, field_name, value)
 
         write_page_data('site-config', current)
-        file_path = "src/data/pages/site-config.json"
-        author = request.user.get_full_name() or request.user.username
-        commit_locally(
-            [file_path],
-            "content: update site-config via CMS",
-            author,
-        )
-        push_to_remote()
         return JsonResponse({'status': 'ok', 'data': current})
     except Exception as e:
         logger.exception("site_config_api error")

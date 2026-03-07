@@ -88,6 +88,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 STORAGES = {
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
@@ -112,12 +115,6 @@ CACHES = {
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 ANTHROPIC_MODEL = 'claude-sonnet-4-20250514'
-
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
-GITHUB_REPO = os.environ.get('GITHUB_REPO', 'ChrisB2025/MMTUK')
-GITHUB_BRANCH = os.environ.get('GITHUB_BRANCH', 'optimize-deploy')
-REPO_CLONE_DIR = BASE_DIR / 'repo_clone'
-OUTPUT_DIR = BASE_DIR / 'output'
 
 # Rate limiting
 CHAT_RATE_LIMIT = 50  # messages per hour per user
