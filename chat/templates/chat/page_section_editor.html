@@ -102,7 +102,7 @@
 (function() {
   var PAGE_KEY    = '{{ page_key }}';
   var SECTION_KEY = '{{ section_key }}';
-  var API_URL = '/api/pages/' + PAGE_KEY + '/section/' + SECTION_KEY + '/';
+  var API_URL = '{% url "page_section_api" page_key=page_key section_key=section_key %}';
 
   var form    = document.getElementById('sectionForm');
   var saveBtn = document.getElementById('saveBtn');

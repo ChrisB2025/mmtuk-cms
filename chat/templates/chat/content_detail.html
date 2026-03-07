@@ -427,7 +427,7 @@
     if (!_pickerImages || subDir !== _pickerDir) {
       _pickerDir = subDir;
       _pickerImages = null;
-      var url = '/api/images/' + (subDir ? '?directory=' + encodeURIComponent(subDir) : '');
+      var url = '{% url "images_api" %}' + (subDir ? '?directory=' + encodeURIComponent(subDir) : '');
       fetch(url)
         .then(function(r) { return r.json(); })
         .then(function(data) {

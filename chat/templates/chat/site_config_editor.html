@@ -67,7 +67,7 @@
 {% block extra_scripts %}
 <script>
 (function() {
-  var API_URL = '/api/site-config/';
+  var API_URL = '{% url "site_config_api" %}';
   var form = document.getElementById('siteConfigForm');
   var saveBtn = document.getElementById('saveBtn');
   var status = document.getElementById('saveStatus');
