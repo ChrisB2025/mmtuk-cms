@@ -21,4 +21,4 @@ RUN tailwindcss -i content/static/content/css/input.css -o content/static/conten
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py setup_roles && python manage.py setup_deployment_monitoring && python manage.py setup_event_archival && python manage.py compress_images --commit && python manage.py warmup && gunicorn mmtuk_cms.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers=4 --timeout=300 --access-logfile -"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py setup_roles && python manage.py setup_deployment_monitoring && python manage.py setup_event_archival && python manage.py warmup && gunicorn mmtuk_cms.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers=4 --timeout=300 --access-logfile -"]
