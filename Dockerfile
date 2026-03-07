@@ -16,8 +16,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Build Tailwind CSS
-RUN tailwindcss -i content/static/content/css/input.css -o content/static/content/css/output.css --minify
+# Build Tailwind CSS, then remove source file so WhiteNoise doesn't try to
+# resolve its @import "tailwindcss" directive as a file path
+RUN tailwindcss -i content/static/content/css/input.css -o content/static/content/css/output.css --minify \
+    && rm content/static/content/css/input.css
 
 RUN python manage.py collectstatic --noinput
 
