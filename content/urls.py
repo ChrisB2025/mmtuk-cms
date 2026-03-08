@@ -24,7 +24,7 @@ urlpatterns = [
     path('terms-of-engagement/', views.terms_of_engagement, name='terms_of_engagement'),
     path('cookie-preferences/', views.cookie_preferences, name='cookie_preferences'),
     path('donate/', views.donate, name='donate'),
-    path('join/', RedirectView.as_view(url='/donate/', permanent=False)),
+    path('join/', views.join, name='join'),
     path('robots.txt', views.robots_txt, name='robots_txt'),
     path('', views.homepage, name='homepage'),
 ]

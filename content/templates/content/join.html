@@ -1,0 +1,83 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{# Hero with portrait collage #}
+<section class="relative overflow-hidden bg-background">
+  <div class="absolute inset-0 opacity-20">
+    <div class="grid grid-cols-4 gap-3 p-4 h-full">
+      <div class="flex flex-col gap-3">
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-lady-coat.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-man-books.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      </div>
+      <div class="flex flex-col gap-3 mt-8">
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/young-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-lady.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      </div>
+      <div class="flex flex-col gap-3 mt-4">
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/female-professional.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      </div>
+      <div class="flex flex-col gap-3 mt-12">
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/young-man_1.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/female-student.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      </div>
+    </div>
+  </div>
+  <div class="relative px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-24 lg:py-32 text-center">
+        <div class="max-w-3xl mx-auto">
+          <h1 class="font-body text-[2rem] md:text-[2.5rem] lg:text-[3.5rem] xl:text-[4rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ hero.heading }}</h1>
+          <p class="text-lg text-body-text/80 leading-relaxed">{{ hero.tagline }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# Join section with form #}
+<section class="bg-primary">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="max-w-3xl mx-auto text-center mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ join_section.heading }}</h2>
+          <p class="text-body-text/80 leading-relaxed">{{ join_section.subtitle }}</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {# Benefits column #}
+          <div>
+            <p class="text-body-text leading-relaxed mb-6">{{ join_section.intro }}</p>
+            <ul class="space-y-3 text-body-text list-disc pl-5">
+              {% for benefit in join_section.benefits %}
+              <li>{{ benefit }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {# ActionNetwork form column #}
+          <div class="bg-background rounded-2xl p-6 lg:p-8">
+            <div id="can-form-area-{{ form_id }}" style="width: 100%"></div>
+            <link href="https://actionnetwork.org/css/style-embed-v3.css" rel="stylesheet" type="text/css">
+            <script>
+            (function() {
+              var formId = '{{ form_id }}';
+              var target = document.getElementById('can-form-area-' + formId);
+              if (!target) return;
+              var script = document.createElement('script');
+              script.src = 'https://actionnetwork.org/widgets/v6/form/' + formId + '?format=js&source=widget';
+              target.parentNode.appendChild(script);
+            })();
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

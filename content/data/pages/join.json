@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "title": "Join",
+    "description": "Join MMTUK and help advance public understanding of Modern Monetary Theory in the UK. Become a member, volunteer, or support our research and education work."
+  },
+  "hero": {
+    "heading": "Join the movement for meaningful change",
+    "tagline": "Connect with local groups driving community impact. Make a difference where you live."
+  },
+  "join_section": {
+    "heading": "Join the MMTUK Community",
+    "subtitle": "Register your interest in our research and policy initiatives",
+    "intro": "We are building a register of activists across the country to create a formal campaigning group for Modern Monetary Theory (MMT) in the UK. Whatever your level of expertise, whatever other skills you may have, we need you. By doing this we hope to:",
+    "benefits": [
+      "Create a network of UK based MMT activists to support each others campaigning efforts and initiatives.",
+      "Support each others learning of MMT fundamentals.",
+      "Coordinate larger campaigns, dissemination and educational activities.",
+      "Create high quality MMT informed policy documents to take to politicians and other campaigners.",
+      "Have a collection of experts at the ready to make the case for MMT wherever it is needed.",
+      "We are very keen on getting connected with people interested in MMT from a broad range of backgrounds and with a wide range of experiences. We look forward to having you on board!"
+    ]
+  }
+}

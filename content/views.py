@@ -82,6 +82,17 @@ def donate(request):
     })
 
 
+def join(request):
+    data = _load_page_data('join.json')
+    site = _load_page_data('site-config.json')
+    return render(request, 'content/join.html', {
+        'meta': data['meta'],
+        'hero': data['hero'],
+        'join_section': data['join_section'],
+        'form_id': site['action_network_form_id'],
+    })
+
+
 def homepage(request):
     data = _load_page_data('home.json')
     hero = data['hero']
