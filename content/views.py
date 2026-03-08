@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 
-from content.models import Bio, Briefing, LocalEvent, LocalGroup, LocalNews, News
+from content.models import Article, Bio, Briefing, LocalEvent, LocalGroup, LocalNews, News
 
 DATA_DIR = Path(__file__).resolve().parent / 'data' / 'pages'
 
@@ -50,6 +50,36 @@ def robots_txt(request):
         'Disallow: /admin/',
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')
+
+
+def donate(request):
+    data = _load_page_data('donate.json')
+    site = _load_page_data('site-config.json')
+    scheme = site['founder_scheme']
+    current = scheme['current_count']
+    target = scheme['target_count']
+    return render(request, 'content/donate.html', {
+        'meta': data['meta'],
+        'hero': data['hero'],
+        'hero_image': static('content/images/pages/Donate-decoration.avif'),
+        'hero_srcset': ' '.join([
+            static('content/images/pages/matt-seymour-RI1x1DpqEH4-unsplash-p-500.avif') + ' 500w,',
+            static('content/images/pages/matt-seymour-RI1x1DpqEH4-unsplash-p-800.avif') + ' 800w,',
+            static('content/images/pages/Donate-decoration.avif') + ' 2400w',
+        ]),
+        'founder_section': data['founder_section'],
+        'founder_cta': data['founder_cta'],
+        'research_donations': data['research_donations'],
+        'pricing': data['pricing'],
+        'thank_you': data['thank_you'],
+        'stripe_links': site['stripe_links'],
+        'deadline_iso': scheme['deadline_iso'],
+        'deadline_display': scheme['deadline_display'],
+        'milestone_message': scheme['milestone_message'],
+        'current_count': current,
+        'target_count': target,
+        'milestone_percent': min(round(current / target * 100), 100) if target else 0,
+    })
 
 
 def homepage(request):
@@ -227,6 +257,18 @@ def briefing_detail(request, slug):
         'briefing': briefing,
         'body_html': body_html,
         'has_source': has_source,
+    })
+
+
+def article_detail(request, slug):
+    article = get_object_or_404(Article, slug=slug, status='published')
+    body_html = markdown.markdown(article.body, extensions=['extra', 'smarty'])
+    is_simplified = article.layout in ('simplified', 'rebuttal')
+    return render(request, 'content/article_detail.html', {
+        'article': article,
+        'body_html': body_html,
+        'crumb_parent_label': 'Education' if is_simplified else 'Articles',
+        'crumb_parent_url': '/education/' if is_simplified else '/articles/',
     })
 
 

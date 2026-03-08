@@ -1,0 +1,21 @@
+{
+  "discord_url": "https://discord.gg/S3UbxFe4FR",
+  "stripe_links": {
+    "supporter": "https://donate.stripe.com/14A5kD28WgUn7NY8bHfYY01",
+    "founder": "https://donate.stripe.com/9B6fZh3d0cE78S20JffYY02",
+    "patron": "https://donate.stripe.com/aFa3cvbJwcE7fgqajPfYY03"
+  },
+  "action_network_form_id": "activist-registration-form",
+  "founder_scheme": {
+    "current_count": 24,
+    "target_count": 100,
+    "deadline_iso": "05/17/2026 00:00:00",
+    "deadline_display": "Sun 17 May 2026",
+    "milestone_message": "First milestone in sight — help us reach 25 founding members"
+  },
+  "announcement_bar": {
+    "enabled": false,
+    "message": "",
+    "link": ""
+  }
+}

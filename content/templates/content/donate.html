@@ -1,0 +1,244 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.title }}{% endblock %}
+{% block meta_description %}{{ meta.description }}{% endblock %}
+{% block og_title %}{{ meta.title }}{% endblock %}
+{% block og_description %}{{ meta.description }}{% endblock %}
+
+{% block content %}
+{# 1. Hero header #}
+{% with hero_heading=hero.heading hero_description=hero.tagline hero_image=hero_image hero_srcset=hero_srcset hero_text_class="text-[#2E2C25]" %}
+  {% include "content/includes/_hero_header.html" %}
+{% endwith %}
+
+{# 2. Founder Member Scheme — 2-col layout #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div class="mb-6">
+              <svg class="w-12 h-12 text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path fill="currentColor" d="M292.48-516.28q17.04-33.85 36.47-67.06 19.42-33.2 41.22-63.77l-76.6-15.52-103.03 103.26 101.94 43.09ZM808.2-821.35q-102 5.96-181.85 43.98-79.85 38.02-156.65 114.83-30.77 30.76-63.05 79.68-32.28 48.93-59.72 107.36L478.5-343.93q58.2-27.44 107.24-59.48 49.04-32.05 79.8-62.81 76.81-77.04 114.71-156.51 37.9-79.47 44.1-181.47.24-3.71-.88-7.07-1.12-3.36-3.36-5.84-2.48-2.24-5.34-3.36-2.86-1.12-6.57-.88ZM576.46-572.22q-19.76-19.76-19.76-48.66 0-28.9 19.76-48.66 19.76-19.53 48.42-19.53t48.42 19.53q19.77 19.76 19.77 48.66 0 28.9-19.77 48.66-19.76 19.52-48.42 19.52t-48.42-19.52Z"/></svg>
+            </div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ founder_section.heading }}</h2>
+            <p class="text-lg text-body-text/80 leading-relaxed mb-6">{{ founder_section.tagline }}</p>
+            <p class="text-body-text leading-relaxed">{{ founder_section.body }}</p>
+          </div>
+          <div class="overflow-hidden rounded-2xl">
+            <img loading="lazy"
+                 sizes="(max-width: 2400px) 100vw, 2400px"
+                 srcset="{% static 'content/images/pages/diana-light-lK_nxI17h-U-unsplash-p-500.avif' %} 500w, {% static 'content/images/pages/diana-light-lK_nxI17h-U-unsplash-p-800.avif' %} 800w, {% static 'content/images/pages/diana-light-lK_nxI17h-U-unsplash-p-1080.avif' %} 1080w, {% static 'content/images/pages/envelopes.avif' %} 2400w"
+                 src="{% static 'content/images/pages/envelopes.avif' %}"
+                 alt=""
+                 class="w-full h-full object-cover">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 3. Milestone Progress Bar #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="border-t border-secondary/40"></div>
+      <div class="py-12">
+        <div class="max-w-2xl mx-auto text-center">
+          <p class="text-body-text/70 mb-4">{{ milestone_message }}</p>
+          <div class="relative h-4 bg-primary rounded-full overflow-hidden mb-2">
+            <div class="absolute inset-y-0 left-0 bg-accent rounded-full transition-all duration-1000" style="width: {{ milestone_percent }}%"></div>
+          </div>
+          <p class="text-sm text-body-text/60">{{ current_count }} of {{ target_count }} founding members</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 4. Founder CTA with Countdown #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="border-t border-secondary/40"></div>
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-12 items-start">
+          <div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ founder_cta.heading }}</h2>
+            <div class="mb-4">
+              <span class="inline-flex items-center px-3 py-1 text-sm font-semibold bg-primary text-body-text rounded-md">The application deadline is:</span>
+            </div>
+            <p class="text-lg font-semibold text-body-text mb-8">{{ deadline_display }}</p>
+            {# Countdown timer #}
+            <div class="flex gap-6" data-countdown-target="{{ deadline_iso }}">
+              <div class="text-center">
+                <div id="days" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
+                <div class="text-sm text-body-text/60">Days</div>
+              </div>
+              <div class="w-px bg-secondary/40 self-stretch"></div>
+              <div class="text-center">
+                <div id="hours" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
+                <div class="text-sm text-body-text/60">Hours</div>
+              </div>
+              <div class="w-px bg-secondary/40 self-stretch"></div>
+              <div class="text-center">
+                <div id="minutes" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
+                <div class="text-sm text-body-text/60">Mins</div>
+              </div>
+              <div class="w-px bg-secondary/40 self-stretch"></div>
+              <div class="text-center">
+                <div id="seconds" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
+                <div class="text-sm text-body-text/60">Secs</div>
+              </div>
+            </div>
+          </div>
+          {# Pricing card #}
+          <div class="bg-primary rounded-2xl p-8 border border-accent/20">
+            <div class="flex justify-between items-start mb-6">
+              <div class="text-sm font-semibold uppercase text-body-text/60">{{ founder_cta.plan_label }}</div>
+              <div class="font-body text-[2rem] font-medium text-body-text">{{ founder_cta.plan_amount }}</div>
+            </div>
+            <div class="border-t border-secondary/40 my-6"></div>
+            <a href="{{ stripe_links.founder }}" target="_blank" class="block w-full text-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">{{ founder_cta.button_label }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 5. Research Donations — 2-col layout #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="border-t border-secondary/40"></div>
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div class="overflow-hidden rounded-2xl">
+            <img loading="lazy"
+                 sizes="(max-width: 2400px) 100vw, 2400px"
+                 srcset="{% static 'content/images/pages/markus-spiske-XrIfY_4cK1w-unsplash-p-500.avif' %} 500w, {% static 'content/images/pages/markus-spiske-XrIfY_4cK1w-unsplash-p-800.avif' %} 800w, {% static 'content/images/pages/markus-spiske-XrIfY_4cK1w-unsplash-p-1080.avif' %} 1080w, {% static 'content/images/pages/financial-charts.avif' %} 2400w"
+                 src="{% static 'content/images/pages/financial-charts.avif' %}"
+                 alt=""
+                 class="w-full h-full object-cover">
+          </div>
+          <div>
+            <div class="mb-6">
+              <img src="{% static 'content/images/gift.svg' %}" loading="lazy" alt="" class="w-12 h-12">
+            </div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ research_donations.heading }}</h2>
+            <p class="text-body-text leading-relaxed mb-6">{{ research_donations.body }}</p>
+            <ul class="space-y-3 text-body-text">
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-accent mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                {{ research_donations.bullet_1 }}
+              </li>
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-accent mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                {{ research_donations.bullet_2 }}
+              </li>
+              <li class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-accent mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                {{ research_donations.bullet_3 }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 6. Donation Tiers — 3-col pricing grid #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="border-t border-secondary/40"></div>
+      <div class="py-16 lg:py-20">
+        <div class="max-w-2xl mx-auto text-center mb-12">
+          <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-4">{{ pricing.heading }}</h2>
+          <p class="text-body-text/70 leading-relaxed">{{ pricing.tagline }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {# Supporter tier #}
+          <div class="bg-primary rounded-2xl p-8 text-center">
+            <div class="mb-6">
+              <div class="text-sm font-semibold uppercase text-body-text/60 mb-2">{{ pricing.supporter_label }}</div>
+              <div class="font-body text-[2.5rem] font-medium text-body-text">{{ pricing.supporter_amount }}</div>
+              <div class="text-sm text-body-text/60">{{ pricing.supporter_period }}</div>
+            </div>
+            <a href="{{ stripe_links.supporter }}" target="_blank" class="block w-full text-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">{{ pricing.supporter_button }}</a>
+          </div>
+          {# Founder tier (highlighted) #}
+          <div class="bg-primary rounded-2xl p-8 text-center border-2 border-accent/30">
+            <div class="mb-6">
+              <div class="text-sm font-semibold uppercase text-body-text/60 mb-2">{{ pricing.founder_label }}</div>
+              <div class="font-body text-[2.5rem] font-medium text-body-text">{{ pricing.founder_amount }}</div>
+              <div class="text-sm text-body-text/60">{{ pricing.founder_period }}</div>
+            </div>
+            <a href="{{ stripe_links.founder }}" target="_blank" class="block w-full text-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">{{ pricing.founder_button }}</a>
+          </div>
+          {# Patron tier #}
+          <div class="bg-primary rounded-2xl p-8 text-center">
+            <div class="mb-6">
+              <div class="text-sm font-semibold uppercase text-body-text/60 mb-2">{{ pricing.patron_label }}</div>
+              <div class="font-body text-[2.5rem] font-medium text-body-text">{{ pricing.patron_amount }}</div>
+              <div class="text-sm text-body-text/60">{{ pricing.patron_period }}</div>
+            </div>
+            <a href="{{ stripe_links.patron }}" target="_blank" class="block w-full text-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">{{ pricing.patron_button }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# 7. Thank You #}
+<section class="bg-background">
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="border-t border-secondary/40"></div>
+      <div class="py-16 lg:py-20">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ thank_you.heading }}</h2>
+            <p class="text-body-text leading-relaxed">{{ thank_you.body }}</p>
+          </div>
+          <div class="overflow-hidden rounded-2xl">
+            <img loading="lazy" src="{% static 'content/images/pages/owl.avif' %}" alt="Owl" class="w-full h-full object-cover">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# Countdown timer script #}
+<script>
+(function () {
+  var second = 1000, minute = second * 60, hour = minute * 60, day = hour * 24;
+  var container = document.querySelector('[data-countdown-target]');
+  if (!container) return;
+  var targetDate = new Date(container.getAttribute('data-countdown-target')).getTime();
+  function update() {
+    var now = new Date().getTime(), distance = targetDate - now;
+    if (distance < 0) {
+      document.getElementById('days').innerText = '0';
+      document.getElementById('hours').innerText = '0';
+      document.getElementById('minutes').innerText = '0';
+      document.getElementById('seconds').innerText = '0';
+      clearInterval(timer);
+      return;
+    }
+    document.getElementById('days').innerText = Math.floor(distance / day);
+    document.getElementById('hours').innerText = Math.floor((distance % day) / hour);
+    document.getElementById('minutes').innerText = Math.floor((distance % hour) / minute);
+    document.getElementById('seconds').innerText = Math.floor((distance % minute) / second);
+  }
+  update();
+  var timer = setInterval(update, 1000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "title": "Donate",
+    "description": "Support MMTUK's mission to promote understanding of Modern Monetary Theory. Your donation funds independent research, education programmes and community outreach across the UK."
+  },
+  "hero": {
+    "heading": "Support modern economics",
+    "tagline": "Join our mission to advance progressive economic thinking through research, collaboration, and innovative funding strategies."
+  },
+  "founder_section": {
+    "heading": "founder member scheme",
+    "tagline": "Calling 100 visionary donors to make a difference",
+    "body": "Be among the first 100 donors to contribute £100 or more within 100 days and be recognised as a founding supporter of MMTUK."
+  },
+  "founder_cta": {
+    "heading": "fuel our foundations",
+    "plan_label": "Founder Member donation",
+    "plan_amount": "£100",
+    "button_label": "Join as a Founder Member of MMTUK"
+  },
+  "research_donations": {
+    "heading": "research Donations",
+    "body": "Support our research projects. Every contribution drives meaningful change.",
+    "bullet_1": "Fund groundbreaking research initiatives",
+    "bullet_2": "Support emerging economic scholars",
+    "bullet_3": "Advance progressive economic thinking"
+  },
+  "pricing": {
+    "heading": "Research Donation levels",
+    "tagline": "Choose a contribution that matches your commitment to economic research",
+    "supporter_label": "Supporter",
+    "supporter_amount": "£5",
+    "supporter_period": "Monthly contribution",
+    "supporter_button": "Donate now",
+    "founder_label": "Founder",
+    "founder_amount": "£100",
+    "founder_period": "One-off donation",
+    "founder_button": "Donate now",
+    "patron_label": "Patron",
+    "patron_amount": "£?",
+    "patron_period": "One-off donation",
+    "patron_button": "Donate now"
+  },
+  "thank_you": {
+    "heading": "thank you for Transforming economics with us",
+    "body": "Your contribution matters. Help us reshape economic understanding through collaborative, progressive research."
+  }
+}

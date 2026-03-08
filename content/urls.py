@@ -7,6 +7,8 @@ app_name = 'website'
 urlpatterns = [
     path('research/briefings/<slug:slug>/', views.briefing_detail, name='briefing_detail'),
     path('research/briefings/', views.briefings_index, name='briefings_index'),
+    path('articles/<slug:slug>/', views.article_detail, name='article_detail'),
+    path('education/articles/<slug:slug>/', views.article_detail, name='education_article_detail'),
     path('news/<slug:slug>/', views.news_detail, name='news_detail'),
     path('research/', views.research, name='research'),
     path('research/job-guarantee/', views.job_guarantee, name='job_guarantee'),
@@ -21,6 +23,8 @@ urlpatterns = [
     path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
     path('terms-of-engagement/', views.terms_of_engagement, name='terms_of_engagement'),
     path('cookie-preferences/', views.cookie_preferences, name='cookie_preferences'),
+    path('donate/', views.donate, name='donate'),
+    path('join/', RedirectView.as_view(url='/donate/', permanent=False)),
     path('robots.txt', views.robots_txt, name='robots_txt'),
     path('', views.homepage, name='homepage'),
 ]

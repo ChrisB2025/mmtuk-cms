@@ -1,0 +1,77 @@
+{% extends "content/base.html" %}
+{% load static %}
+
+{% block title %}{{ article.title }}{% endblock %}
+{% block meta_description %}{{ article.summary }}{% endblock %}
+{% block og_title %}{{ article.title }}{% endblock %}
+{% block og_description %}{{ article.summary }}{% endblock %}
+
+{% block content %}
+<article>
+  <!-- Header -->
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="py-14">
+        <!-- Breadcrumb -->
+        {% with crumb_parent_label=crumb_parent_label crumb_parent_url=crumb_parent_url crumb_child_label=article.category crumb_child_url=crumb_parent_url %}
+          {% include "content/includes/_breadcrumb.html" %}
+        {% endwith %}
+
+        <div class="mt-6">
+          <h1 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text">{{ article.title }}</h1>
+
+          <div class="mt-8">
+            <div class="flex items-center gap-1 text-body-text">
+              <span>By</span>
+              <span class="font-semibold">{{ article.author }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-body-text/70 mt-1">
+              <span>{{ article.pub_date|date:"j F Y" }}</span>
+              <span>&bull;</span>
+              <span>{{ article.read_time }} min read</span>
+              {% if article.category %}
+              <span>&bull;</span>
+              <span>{{ article.category }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mt-6">
+            {% with share_label="Share this article" %}
+              {% include "content/includes/_share_buttons.html" %}
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body content -->
+  <div class="px-[5%]">
+    <div class="mx-auto max-w-[80rem]">
+      <div class="pb-16">
+        <div style="max-width: 65ch;">
+          <div class="prose text-body-text">
+            {{ body_html|safe }}
+          </div>
+
+          <!-- Author footer -->
+          <div class="mt-12 pt-6 border-t border-body-text/10">
+            <p class="font-semibold text-body-text">{{ article.author }}</p>
+            {% if article.author_title %}
+              <p class="text-sm text-body-text/70">{{ article.author_title }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Bottom share -->
+          <div class="mt-8 pt-6 border-t border-body-text/10">
+            {% with share_label="Share this article" %}
+              {% include "content/includes/_share_buttons.html" %}
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+{% endblock %}
