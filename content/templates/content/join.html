@@ -7,32 +7,54 @@
 {% block og_description %}{{ meta.description }}{% endblock %}
 
 {% block content %}
-{# Hero with portrait collage #}
+{# Hero with scattered portrait collage + parallax #}
 <section class="relative overflow-hidden bg-background">
-  <div class="absolute inset-0 opacity-20">
-    <div class="grid grid-cols-4 gap-3 p-4 h-full">
-      <div class="flex flex-col gap-3">
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-lady-coat.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-man-books.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+  {# Scattered portrait images — absolute positioned, split into 2 groups for parallax depth #}
+  <div class="absolute inset-0" data-parallax-canvas>
+    {# Group 1 — moves more on hover #}
+    <div class="absolute inset-0 flex justify-center items-center" data-parallax-group1>
+      {# senior-lady-coat — left edge #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%] z-[1]" style="bottom: 10%; left: -8%">
+        <img src="{% static 'content/images/pages/senior-lady-coat.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
-      <div class="flex flex-col gap-3 mt-8">
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/young-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-lady.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      {# young-man — upper center #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[12%] z-[1]" style="top: 5%; left: 40%">
+        <img src="{% static 'content/images/pages/young-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
-      <div class="flex flex-col gap-3 mt-4">
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/female-professional.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/senior-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      {# senior-man — bottom right #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%] z-[1]" style="bottom: -5%; right: -5%">
+        <img src="{% static 'content/images/pages/senior-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
-      <div class="flex flex-col gap-3 mt-12">
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/young-man_1.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
-        <div class="rounded-lg overflow-hidden flex-1"><img src="{% static 'content/images/pages/female-student.avif' %}" alt="" class="w-full h-full object-cover" loading="eager"></div>
+      {# young-man_1 — bottom center #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%]" style="bottom: -5%; left: 55%">
+        <img src="{% static 'content/images/pages/young-man_1.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
+      </div>
+    </div>
+    {# Group 2 — moves less on hover #}
+    <div class="absolute inset-0 flex justify-center items-center" data-parallax-group2>
+      {# senior-man-books — upper left #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%]" style="top: -10%; left: 10%">
+        <img src="{% static 'content/images/pages/senior-man-books.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
+      </div>
+      {# senior-lady — upper right #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[16%]" style="top: -10%; right: 20%">
+        <img src="{% static 'content/images/pages/senior-lady.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
+      </div>
+      {# female-professional — right edge #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[15%]" style="top: 25%; right: -5%">
+        <img src="{% static 'content/images/pages/female-professional.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
+      </div>
+      {# female-student — bottom right center #}
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[15%]" style="bottom: 5%; right: 32%">
+        <img src="{% static 'content/images/pages/female-student.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
     </div>
   </div>
-  <div class="relative px-[5%]">
+  {# Text content — centered, above images #}
+  <div class="relative z-10 px-[5%]">
     <div class="mx-auto max-w-[80rem]">
-      <div class="py-24 lg:py-32 text-center">
-        <div class="max-w-3xl mx-auto">
+      <div class="flex items-center justify-center min-h-[70vh] lg:min-h-screen text-center">
+        <div class="max-w-3xl mx-auto py-16">
           <h1 class="font-body text-[2rem] md:text-[2.5rem] lg:text-[3.5rem] xl:text-[4rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ hero.heading }}</h1>
           <p class="text-lg text-body-text/80 leading-relaxed">{{ hero.tagline }}</p>
         </div>
@@ -80,4 +102,33 @@
     </div>
   </div>
 </section>
+
+{# Parallax hover effect for hero images #}
+<script>
+(function() {
+  var canvas = document.querySelector('[data-parallax-canvas]');
+  var group1 = document.querySelector('[data-parallax-group1]');
+  var group2 = document.querySelector('[data-parallax-group2]');
+  var hero = canvas ? canvas.parentElement : null;
+  if (!canvas || !group1 || !group2 || !hero) return;
+  [canvas, group1, group2].forEach(function(el) {
+    el.style.willChange = 'transform';
+    el.style.transition = 'transform 0.1s ease-out';
+  });
+  hero.addEventListener('mousemove', function(e) {
+    var rect = hero.getBoundingClientRect();
+    var cx = rect.width / 2, cy = rect.height / 2;
+    var ox = (e.clientX - rect.left - cx) / cx;
+    var oy = (e.clientY - rect.top - cy) / cy;
+    canvas.style.transform = 'translate3d(' + (ox * -5) + 'vw,' + (oy * -5) + 'vh,0)';
+    group1.style.transform = 'translate3d(' + (ox * -8) + '%,' + (oy * -8) + '%,0)';
+    group2.style.transform = 'translate3d(' + (ox * -2) + '%,' + (oy * -2) + '%,0)';
+  });
+  hero.addEventListener('mouseleave', function() {
+    canvas.style.transform = 'translate3d(0,0,0)';
+    group1.style.transform = 'translate3d(0,0,0)';
+    group2.style.transform = 'translate3d(0,0,0)';
+  });
+})();
+</script>
 {% endblock %}
