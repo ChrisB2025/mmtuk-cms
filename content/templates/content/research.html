@@ -8,7 +8,7 @@
 
 {% block content %}
 {# 1. Hero header #}
-{% with hero_heading=hero.heading hero_description=hero.tagline hero_layout="standard" hero_text_class="text-[#2E2C25]" %}
+{% with hero_heading=hero.heading hero_description=hero.tagline hero_image=hero_image hero_srcset=hero_srcset hero_layout="standard" hero_text_class="text-[#2E2C25]" %}
   {% include "content/includes/_hero_header.html" %}
 {% endwith %}
 
