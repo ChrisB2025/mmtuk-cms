@@ -20,7 +20,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div class="mb-6">
-              <svg class="w-12 h-12 text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path fill="currentColor" d="M292.48-516.28q17.04-33.85 36.47-67.06 19.42-33.2 41.22-63.77l-76.6-15.52-103.03 103.26 101.94 43.09ZM808.2-821.35q-102 5.96-181.85 43.98-79.85 38.02-156.65 114.83-30.77 30.76-63.05 79.68-32.28 48.93-59.72 107.36L478.5-343.93q58.2-27.44 107.24-59.48 49.04-32.05 79.8-62.81 76.81-77.04 114.71-156.51 37.9-79.47 44.1-181.47.24-3.71-.88-7.07-1.12-3.36-3.36-5.84-2.48-2.24-5.34-3.36-2.86-1.12-6.57-.88ZM576.46-572.22q-19.76-19.76-19.76-48.66 0-28.9 19.76-48.66 19.76-19.53 48.42-19.53t48.42 19.53q19.77 19.76 19.77 48.66 0 28.9-19.77 48.66-19.76 19.52-48.42 19.52t-48.42-19.52Z"/></svg>
+              <svg class="w-8 h-8 md:w-12 md:h-12 lg:w-16 lg:h-16 text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path fill="currentColor" d="M292.48-516.28q17.04-33.85 36.47-67.06 19.42-33.2 41.22-63.77l-76.6-15.52-103.03 103.26 101.94 43.09ZM808.2-821.35q-102 5.96-181.85 43.98-79.85 38.02-156.65 114.83-30.77 30.76-63.05 79.68-32.28 48.93-59.72 107.36L478.5-343.93q58.2-27.44 107.24-59.48 49.04-32.05 79.8-62.81 76.81-77.04 114.71-156.51 37.9-79.47 44.1-181.47.24-3.71-.88-7.07-1.12-3.36-3.36-5.84-2.48-2.24-5.34-3.36-2.86-1.12-6.57-.88ZM576.46-572.22q-19.76-19.76-19.76-48.66 0-28.9 19.76-48.66 19.76-19.53 48.42-19.53t48.42 19.53q19.77 19.76 19.77 48.66 0 28.9-19.77 48.66-19.76 19.52-48.42 19.52t-48.42-19.52Z"/></svg>
             </div>
             <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ founder_section.heading }}</h2>
             <p class="text-lg text-body-text/80 leading-relaxed mb-6">{{ founder_section.tagline }}</p>
@@ -131,33 +131,33 @@
             </div>
             <p class="text-lg font-semibold text-body-text mb-8">{{ deadline_display }}</p>
             {# Countdown timer #}
-            <div class="flex gap-6" data-countdown-target="{{ deadline_iso }}">
-              <div class="text-center">
+            <div class="inline-flex gap-4 border border-body-text/15 rounded-lg bg-[#fceccc] px-6 py-4" data-countdown-target="{{ deadline_iso }}">
+              <div class="flex flex-col items-center min-w-[4.5rem]">
                 <div id="days" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
-                <div class="text-sm text-body-text/60">Days</div>
+                <div class="text-sm text-body-text">Days</div>
               </div>
-              <div class="w-px bg-secondary/40 self-stretch"></div>
-              <div class="text-center">
+              <div class="w-px bg-body-text/15 self-stretch"></div>
+              <div class="flex flex-col items-center min-w-[4.5rem]">
                 <div id="hours" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
-                <div class="text-sm text-body-text/60">Hours</div>
+                <div class="text-sm text-body-text">Hours</div>
               </div>
-              <div class="w-px bg-secondary/40 self-stretch"></div>
-              <div class="text-center">
+              <div class="w-px bg-body-text/15 self-stretch"></div>
+              <div class="flex flex-col items-center min-w-[4.5rem]">
                 <div id="minutes" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
-                <div class="text-sm text-body-text/60">Mins</div>
+                <div class="text-sm text-body-text">Mins</div>
               </div>
-              <div class="w-px bg-secondary/40 self-stretch"></div>
-              <div class="text-center">
+              <div class="w-px bg-body-text/15 self-stretch"></div>
+              <div class="flex flex-col items-center min-w-[4.5rem]">
                 <div id="seconds" class="font-body text-[2rem] lg:text-[3rem] font-medium text-body-text">--</div>
-                <div class="text-sm text-body-text/60">Secs</div>
+                <div class="text-sm text-body-text">Secs</div>
               </div>
             </div>
           </div>
           {# Pricing card #}
-          <div class="bg-primary rounded-2xl p-8 border border-accent/20">
+          <div class="bg-[#fceccc] rounded-2xl p-8 border border-body-text/15">
             <div class="flex justify-between items-start mb-6">
-              <div class="text-sm font-semibold uppercase text-body-text/60">{{ founder_cta.plan_label }}</div>
-              <div class="font-body text-[2rem] font-medium text-body-text">{{ founder_cta.plan_amount }}</div>
+              <div class="text-[1.25rem] lg:text-[2rem] font-medium uppercase text-body-text leading-tight">{{ founder_cta.plan_label }}</div>
+              <div class="font-body text-[2.25rem] lg:text-[4rem] font-medium text-body-text self-center pl-4">{{ founder_cta.plan_amount }}</div>
             </div>
             <div class="border-t border-secondary/40 my-6"></div>
             <a href="{{ stripe_links.founder }}" target="_blank" class="block w-full text-center px-8 py-3 bg-body-text text-background font-medium rounded-[12px] hover:bg-body-text/90 transition-colors">{{ founder_cta.button_label }}</a>
