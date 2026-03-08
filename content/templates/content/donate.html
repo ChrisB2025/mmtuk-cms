@@ -18,9 +18,9 @@
     <div class="mx-auto max-w-[80rem]">
       <div class="py-16 lg:py-20">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
+          <div class="text-center">
             <div class="mb-6">
-              <svg class="w-12 h-12 text-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path fill="currentColor" d="M292.48-516.28q17.04-33.85 36.47-67.06 19.42-33.2 41.22-63.77l-76.6-15.52-103.03 103.26 101.94 43.09ZM808.2-821.35q-102 5.96-181.85 43.98-79.85 38.02-156.65 114.83-30.77 30.76-63.05 79.68-32.28 48.93-59.72 107.36L478.5-343.93q58.2-27.44 107.24-59.48 49.04-32.05 79.8-62.81 76.81-77.04 114.71-156.51 37.9-79.47 44.1-181.47.24-3.71-.88-7.07-1.12-3.36-3.36-5.84-2.48-2.24-5.34-3.36-2.86-1.12-6.57-.88ZM576.46-572.22q-19.76-19.76-19.76-48.66 0-28.9 19.76-48.66 19.76-19.53 48.42-19.53t48.42 19.53q19.77 19.76 19.77 48.66 0 28.9-19.77 48.66-19.76 19.52-48.42 19.52t-48.42-19.52Z"/></svg>
+              <svg class="w-12 h-12 text-accent mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path fill="currentColor" d="M292.48-516.28q17.04-33.85 36.47-67.06 19.42-33.2 41.22-63.77l-76.6-15.52-103.03 103.26 101.94 43.09ZM808.2-821.35q-102 5.96-181.85 43.98-79.85 38.02-156.65 114.83-30.77 30.76-63.05 79.68-32.28 48.93-59.72 107.36L478.5-343.93q58.2-27.44 107.24-59.48 49.04-32.05 79.8-62.81 76.81-77.04 114.71-156.51 37.9-79.47 44.1-181.47.24-3.71-.88-7.07-1.12-3.36-3.36-5.84-2.48-2.24-5.34-3.36-2.86-1.12-6.57-.88ZM576.46-572.22q-19.76-19.76-19.76-48.66 0-28.9 19.76-48.66 19.76-19.53 48.42-19.53t48.42 19.53q19.77 19.76 19.77 48.66 0 28.9-19.77 48.66-19.76 19.52-48.42 19.52t-48.42-19.52Z"/></svg>
             </div>
             <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ founder_section.heading }}</h2>
             <p class="text-lg text-body-text/80 leading-relaxed mb-6">{{ founder_section.tagline }}</p>
@@ -47,16 +47,75 @@
       <div class="border-t border-secondary/40"></div>
       <div class="py-12">
         <div class="max-w-2xl mx-auto text-center">
-          <p class="text-body-text/70 mb-4">{{ milestone_message }}</p>
-          <div class="relative h-4 bg-primary rounded-full overflow-hidden mb-2">
-            <div class="absolute inset-y-0 left-0 bg-accent rounded-full transition-all duration-1000" style="width: {{ milestone_percent }}%"></div>
+          <div class="text-sm font-semibold uppercase tracking-[0.08em] text-[#5a6775] mb-2">Founding member progress</div>
+          {# Track with milestones #}
+          <div class="relative h-[60px] my-4">
+            {# Track line #}
+            <div class="absolute top-[10px] left-0 right-0 h-[3px] rounded-sm bg-[#fdf5e5]">
+              <div class="absolute top-0 left-0 h-full rounded-sm bg-[#f0a202] transition-all duration-700" style="width: {{ milestone_percent }}%"></div>
+            </div>
+            {# Milestone markers at 25, 50, 75, 100 #}
+            {# 25 marker #}
+            <div class="absolute top-0 flex flex-col items-center" style="left: 25%; transform: translateX(-50%)">
+              {% if milestone_percent >= 25 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#f0a202] border-2 border-[#f0a202]"></div>
+              {% elif milestone_percent < 25 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-transparent border-2 border-[#f0a202] animate-[milestone-pulse_2s_ease-in-out_infinite]"></div>
+              {% endif %}
+              <div class="text-xs mt-1 text-[#5a6775]">25</div>
+            </div>
+            {# 50 marker #}
+            <div class="absolute top-0 flex flex-col items-center" style="left: 50%; transform: translateX(-50%)">
+              {% if milestone_percent >= 50 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#f0a202] border-2 border-[#f0a202]"></div>
+              {% elif milestone_percent >= 25 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-transparent border-2 border-[#f0a202] animate-[milestone-pulse_2s_ease-in-out_infinite]"></div>
+              {% else %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#eeeff1] border-2 border-[#d5d8dc]"></div>
+              {% endif %}
+              <div class="text-xs mt-1 text-[#5a6775]">50</div>
+            </div>
+            {# 75 marker #}
+            <div class="absolute top-0 flex flex-col items-center" style="left: 75%; transform: translateX(-50%)">
+              {% if milestone_percent >= 75 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#f0a202] border-2 border-[#f0a202]"></div>
+              {% elif milestone_percent >= 50 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-transparent border-2 border-[#f0a202] animate-[milestone-pulse_2s_ease-in-out_infinite]"></div>
+              {% else %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#eeeff1] border-2 border-[#d5d8dc]"></div>
+              {% endif %}
+              <div class="text-xs mt-1 text-[#5a6775]">75</div>
+            </div>
+            {# 100 marker #}
+            <div class="absolute top-0 flex flex-col items-center" style="left: 100%; transform: translateX(-50%)">
+              {% if milestone_percent >= 100 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#f0a202] border-2 border-[#f0a202]"></div>
+              {% elif milestone_percent >= 75 %}
+              <div class="w-[22px] h-[22px] rounded-full bg-transparent border-2 border-[#f0a202] animate-[milestone-pulse_2s_ease-in-out_infinite]"></div>
+              {% else %}
+              <div class="w-[22px] h-[22px] rounded-full bg-[#eeeff1] border-2 border-[#d5d8dc]"></div>
+              {% endif %}
+              <div class="text-xs mt-1 text-[#5a6775]">100</div>
+            </div>
           </div>
-          <p class="text-sm text-body-text/60">{{ current_count }} of {{ target_count }} founding members</p>
+          {# Motivational text #}
+          <p class="text-sm text-[#5a6775] mt-2">{{ milestone_message }}</p>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+{# Milestone pulse animation #}
+<style>
+@keyframes milestone-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 162, 2, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(240, 162, 2, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[milestone-pulse_2s_ease-in-out_infinite\] { animation: none; }
+}
+</style>
 
 {# 4. Founder CTA with Countdown #}
 <section class="bg-background">
@@ -124,13 +183,13 @@
                  alt=""
                  class="w-full h-full object-cover">
           </div>
-          <div>
+          <div class="text-center">
             <div class="mb-6">
-              <img src="{% static 'content/images/gift.svg' %}" loading="lazy" alt="" class="w-12 h-12">
+              <img src="{% static 'content/images/gift.svg' %}" loading="lazy" alt="" class="w-12 h-12 mx-auto">
             </div>
             <h2 class="font-body text-[1.5rem] md:text-[1.875rem] lg:text-[2.25rem] xl:text-[3rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ research_donations.heading }}</h2>
             <p class="text-body-text leading-relaxed mb-6">{{ research_donations.body }}</p>
-            <ul class="space-y-3 text-body-text">
+            <ul class="inline-block text-left space-y-3 text-body-text">
               <li class="flex items-start gap-3">
                 <svg class="w-5 h-5 text-accent mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                 {{ research_donations.bullet_1 }}
@@ -165,7 +224,7 @@
           {# Supporter tier #}
           <div class="bg-primary rounded-2xl p-8 text-center">
             <div class="mb-6">
-              <div class="text-sm font-semibold uppercase text-body-text/60 mb-2">{{ pricing.supporter_label }}</div>
+              <div class="text-sm font-semibold uppercase text-body-text mb-2">{{ pricing.supporter_label }}</div>
               <div class="font-body text-[2.5rem] font-medium text-body-text">{{ pricing.supporter_amount }}</div>
               <div class="text-sm text-body-text/60">{{ pricing.supporter_period }}</div>
             </div>
@@ -174,7 +233,7 @@
           {# Founder tier (highlighted) #}
           <div class="bg-primary rounded-2xl p-8 text-center border-2 border-accent/30">
             <div class="mb-6">
-              <div class="text-sm font-semibold uppercase text-body-text/60 mb-2">{{ pricing.founder_label }}</div>
+              <div class="text-sm font-semibold uppercase text-body-text mb-2">{{ pricing.founder_label }}</div>
               <div class="font-body text-[2.5rem] font-medium text-body-text">{{ pricing.founder_amount }}</div>
               <div class="text-sm text-body-text/60">{{ pricing.founder_period }}</div>
             </div>
@@ -183,7 +242,7 @@
           {# Patron tier #}
           <div class="bg-primary rounded-2xl p-8 text-center">
             <div class="mb-6">
-              <div class="text-sm font-semibold uppercase text-body-text/60 mb-2">{{ pricing.patron_label }}</div>
+              <div class="text-sm font-semibold uppercase text-body-text mb-2">{{ pricing.patron_label }}</div>
               <div class="font-body text-[2.5rem] font-medium text-body-text">{{ pricing.patron_amount }}</div>
               <div class="text-sm text-body-text/60">{{ pricing.patron_period }}</div>
             </div>
