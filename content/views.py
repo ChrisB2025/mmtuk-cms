@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import markdown
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 
@@ -39,6 +40,16 @@ def _resolve_image(image):
             image['srcset'],
         )
     return image
+
+
+def robots_txt(request):
+    lines = [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /cms/',
+        'Disallow: /admin/',
+    ]
+    return HttpResponse('\n'.join(lines), content_type='text/plain')
 
 
 def homepage(request):

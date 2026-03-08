@@ -21,5 +21,6 @@ urlpatterns = [
     path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
     path('terms-of-engagement/', views.terms_of_engagement, name='terms_of_engagement'),
     path('cookie-preferences/', views.cookie_preferences, name='cookie_preferences'),
+    path('robots.txt', views.robots_txt, name='robots_txt'),
     path('', views.homepage, name='homepage'),
 ]
