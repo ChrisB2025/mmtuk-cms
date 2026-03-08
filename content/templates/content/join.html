@@ -14,7 +14,7 @@
     {# Group 1 — moves more on hover #}
     <div class="absolute inset-0 flex justify-center items-center" data-parallax-group1>
       {# senior-lady-coat — left edge #}
-      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%] z-[1]" style="bottom: 10%; left: -8%">
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%] z-[1]" style="bottom: 15%; left: -8%">
         <img src="{% static 'content/images/pages/senior-lady-coat.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
       {# young-man — upper center #}
@@ -26,7 +26,7 @@
         <img src="{% static 'content/images/pages/senior-man.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
       {# young-man_1 — bottom center #}
-      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%]" style="bottom: -5%; left: 55%">
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[18%]" style="bottom: -5%; left: 45%">
         <img src="{% static 'content/images/pages/young-man_1.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
     </div>
@@ -45,7 +45,7 @@
         <img src="{% static 'content/images/pages/female-professional.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
       {# female-student — bottom right center #}
-      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[15%]" style="bottom: 5%; right: 32%">
+      <div class="absolute overflow-hidden rounded-2xl w-full max-w-[15%]" style="bottom: 10%; right: 28%">
         <img src="{% static 'content/images/pages/female-student.avif' %}" alt="" class="w-full h-full object-cover" loading="eager">
       </div>
     </div>
@@ -54,7 +54,7 @@
   <div class="relative z-10 px-[5%]">
     <div class="mx-auto max-w-[80rem]">
       <div class="flex items-center justify-center min-h-[70vh] lg:min-h-screen text-center">
-        <div class="max-w-3xl mx-auto py-16">
+        <div class="max-w-5xl mx-auto py-16">
           <h1 class="font-body text-[2rem] md:text-[2.5rem] lg:text-[3.5rem] xl:text-[4rem] font-medium uppercase leading-none tracking-[-0.0375rem] text-body-text mb-6">{{ hero.heading }}</h1>
           <p class="text-lg text-body-text/80 leading-relaxed">{{ hero.tagline }}</p>
         </div>
@@ -83,7 +83,7 @@
             </ul>
           </div>
           {# ActionNetwork form column #}
-          <div class="bg-background rounded-2xl p-6 lg:p-8">
+          <div>
             <div id="can-form-area-{{ form_id }}" style="width: 100%"></div>
             <link href="https://actionnetwork.org/css/style-embed-v3.css" rel="stylesheet" type="text/css">
             <script>
