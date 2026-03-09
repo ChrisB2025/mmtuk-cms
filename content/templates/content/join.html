@@ -111,20 +111,20 @@
   var group2 = document.querySelector('[data-parallax-group2]');
   var hero = canvas ? canvas.parentElement : null;
   if (!canvas || !group1 || !group2 || !hero) return;
-  [canvas, group1, group2].forEach(function(el) {
-    el.style.willChange = 'transform';
-    el.style.transition = 'transform 0.1s ease-out';
-  });
+  var els = [canvas, group1, group2];
+  els.forEach(function(el) { el.style.willChange = 'transform'; });
   hero.addEventListener('mousemove', function(e) {
     var rect = hero.getBoundingClientRect();
     var cx = rect.width / 2, cy = rect.height / 2;
     var ox = (e.clientX - rect.left - cx) / cx;
     var oy = (e.clientY - rect.top - cy) / cy;
+    els.forEach(function(el) { el.style.transition = 'none'; });
     canvas.style.transform = 'translate3d(' + (ox * -5) + 'vw,' + (oy * -5) + 'vh,0)';
     group1.style.transform = 'translate3d(' + (ox * -8) + '%,' + (oy * -8) + '%,0)';
     group2.style.transform = 'translate3d(' + (ox * -2) + '%,' + (oy * -2) + '%,0)';
   });
   hero.addEventListener('mouseleave', function() {
+    els.forEach(function(el) { el.style.transition = 'transform 0.4s ease-out'; });
     canvas.style.transform = 'translate3d(0,0,0)';
     group1.style.transform = 'translate3d(0,0,0)';
     group2.style.transform = 'translate3d(0,0,0)';
