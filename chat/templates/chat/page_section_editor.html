@@ -51,7 +51,7 @@
             <div class="object-array-items">
               {% for item in field.value %}
               <div class="object-array-item" data-index="{{ forloop.counter0 }}"
-                   data-original="{{ item|json_dumps|escapejs }}"
+                   data-original="{{ item|json_dumps }}"
                    style="border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 0.75rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                   <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">Item {{ forloop.counter }}</span>
