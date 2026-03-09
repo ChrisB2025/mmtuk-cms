@@ -1,3 +1,5 @@
+import json
+
 from django import template
 
 register = template.Library()
@@ -8,6 +10,12 @@ def get_item(dictionary, key):
     if isinstance(dictionary, dict):
         return dictionary.get(key, '')
     return ''
+
+
+@register.filter
+def json_dumps(value):
+    """Serialize a value to JSON for use in data attributes."""
+    return json.dumps(value)
 
 
 @register.filter
