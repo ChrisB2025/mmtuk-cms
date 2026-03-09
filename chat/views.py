@@ -2450,7 +2450,26 @@ def page_section_api(request, page_key, section_key):
             if isinstance(raw, str):
                 body[field_name] = [item.strip() for item in raw.split('\n') if item.strip()]
 
-    from .services.page_service import apply_page_patch
+    # Preserve non-schema fields in object_array items by merging with existing data
+    from .services.page_service import apply_page_patch, read_page_data
+    existing_section = read_page_data(page_key).get(section_key, {})
+    for field_name, field_meta in section_def.get('fields', {}).items():
+        if field_meta.get('type') == 'object_array' and field_name in body:
+            existing_items = existing_section.get(field_name, [])
+            new_items = body[field_name]
+            if isinstance(new_items, list) and isinstance(existing_items, list):
+                merged = []
+                for i, new_item in enumerate(new_items):
+                    if (i < len(existing_items)
+                            and isinstance(existing_items[i], dict)
+                            and isinstance(new_item, dict)):
+                        merged_item = dict(existing_items[i])
+                        merged_item.update(new_item)
+                        merged.append(merged_item)
+                    else:
+                        merged.append(new_item)
+                body[field_name] = merged
+
     try:
         patch = {section_key: body}
         updated = apply_page_patch(page_key, patch)
