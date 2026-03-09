@@ -90,8 +90,14 @@
               <img loading="lazy" src="{{ event.image_url }}" alt="{{ event.title }}" class="content-card-img w-full h-full object-cover">
             </div>
             <div class="p-5">
-              <div class="mb-2">
+              <div class="mb-2 flex flex-wrap gap-2">
                 <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-body-text/[0.02] text-body-text border border-body-text/[0.02] rounded-md">{{ event.tag }}</span>
+                {% if not event.partner_event and event.group_name %}
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-secondary text-body-text rounded-md">{{ event.group_name }}</span>
+                {% endif %}
+                {% if event.partner_event %}
+                <span class="inline-flex items-center px-2.5 py-1 text-sm font-semibold bg-accent text-white rounded-md">Partner Event</span>
+                {% endif %}
               </div>
               <h3 class="font-body text-[1.25rem] lg:text-[1.5rem] font-medium uppercase leading-tight text-body-text mb-1">{{ event.title }}</h3>
               <div class="text-sm text-body-text/50 mb-2">{{ event.location }}</div>

@@ -229,6 +229,10 @@ def about_us(request):
     ).order_by('date')
     for e in upcoming_events:
         e.image_url = _static_image_url(e.image)
+        if e.local_group:
+            e.group_name = e.local_group.title
+        else:
+            e.group_name = ''
 
     all_bios = list(Bio.objects.filter(status='published'))
     steering_order = data['steering_group']['order']
