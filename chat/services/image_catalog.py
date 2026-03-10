@@ -4,46 +4,44 @@ Categorise site images by site section and page section for the media library.
 Groups responsive variants (e.g. image-p-500.avif) under their base image and
 assigns each image group to a site section / subsection based on directory and
 filename patterns.
+
+Sections are ordered to match the site navigation:
+  Homepage → Research → Education → Community → About Us → Join → Donate → Shared
 """
 
 import re
 
 # ---------------------------------------------------------------------------
-# Section definitions
+# Section definitions — ordered to match site navigation
 # ---------------------------------------------------------------------------
 # Each section has an id, display name, and a list of subsections.
-# Each subsection has a name and a list of filename patterns (case-insensitive
-# substring matches against the *base* filename, i.e. after stripping the
-# responsive suffix).
-#
-# 'directory' is an optional filter — if set, the image must live in that
-# subdirectory of public/images/ to match.
+# Each subsection has a name and either:
+#   - 'directory': match images in that subdirectory of images/
+#   - 'patterns': case-insensitive substring match against base filename
 # ---------------------------------------------------------------------------
 
 SITE_SECTIONS = [
     {
+        'id': 'homepage',
+        'name': 'Homepage',
+        'subsections': [
+            {'name': 'Homepage Images', 'directory': 'homepage'},
+        ],
+    },
+    {
         'id': 'research',
         'name': 'Research',
         'subsections': [
-            {'name': 'Hero', 'patterns': ['briefing-room']},
-            {'name': 'Policy Cards', 'patterns': [
-                'adult-education', 'central-london-banks', 'report-writing',
-                'Report_IMG', 'financial-charts',
-            ]},
             {'name': 'Briefing Thumbnails', 'directory': 'briefings'},
-            {'name': 'Research', 'directory': 'research'},
-            {'name': 'Newsroom', 'patterns': ['newsroom']},
+            {'name': 'Research Papers & Media', 'directory': 'research'},
         ],
     },
     {
         'id': 'education',
         'name': 'Education',
         'subsections': [
-            {'name': 'Hero', 'patterns': ['hands-up']},
-            {'name': 'Ask MMTUK', 'patterns': ['Ask-a-question']},
-            {'name': 'Library', 'patterns': ['Library']},
-            {'name': 'Events & Lectures', 'patterns': [
-                'events-lecture', 'events-online-workshop',
+            {'name': 'Education Page', 'patterns': [
+                'hands-up', 'Ask-a-question', 'Library',
             ]},
         ],
     },
@@ -51,26 +49,28 @@ SITE_SECTIONS = [
         'id': 'community',
         'name': 'Community',
         'subsections': [
-            {'name': 'Hero', 'patterns': ['Local-events']},
-            {'name': 'Discord', 'patterns': ['MMTUK-Discord', '84285bd93b0d']},
             {'name': 'Local Groups & Events', 'directory': 'local-groups'},
+            {'name': 'Community Page', 'patterns': [
+                'Local-events', 'MMTUK-Discord',
+            ]},
         ],
     },
     {
         'id': 'about',
         'name': 'About Us',
         'subsections': [
-            {'name': 'Hero', 'patterns': ['About-Us', 'UK-Sectoral-balances']},
             {'name': 'Team Photos', 'directory': 'bios'},
+            {'name': 'About Page', 'patterns': [
+                'About-Us', 'UK-Sectoral-balances',
+            ]},
         ],
     },
     {
         'id': 'join',
         'name': 'Join',
         'subsections': [
-            {'name': 'Hero', 'patterns': ['Join']},
-            {'name': 'Parallax People', 'patterns': [
-                'senior-lady-coat', 'senior-lady', 'senior-man-books',
+            {'name': 'Join Page', 'patterns': [
+                'Join', 'senior-lady-coat', 'senior-lady', 'senior-man-books',
                 'senior-man', 'young-man', 'female-professional',
                 'female-student', 'sharp-person-outline',
             ]},
@@ -80,22 +80,9 @@ SITE_SECTIONS = [
         'id': 'donate',
         'name': 'Donate',
         'subsections': [
-            {'name': 'Hero', 'patterns': ['Donate', 'matt-seymour']},
-            {'name': 'Cards', 'patterns': [
-                'envelopes', 'diana-light',
-            ]},
-            {'name': 'Icons', 'patterns': ['gift', 'owl']},
-        ],
-    },
-    {
-        'id': 'homepage',
-        'name': 'Homepage',
-        'subsections': [
-            {'name': 'Slider & Navigation', 'patterns': [
-                'Home', 'Our-Work', 'News', 'marcos-luiz', 'yp-hero',
-            ]},
-            {'name': 'Feature Images', 'patterns': [
-                'relume', 'ecosystem',
+            {'name': 'Donate Page', 'patterns': [
+                'Donate', 'matt-seymour', 'envelopes', 'diana-light',
+                'markus-spiske', 'financial-charts', 'owl', 'gift',
             ]},
         ],
     },
@@ -111,7 +98,7 @@ SHARED_SECTION = {
         ]},
         {'name': 'Icons & Placeholders', 'patterns': [
             'checkbox-check', 'placeholder', 'Placeholder', 'Image.svg',
-            'interaction-icon', 'job-guarantee-hero',
+            'interaction-icon',
         ]},
         {'name': 'Backgrounds', 'patterns': ['Webflow-Background']},
     ],
