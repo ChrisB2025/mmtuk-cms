@@ -37,7 +37,7 @@ from .services.field_mapping import (
     get_model_class, get_title_field, get_title,
     instance_to_frontmatter, generate_slug, MODEL_MAP,
 )
-from .services.image_catalog import categorise_images
+from .services.image_catalog import categorise_images, _group_responsive_variants
 from .services.scraper_service import scrape_url
 from .services.image_service import process_image
 from .services.pdf_service import extract_pdf, save_pdf_images, get_pdf_image
@@ -1984,12 +1984,13 @@ def delete_image(request):
 
 @login_required
 def images_api(request):
-    """Return a flat JSON list of all images for the image picker."""
+    """Return deduplicated image list, collapsing responsive variants."""
     directory = request.GET.get('directory', '')
     images = list_images(directory=directory or None)
+    grouped = _group_responsive_variants(images)
     return JsonResponse({'images': [
-        {'web_path': img['web_path'], 'filename': img['filename']}
-        for img in images
+        {'web_path': g['primary']['web_path'], 'filename': g['base_filename']}
+        for g in grouped if g['primary']
     ]})
 
 
