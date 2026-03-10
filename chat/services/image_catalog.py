@@ -30,10 +30,8 @@ SITE_SECTIONS = [
                 'adult-education', 'central-london-banks', 'report-writing',
                 'Report_IMG', 'financial-charts',
             ]},
-            {'name': 'Briefing Thumbnails', 'patterns': [
-                'nature-of-money', 'income-security', 'symmetry-that-blinds',
-                'question-about-economics',
-            ]},
+            {'name': 'Briefing Thumbnails', 'directory': 'briefings'},
+            {'name': 'Research', 'directory': 'research'},
             {'name': 'Newsroom', 'patterns': ['newsroom']},
         ],
     },
@@ -55,14 +53,7 @@ SITE_SECTIONS = [
         'subsections': [
             {'name': 'Hero', 'patterns': ['Local-events']},
             {'name': 'Discord', 'patterns': ['MMTUK-Discord', '84285bd93b0d']},
-            {'name': 'Local Groups', 'directory': 'local-groups'},
-            {'name': 'Events', 'patterns': [
-                'bill-mitchell-event', 'pintonomics', 'scotland-festival',
-            ]},
-            {'name': 'Locations', 'patterns': [
-                'brighton-pavilion', 'london-westminster', 'cardiff-castle',
-                'edinburgh-castle',
-            ]},
+            {'name': 'Local Groups & Events', 'directory': 'local-groups'},
         ],
     },
     {
