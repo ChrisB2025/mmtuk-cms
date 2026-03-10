@@ -1,4 +1,4 @@
-<header class="grid grid-cols-1 lg:grid-cols-[50%_50%] lg:[place-items:center_stretch] bg-background lg:max-h-[calc(100dvh-4.5rem)]">
+<header class="grid grid-cols-1 lg:grid-cols-[50%_50%] lg:[place-items:center_stretch] bg-background lg:h-[calc(100dvh-4.5rem)]">
   <!-- Left: heading + tagline -->
   <div class="px-[5%] lg:ml-[5vw] lg:mr-[5rem] py-12 lg:py-0 flex items-center">
     <div>
@@ -14,7 +14,7 @@
   </div>
 
   <!-- Right: slider -->
-  <div id="hero-slider" class="relative w-full min-h-[420px] sm:min-h-[450px] lg:min-h-[90dvh] lg:max-h-[60rem] bg-secondary overflow-hidden">
+  <div id="hero-slider" class="relative w-full min-h-[420px] sm:min-h-[450px] lg:min-h-0 lg:h-full bg-secondary overflow-hidden">
     <div class="flex h-full" style="flex-wrap: nowrap;">
       {% for slide in hero.slides %}
       <div class="slide w-full flex-shrink-0 h-full flex flex-col"{% if forloop.first %} id="slider-track"{% endif %}>
