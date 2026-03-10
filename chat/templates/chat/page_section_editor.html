@@ -191,6 +191,8 @@
     });
     if (hiddenInput && hiddenInput.value) {
       editor.setMarkdown(hiddenInput.value);
+      // Scroll editor to top after loading content
+      editor.moveCursorToStart();
     }
     tuiEditors[fieldName] = editor;
   });
