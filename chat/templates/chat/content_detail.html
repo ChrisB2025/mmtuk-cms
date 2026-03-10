@@ -414,33 +414,24 @@
 <script>
   var _pickerTarget = null;
   var _pickerImages = null;
-  var _pickerDir = '';
 
   function openImagePicker(btn) {
     _pickerTarget = document.getElementById(btn.getAttribute('data-field'));
     document.getElementById('imgPickerSearch').value = '';
     document.getElementById('imgPickerModal').style.display = '';
-    // Extract subdirectory from current value (e.g., "/images/briefings/foo.png" → "briefings")
-    var currentVal = _pickerTarget ? _pickerTarget.value : '';
-    var dirMatch = currentVal.match(/^\/images\/([^/]+)\//);
-    var subDir = dirMatch ? dirMatch[1] : '';
-    // Re-fetch if directory changed
-    if (!_pickerImages || subDir !== _pickerDir) {
-      _pickerDir = subDir;
-      _pickerImages = null;
-      var url = '{% url "images_api" %}' + (subDir ? '?directory=' + encodeURIComponent(subDir) : '');
-      fetch(url)
+    if (!_pickerImages) {
+      fetch('{% url "images_api" %}')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           _pickerImages = data.images;
-          renderPickerImages(_pickerImages);
+          renderPickerSections(_pickerImages);
         })
         .catch(function() {
           document.getElementById('imgPickerGrid').innerHTML =
             '<p style="padding:16px;color:var(--text-secondary);">Failed to load images.</p>';
         });
     } else {
-      renderPickerImages(_pickerImages);
+      renderPickerSections(_pickerImages);
     }
   }
 
@@ -451,32 +442,86 @@
   function filterPickerImages(q) {
     if (!_pickerImages) return;
     var lower = q.toLowerCase();
-    var filtered = lower
-      ? _pickerImages.filter(function(i) { return i.filename.toLowerCase().indexOf(lower) !== -1; })
-      : _pickerImages;
-    renderPickerImages(filtered);
+    if (!lower) { renderPickerSections(_pickerImages); return; }
+    var filtered = _pickerImages.filter(function(i) {
+      return i.filename.toLowerCase().indexOf(lower) !== -1;
+    });
+    // When filtering, show flat grid (no sections)
+    renderPickerFlat(filtered);
   }
 
-  function renderPickerImages(images) {
+  function _groupByDir(images) {
+    var groups = {};
+    images.forEach(function(img) {
+      // e.g. "/images/briefings/foo.webp" → "briefings", "/images/foo.webp" → ""
+      var parts = img.web_path.replace(/^\/images\//, '').split('/');
+      var dir = parts.length > 1 ? parts[0] : '';
+      if (!groups[dir]) groups[dir] = [];
+      groups[dir].push(img);
+    });
+    return groups;
+  }
+
+  function _imgCard(img) {
+    var safeUrl = img.web_path.replace(/'/g, '%27');
+    var safePath = img.web_path.replace(/'/g, '&#39;');
+    return '<div class="img-picker-item" onclick="selectPickerImage(\'' + safePath + '\')">' +
+      '<img src="/cms/repo-images' + safeUrl + '" loading="lazy" ' +
+      'onerror="this.style.display=\'none\'">' +
+      '<span>' + img.filename + '</span></div>';
+  }
+
+  function renderPickerSections(images) {
+    var grid = document.getElementById('imgPickerGrid');
+    if (!images.length) {
+      grid.innerHTML = '<p style="padding:16px;color:var(--text-secondary);">No images found.</p>';
+      return;
+    }
+    var groups = _groupByDir(images);
+    var dirNames = Object.keys(groups).sort(function(a, b) {
+      if (a === '') return 1; if (b === '') return -1;
+      return a.localeCompare(b);
+    });
+    var html = '';
+    dirNames.forEach(function(dir) {
+      var label = dir || 'General';
+      var imgs = groups[dir];
+      var id = 'picker-section-' + (dir || 'root');
+      html += '<div class="picker-section">' +
+        '<button type="button" class="picker-section-header" onclick="togglePickerSection(this)" aria-expanded="false">' +
+          '<span class="picker-section-toggle">&#9656;</span>' +
+          '<span class="picker-section-name">' + label + '</span>' +
+          '<span class="picker-section-count">' + imgs.length + '</span>' +
+        '</button>' +
+        '<div class="picker-section-content" style="display:none;">' +
+          '<div class="img-picker-grid-inner">' +
+            imgs.map(_imgCard).join('') +
+          '</div>' +
+        '</div></div>';
+    });
+    grid.innerHTML = html;
+  }
+
+  function renderPickerFlat(images) {
     var grid = document.getElementById('imgPickerGrid');
     if (!images.length) {
       grid.innerHTML = '<p style="padding:16px;color:var(--text-secondary);">No images match.</p>';
       return;
     }
-    grid.innerHTML = images.map(function(img) {
-      var safeUrl = img.web_path.replace(/'/g, '%27');
-      var safePath = img.web_path.replace(/'/g, '&#39;');
-      return '<div class="img-picker-item" onclick="selectPickerImage(\'' + safePath + '\')">' +
-        '<img src="/cms/repo-images' + safeUrl + '" loading="lazy" ' +
-        'onerror="this.style.display=\'none\'">' +
-        '<span>' + img.filename + '</span></div>';
-    }).join('');
+    grid.innerHTML = '<div class="img-picker-grid-inner">' + images.map(_imgCard).join('') + '</div>';
+  }
+
+  function togglePickerSection(btn) {
+    var content = btn.nextElementSibling;
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', !expanded);
+    content.style.display = expanded ? 'none' : '';
+    btn.querySelector('.picker-section-toggle').textContent = expanded ? '\u25B8' : '\u25BE';
   }
 
   function selectPickerImage(webPath) {
     if (_pickerTarget) {
       _pickerTarget.value = webPath;
-      // Update the visible path label next to the Browse button
       var row = _pickerTarget.nextElementSibling;
       if (row) {
         var pathSpan = row.querySelector('.fm-image-path');
