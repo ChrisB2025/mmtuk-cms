@@ -1410,6 +1410,14 @@ body {
 }
 .fm-image-row .form-input { flex: 1; }
 .fm-browse-btn { white-space: nowrap; flex-shrink: 0; }
+.fm-image-path {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
 
 /* ---- Media Library ---- */
 .media-container {

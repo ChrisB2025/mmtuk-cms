@@ -57,10 +57,11 @@
         <div class="form-group-sm">
           <label>{{ key }}</label>
           {% if key == "thumbnail" or key == "image" or key == "photo" or key == "heroImage" %}
+          <input type="hidden" name="fm_{{ key }}" id="fm_{{ key }}" value="{{ value }}">
           <div class="fm-image-row">
-            <input type="text" name="fm_{{ key }}" id="fm_{{ key }}" value="{{ value }}" class="form-input form-input-sm">
             <button type="button" class="btn btn-small btn-secondary fm-browse-btn"
                     data-field="fm_{{ key }}" onclick="openImagePicker(this)">Browse</button>
+            <span class="fm-image-path">{{ value|default:"No image selected" }}</span>
           </div>
           {% if value %}
           <img src="/cms/repo-images{{ value }}" class="fm-thumbnail-preview"
@@ -473,7 +474,15 @@
   }
 
   function selectPickerImage(webPath) {
-    if (_pickerTarget) { _pickerTarget.value = webPath; }
+    if (_pickerTarget) {
+      _pickerTarget.value = webPath;
+      // Update the visible path label next to the Browse button
+      var row = _pickerTarget.nextElementSibling;
+      if (row) {
+        var pathSpan = row.querySelector('.fm-image-path');
+        if (pathSpan) pathSpan.textContent = webPath;
+      }
+    }
     closeImagePicker();
   }
 
