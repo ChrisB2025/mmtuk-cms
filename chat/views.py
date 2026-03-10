@@ -1831,6 +1831,7 @@ def media_library(request):
     view_mode = request.GET.get('view', 'sections')
 
     images = list_images(subdirectory or None)
+    grouped = _group_responsive_variants(images)
 
     # Can upload: admin, editor, group_lead
     can_upload = profile.role in ('admin', 'editor', 'group_lead')
@@ -1842,7 +1843,7 @@ def media_library(request):
 
     return render(request, 'chat/media_library.html', {
         'conversations': conversations,
-        'images': images,
+        'images': grouped,
         'sections': sections,
         'profile': profile,
         'can_upload': can_upload,

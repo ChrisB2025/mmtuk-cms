@@ -9,7 +9,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div>
         <h2 class="page-title" style="margin-bottom:4px;">Media Library</h2>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ images|length }} images in public/images/</p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ images|length }} unique images in public/images/</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         {% if view_mode == 'flat' %}
@@ -41,10 +41,11 @@
   {% endif %}
 
   {% if view_mode == 'flat' %}
-  {# ---- Flat View ---- #}
+  {# ---- Flat View (grouped, no responsive variants) ---- #}
   <div class="media-grid" style="margin-top:20px;">
-    {% for img in images %}
+    {% for group in images %}
     <div class="media-card">
+      {% with img=group.primary %}
       {% if img.filename|lower|slice:"-4:" == ".svg" %}
       <div class="media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-secondary);">SVG</div>
       {% else %}
@@ -52,9 +53,28 @@
            onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('afterbegin','<div class=media-thumb style=display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--text-secondary)>No preview</div>');">
       {% endif %}
       <div class="media-info">
-        <div class="media-filename">{{ img.filename }}</div>
+        <div class="media-filename">
+          {{ group.base_filename }}
+          {% if group.variant_count > 0 %}
+          <span class="variant-pill" title="Has {{ group.variant_count }} responsive variant{{ group.variant_count|pluralize }}">{{ group.variant_count }} size{{ group.variant_count|pluralize }}</span>
+          {% endif %}
+        </div>
         <div class="media-path" title="Click to copy" onclick="copyPath('{{ img.web_path }}', this)">{{ img.web_path }}</div>
-        <div class="media-size">{{ img.size|filesizeformat }}</div>
+        <div class="media-size">{{ group.total_size|filesizeformat }}</div>
+        {% if group.variant_count > 0 %}
+        <details class="variant-details">
+          <summary>Show {{ group.variant_count }} variant{{ group.variant_count|pluralize }}</summary>
+          <ul class="variant-list">
+            {% for v in group.variants %}
+            <li>
+              <span class="variant-name">{{ v.filename }}</span>
+              <span class="variant-size">{{ v.size|filesizeformat }}</span>
+              <span class="media-path" title="Click to copy" onclick="event.stopPropagation();copyPath('{{ v.web_path }}', this)">{{ v.web_path }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
         {% if can_upload %}
         <div class="media-card-actions">
           <button class="btn-icon btn-delete-img" title="Delete image"
@@ -63,6 +83,7 @@
         </div>
         {% endif %}
       </div>
+      {% endwith %}
     </div>
     {% empty %}
     <div class="empty-state-large">
