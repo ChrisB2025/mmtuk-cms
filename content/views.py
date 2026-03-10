@@ -43,11 +43,14 @@ def _resolve_image(image):
 
 
 def robots_txt(request):
+    host = request.get_host()
     lines = [
         'User-agent: *',
         'Allow: /',
         'Disallow: /cms/',
         'Disallow: /admin/',
+        '',
+        f'Sitemap: https://{host}/sitemap-index.xml',
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')
 
@@ -140,6 +143,27 @@ def cookie_preferences(request):
         'last_updated': content['last_updated'],
         'intro_html': markdown.markdown(content['intro']),
         'services_html': markdown.markdown(content['services_list']),
+    })
+
+
+def articles_index(request):
+    articles = list(
+        Article.objects.filter(status='published')
+        .order_by('-pub_date')
+    )
+    for a in articles:
+        a.thumbnail_url = _static_image_url(a.thumbnail)
+        is_simplified = a.layout in ('simplified', 'rebuttal')
+        a.url = f'/education/articles/{a.slug}/' if is_simplified else f'/articles/{a.slug}/'
+    return render(request, 'content/articles.html', {
+        'articles': articles,
+        'hero_image': static('content/images/homepage/Library.avif'),
+        'hero_srcset': ' '.join([
+            static('content/images/homepage/Library-p-500.avif') + ' 500w,',
+            static('content/images/homepage/Library-p-800.avif') + ' 800w,',
+            static('content/images/homepage/Library-p-1080.avif') + ' 1080w,',
+            static('content/images/homepage/Library.avif') + ' 2400w',
+        ]),
     })
 
 

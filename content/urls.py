@@ -7,6 +7,7 @@ app_name = 'website'
 urlpatterns = [
     path('research/briefings/<slug:slug>/', views.briefing_detail, name='briefing_detail'),
     path('research/briefings/', views.briefings_index, name='briefings_index'),
+    path('articles/', views.articles_index, name='articles_index'),
     path('articles/<slug:slug>/', views.article_detail, name='article_detail'),
     path('education/articles/<slug:slug>/', views.article_detail, name='education_article_detail'),
     path('news/<slug:slug>/', views.news_detail, name='news_detail'),
@@ -17,6 +18,9 @@ urlpatterns = [
     path('founders/launch-event/', views.founders_launch_event, name='founders_launch_event'),
     path('founders/', views.founders, name='founders'),
     path('job-guarantee/', RedirectView.as_view(url='/research/job-guarantee/', permanent=True)),
+    path('library/', RedirectView.as_view(url='/education/', permanent=True)),
+    path('ecosystem/<slug:slug>/', RedirectView.as_view(url='/', permanent=True)),
+    path('ecosystem/', RedirectView.as_view(url='/', permanent=True)),
     path('local-group/<slug:group_slug>/<slug:news_slug>/', views.local_news_detail, name='local_news_detail'),
     path('local-group/<slug:slug>/', views.local_group_detail, name='local_group_detail'),
     path('about-us/', views.about_us, name='about_us'),
