@@ -1409,6 +1409,7 @@ body {
   align-items: center;
 }
 .fm-image-row .form-input { flex: 1; }
+.fm-browse-btn { white-space: nowrap; flex-shrink: 0; }
 
 /* ---- Media Library ---- */
 .media-container {

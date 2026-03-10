@@ -226,9 +226,6 @@ def list_images(directory=None):
             if f.suffix.lower() not in image_extensions:
                 continue
 
-            rel_path = str(f.relative_to(root_dir)).replace('\\', '/')
-            web_path = '/images/' + str(f.relative_to(base_dir.parent if base_dir.name == 'images' else base_dir)).replace('\\', '/') if source == 'media' else '/' + rel_path
-
             results.append({
                 'path': str(f.relative_to(root_dir)).replace('\\', '/'),
                 'web_path': '/' + str(f.relative_to(base_dir.parent)).replace('\\', '/') if base_dir.name != 'images' else f'/images/{f.relative_to(base_dir)}'.replace('\\', '/'),
