@@ -93,9 +93,9 @@ Defined in `content_schema/schemas.py`. Each type has a name, directory, file pa
 
 The media library (`/media/`) displays images organised by site section rather than a flat grid. This is powered by `chat/services/image_catalog.py`.
 
-**Section view** (default): Images are categorised into collapsible sections (Research, Education, Community, About Us, Join, Donate, Homepage, Shared) with subsections (Hero, Cards, Team Photos, etc.). Categorisation uses directory paths (`bios/` → About Us, `local-groups/` → Community) and filename pattern matching. Webflow responsive variants (`-p-500`, `-p-800`, `-p-1080`, etc.) are grouped under their base image with an expandable "N sizes" indicator.
+**Section view** (default): Images are categorised into collapsible sections ordered to match site navigation (Homepage → Research → Education → Community → About Us → Join → Donate → Shared) with subsections. Categorisation uses directory paths (`bios/` → About Us, `local-groups/` → Community) and filename pattern matching. Webflow responsive variants (`-p-500`, `-p-800`, `-p-1080`, etc.) are grouped under their base image with an expandable "N sizes" indicator.
 
-**Flat view** (`?view=flat`): The original flat grid, accessible via a toggle button in the header.
+**Flat view** (`?view=flat`): Grouped flat grid (same deduplication as section view), accessible via a toggle button in the header.
 
 **Adding new image categories**: Edit `SITE_SECTIONS` in `image_catalog.py`. Each section has subsections with either `'directory'` (matches images in that subdirectory) or `'patterns'` (case-insensitive substring matches against the base filename). Unmatched images fall through to "Shared / Site Assets / Other".
 
@@ -438,7 +438,8 @@ Runs at deploy startup (in Dockerfile CMD). Pre-clones the MMTUK site repo to di
 - **`prepare_repo_for_write()`** (`git_service.py`) — Pre-write setup: updates remote URL + `git checkout`. Never fetches.
 - **`ensure_repo()`** (`git_service.py`) — Full sync: fetches + rebases/resets. Only called by warmup command and initial clone.
 - **`push_to_remote()`** (`git_service.py`) — Handles push with automatic rebase retry on non-fast-forward.
-- **`_pre_scrape_url()`** (`views.py`) — Eagerly scrapes any URL (not just Substack) before Claude is called, so scraped content is in context. Renamed from `_pre_scrape_substack()`.
+- **`_pre_scrape_url()`** (`views.py`) — Eagerly scrapes any URL (not just Substack) before Claude is called, so scraped content is in context. Renamed from `_pre_scrape_substack()`. Does NOT presuppose content type — asks user what they want to do with the scraped content.
+- **`_group_responsive_variants()`** (`image_catalog.py`) — Groups Webflow responsive variants under base images. Used by both the image picker API (`images_api`) and the media library flat view.
 
 ---
 
@@ -551,3 +552,40 @@ Runs at deploy startup (in Dockerfile CMD). Pre-clones the MMTUK site repo to di
 ### Featured Briefing
 
 Changed featured briefing from "On The Nature of Money" to "Shadows on the Wall" via frontmatter `featured: true/false` toggle in the briefing `.md` files.
+
+---
+
+## Session: Media Library & Image Picker QA (2026-03-10)
+
+### Image Picker Improvements
+
+- **Accordion folders**: Image picker modal groups images by directory into collapsible sections instead of a flat grid of 100+ images
+- **Variant deduplication**: Responsive variants collapsed via `_group_responsive_variants()` — picker shows one thumbnail per unique image
+- **Browse button fix**: Fixed wrapping and replaced broken text input with hidden input + path label
+- **Missing thumbnails fix**: Added `/cms/` prefix to `repo-images` URLs (recurring pattern from CMS URL routing)
+
+### Media Library Improvements
+
+- **Flat view deduplication**: Flat view now uses same `_group_responsive_variants()` grouping as section view
+- **Section ordering**: Sections reordered to match site navigation (Homepage → Research → Education → Community → About Us → Join → Donate → Shared)
+- **Image reorganisation**: 12 images moved from root `images/` to correct subdirectories (`local-groups/`, `briefings/`, `research/`) with DB migration (`0003_reorganise_image_paths`)
+- **Unused image cleanup**: Removed 7 getty-images responsive variants (Webflow leftovers) from static files
+
+### Chat URL Scraping
+
+- Removed `_wants_import()` check — URLs are always scraped for context
+- System prompt updated: Claude asks open-ended "What would you like to do with it?" instead of presuming briefing creation
+
+### Image Directory Structure
+
+```text
+content/static/content/images/
+├── bios/           # Team photos (About Us)
+├── briefings/      # Briefing thumbnails (Research)
+├── homepage/       # Homepage images
+├── local-groups/   # Local group headers & events (Community)
+├── news/           # News thumbnails
+├── pages/          # Page-specific images (Join, Donate, Education, etc.)
+├── research/       # Research media
+└── *.webp/svg      # Shared site assets (favicon, logo, og-image, webclip, placeholder)
+```
