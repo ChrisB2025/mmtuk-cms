@@ -912,18 +912,6 @@ _CONFIRMATIONS = {
     'sounds good', 'looks good',
 }
 
-_IMPORT_PHRASES = re.compile(
-    r'\b(?:add\s+(?:this\s+)?(?:briefing|article)|import|create\s+(?:a\s+)?briefing\s+from|'
-    r'add\s+(?:this|a)\s+(?:as\s+(?:a\s+)?)?briefing|make\s+(?:this\s+)?(?:a\s+)?briefing|'
-    r'publish\s+(?:this|the)\s+(?:article|briefing))\b',
-    re.IGNORECASE,
-)
-
-
-def _wants_import(message):
-    """Return True if the user's message indicates intent to import/create a briefing from a URL."""
-    return bool(_IMPORT_PHRASES.search(message))
-
 
 def _slugify(text):
     """Convert text to a URL-safe slug."""
@@ -1103,7 +1091,7 @@ def _format_scrape_preview(scraped):
         lines.append('')
         lines.append(body_preview + ('...' if len(clean_body) > 300 else ''))
     lines.append('')
-    lines.append('Would you like me to create this as a briefing on the MMTUK site, or did you have something else in mind?')
+    lines.append("I've scraped the content above. What would you like me to do with it? For example: create a briefing, add as an article, create a local event, or something else?")
     return '\n'.join(lines)
 
 
@@ -1173,11 +1161,10 @@ def send_message(request, conversation_id):
                     'action_taken': None,
                 })
 
-    # STEP 2: URL + import intent → scrape and return preview (no Claude call).
-    # Only auto-scrape when user explicitly asks to import/add a briefing.
-    # Other URL-containing messages (e.g. "add this event to pages") go to Claude.
+    # STEP 2: URL detected → scrape and show preview, then ask what to do.
+    # The scraped data is saved in conversation history so Claude can use it in STEP 3.
     url_match = _GENERAL_URL_RE.search(user_message)
-    if url_match and _wants_import(user_message):
+    if url_match:
         scraped_data = _pre_scrape_url(user_message, conv)
         if scraped_data:
             preview = _format_scrape_preview(scraped_data)
@@ -1604,7 +1591,13 @@ def content_detail(request, content_type, slug):
     route = _CONTENT_ROUTES.get(content_type, '')
     site_url = ''
     if route and '{slug}' in route:
-        site_url = 'https://mmtuk.org' + route.format(slug=slug)
+        try:
+            site_url = 'https://mmtuk.org' + route.format(
+                slug=slug,
+                localGroup=item['frontmatter'].get('localGroup', ''),
+            )
+        except (KeyError, AttributeError):
+            site_url = ''
 
     # Get audit log entries for this item (if model exists)
     audit_entries = []
