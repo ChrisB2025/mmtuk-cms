@@ -339,7 +339,7 @@
     deleteBtn.addEventListener('click', function() {
       var contentType = this.getAttribute('data-content-type');
       deleteTitle.textContent = this.getAttribute('data-title');
-      deleteForm.action = '/content/' + contentType + '/' + this.getAttribute('data-slug') + '/delete/';
+      deleteForm.action = '/cms/content/' + contentType + '/' + this.getAttribute('data-slug') + '/delete/';
 
       // Pre-select default redirect based on content type
       var defaultRedirects = {
