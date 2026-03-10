@@ -389,6 +389,8 @@
     <div class="help-nav-title">Site Management</div>
     <a class="help-nav-link" href="#page-manager">Page Manager</a>
     <a class="help-nav-link" href="#media">Media Library</a>
+    <a class="help-nav-link" href="#activity-log">Activity Log</a>
+    <a class="help-nav-link" href="#health-check">Health Check</a>
   </nav>
 
   <!-- ── Right content ──────────────────────────────────────── -->
@@ -402,7 +404,7 @@
       <p class="section-intro">A quick orientation for new editors and contributors.</p>
 
       <h3>What this CMS does</h3>
-      <p>The MMTUK CMS manages the content on <strong>mmtuk.org</strong>. Every change you make — a new article, an updated page section, an uploaded image — gets saved to a version-controlled Git repository and automatically deployed to the live site. You don't need to know anything about Git; the CMS handles all of that.</p>
+      <p>The MMTUK CMS manages the content on <strong>mmtuk.org</strong>. Every change you make — a new article, an updated page section, an uploaded image — is saved to the database and goes live on the site immediately. No deploy step is needed.</p>
 
       <h3>The sidebar</h3>
       <p>The sidebar on the left is your main navigation. It has three tabs at the top:</p>
@@ -411,7 +413,7 @@
         <li><strong>Content</strong> — Browse, search, edit, and delete all existing site content</li>
         <li><strong>Pages</strong> — Edit the text on static pages (Home, Research, etc.) — <em>editors and admins only</em></li>
       </ul>
-      <p>The sidebar footer links give you access to the Media Library, Pending Approvals, Review &amp; Publish, and Health Check (visibility depends on your role).</p>
+      <p>The sidebar footer links give you access to the Media Library, Pending Approvals, Activity Log, and Health Check (visibility depends on your role).</p>
 
       <h3>Quick navigation — <kbd>Ctrl K</kbd></h3>
       <p>Press <strong>Ctrl+K</strong> (or Cmd+K on Mac) from anywhere to open the command palette. Start typing the name of any page or action to jump to it instantly.</p>
@@ -419,8 +421,8 @@
       <h3>Dark mode</h3>
       <p>Click the sun/moon icon in the top-left corner of the sidebar to switch between light and dark themes. Your preference is saved automatically.</p>
 
-      <h3>Unpublished changes</h3>
-      <p>An orange bar appears at the top of the sidebar when you have changes saved locally that haven't been deployed yet. Click <strong>Review &amp; Publish</strong> to review and push them live. Changes from chat conversations are usually published immediately for editors and admins — the bar is more common after Page Manager edits.</p>
+      <h3>Keyboard shortcuts</h3>
+      <p><strong>Ctrl+K</strong> opens the command palette from any page. You can also press <strong>Escape</strong> to close any open modal or dialog.</p>
     </section>
 
     <hr class="help-divider">
@@ -568,12 +570,15 @@
         <div class="pathway-header">B — Import from a URL (Substack, blogs, etc.)</div>
         <ol>
           <li>Start a new chat</li>
-          <li>Paste the URL of a Substack post, blog article, or any web page</li>
-          <li>Claude automatically scrapes the title, author, date, body, and header image</li>
+          <li>Tell Claude to <strong>add</strong> or <strong>import</strong> the article — e.g. <em>"Add this briefing: https://example.substack.com/p/article"</em></li>
+          <li>Claude scrapes the title, author, date, body, and header image</li>
           <li>Review the preview — check title, author, and publication date are correct</li>
           <li>Say "yes" or "create it" to confirm</li>
           <li>Content is created with full source attribution automatically included</li>
         </ol>
+        <div class="help-callout info">
+          <strong>Tip:</strong> If you paste a URL without asking Claude to import it, it will be treated as a normal conversation — Claude won't automatically try to create a briefing from it. Use words like "add", "import", or "create briefing from" to trigger the import workflow.
+        </div>
       </div>
 
       <div class="pathway">
@@ -590,7 +595,7 @@
 
       <h3>What happens after you submit</h3>
       <div class="help-callout info">
-        <strong>Editors and admins:</strong> Content publishes immediately. You'll see a confirmation message in the chat. A green "Saved and published" notice confirms the change has been committed and will deploy on the next push.<br><br>
+        <strong>Editors and admins:</strong> Content publishes immediately and is live on the site. You'll see a confirmation message in the chat.<br><br>
         <strong>Contributors and Group Leads (outside own group):</strong> Content is saved as a draft and sent for approval. You'll see "Your [type] has been saved and is awaiting approval." Watch for the notification on your next login.
       </div>
 
@@ -599,7 +604,7 @@
       <p>For quick frontmatter edits (changing a title, date, or featured flag without touching the body), use the <strong>Quick Edit</strong> option instead — it opens an inline form.</p>
 
       <h3>Deleting content</h3>
-      <p>Find the item in the Content browser and click <strong>Delete</strong>. You'll be asked to confirm. Deletion is permanent — editors and admins only.</p>
+      <p>Find the item in the Content browser and click <strong>Delete</strong>. You'll be asked to confirm and can optionally set a <strong>redirect</strong> — visitors to the old URL will be sent to the page you choose (e.g. the articles index). This preserves SEO and avoids broken links. Deletion is permanent — editors and admins only.</p>
     </section>
 
     <hr class="help-divider">
@@ -766,7 +771,7 @@
         <li>Left panel: metadata (title, type, author, slug, date)</li>
         <li>Right panel: full markdown preview — exactly how it will appear on the site</li>
         <li>Check: Does it meet our editorial standards? Is the category correct? Is the slug sensible?</li>
-        <li>Click <strong>Approve &amp; Publish</strong> — it commits to git and deploys</li>
+        <li>Click <strong>Approve &amp; Publish</strong> — it goes live on the site immediately</li>
         <li>Or click <strong>Reject</strong> — enter feedback; the contributor is notified on their next login</li>
       </ol>
 
@@ -940,8 +945,7 @@
         <li>You'll see a list of sections (Hero, Features, FAQ, etc.)</li>
         <li>Click <strong>Edit</strong> next to the section you want to change</li>
         <li>Fill in or update the fields</li>
-        <li>Click <strong>Save &amp; Publish</strong></li>
-        <li>The change commits to git and will deploy automatically on the next push</li>
+        <li>Click <strong>Save &amp; Publish</strong> — the change is live on the site immediately</li>
       </ol>
 
       <h3>Field types</h3>
@@ -1000,7 +1004,7 @@
         <li>Click <strong>Media Library</strong> in the sidebar footer</li>
         <li>Click <strong>Upload Image</strong></li>
         <li>Select a file — JPG, PNG, WebP, or GIF, max 10 MB</li>
-        <li>The image is saved to the repository and a path like <code>/images/my-image.webp</code> is shown</li>
+        <li>The image is uploaded and a path like <code>/images/my-image.webp</code> is shown</li>
         <li>Copy that path and paste it into any image field in a content form or page editor</li>
       </ol>
 
@@ -1012,7 +1016,7 @@
         <tbody>
           <tr>
             <td>Format</td>
-            <td>WebP preferred — smaller files, same quality. The CMS accepts JPG and PNG and stores them as-is</td>
+            <td>The CMS accepts JPG, PNG, and WebP. Uploaded images via chat are automatically optimised and converted to WebP for smaller file sizes</td>
           </tr>
           <tr>
             <td>File size</td>
@@ -1035,6 +1039,61 @@
 
       <h3>Deleting images</h3>
       <p>Images can be deleted from the Media Library, but check first that they are not in use on any page or article. Deleting an image that is referenced in content will cause a broken image on the live site.</p>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 10. ACTIVITY LOG                                         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="activity-log">
+      <h2>Activity Log</h2>
+      <p class="section-intro">A chronological audit trail of every content change on the site.</p>
+
+      <div class="help-callout warning">
+        <strong>Editors and Admins only.</strong> The Activity Log is not visible to contributors or group leads.
+      </div>
+
+      <h3>What it shows</h3>
+      <ul>
+        <li><strong>Who</strong> made the change (user name and role)</li>
+        <li><strong>What</strong> changed (content type, title, action — create, edit, delete)</li>
+        <li><strong>When</strong> the change was made</li>
+        <li>For deletions: whether a redirect was set and where it points</li>
+      </ul>
+
+      <h3>When to use it</h3>
+      <ul>
+        <li>Checking who last edited a piece of content</li>
+        <li>Verifying that a contributor's draft was approved (and by whom)</li>
+        <li>Reviewing recent site changes after a handover or holiday</li>
+        <li>Investigating unexpected content changes</li>
+      </ul>
+    </section>
+
+    <hr class="help-divider">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 11. HEALTH CHECK                                         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section class="help-section" id="health-check">
+      <h2>Health Check</h2>
+      <p class="section-intro">A diagnostic page that verifies the site is working correctly.</p>
+
+      <div class="help-callout warning">
+        <strong>Admins only.</strong> The Health Check is not visible to other roles.
+      </div>
+
+      <h3>What it checks</h3>
+      <ul>
+        <li><strong>Database connection</strong> — can the site reach PostgreSQL?</li>
+        <li><strong>Content counts</strong> — how many articles, briefings, news items, events, and bios exist</li>
+        <li><strong>Page data files</strong> — are all JSON page data files present and valid?</li>
+        <li><strong>Static files</strong> — can the site serve CSS, JS, and images?</li>
+      </ul>
+
+      <h3>When to use it</h3>
+      <p>If something seems wrong with the site — pages not loading, content missing, or errors appearing — check the Health Check first. It will flag the specific component that is failing.</p>
     </section>
 
   </div><!-- /help-content -->
