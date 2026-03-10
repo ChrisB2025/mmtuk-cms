@@ -23,8 +23,38 @@ _USER_AGENT = (
 )
 
 
+def _is_safe_url(url):
+    """Block private/internal URLs to prevent SSRF."""
+    from urllib.parse import urlparse
+    import ipaddress
+    import socket
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https'):
+        return False
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+    # Block obvious internal hostnames
+    if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1'):
+        return False
+    if hostname.endswith('.internal') or hostname.endswith('.local'):
+        return False
+    # Resolve and check for private IPs
+    try:
+        for info in socket.getaddrinfo(hostname, None):
+            addr = ipaddress.ip_address(info[4][0])
+            if addr.is_private or addr.is_loopback or addr.is_link_local:
+                return False
+    except (socket.gaierror, ValueError):
+        return False
+    return True
+
+
 def _fetch_html(url):
     """Fetch a URL and return the HTML content."""
+    if not _is_safe_url(url):
+        raise ValueError(f'URL blocked by SSRF protection: {url}')
     logger.info('fetch_html: start %.100s', url)
     resp = httpx.get(
         url,

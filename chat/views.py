@@ -1886,9 +1886,12 @@ def upload_image(request):
         except Exception:
             pass  # Keep original format
 
-    # Save to MEDIA_ROOT/images/
+    # Save to MEDIA_ROOT/images/ — block directory traversal
     from pathlib import Path
-    save_path = Path(settings.MEDIA_ROOT) / save_dir.strip('/') / filename
+    media_root = Path(settings.MEDIA_ROOT).resolve()
+    save_path = (media_root / save_dir.strip('/') / filename).resolve()
+    if not str(save_path).startswith(str(media_root)):
+        return JsonResponse({'error': 'Invalid directory.'}, status=400)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:

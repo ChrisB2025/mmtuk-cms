@@ -40,6 +40,9 @@ def download_image(url):
     return resp.content, content_type
 
 
+MAX_IMAGE_PIXELS = 50_000_000  # 50 megapixels — prevents decompression bombs
+
+
 def optimize_image(image_bytes, source_format=None, max_width=1200):
     """
     Optimize image bytes for web delivery using WebP.
@@ -51,6 +54,12 @@ def optimize_image(image_bytes, source_format=None, max_width=1200):
     Returns WebP bytes.
     """
     img = Image.open(io.BytesIO(image_bytes))
+    # Guard against decompression bombs
+    if img.width * img.height > MAX_IMAGE_PIXELS:
+        raise ValueError(
+            f'Image too large: {img.width}x{img.height} '
+            f'({img.width * img.height:,} pixels, max {MAX_IMAGE_PIXELS:,})'
+        )
 
     # Resize if wider than max_width (maintain aspect ratio)
     if max_width and img.width > max_width:
