@@ -188,20 +188,20 @@ class TestGetImageSavePath:
         abs_path, web_path = get_image_save_path('bio', 'jane-doe')
         assert abs_path.name == 'jane-doe.webp'
         assert 'bios' in abs_path.parts
-        assert 'static' in abs_path.parts
+        assert 'media' not in abs_path.parts
         assert web_path == '/images/bios/jane-doe.webp'
 
     def test_briefing_path(self):
         abs_path, web_path = get_image_save_path('briefing', 'my-briefing')
         assert abs_path.name == 'my-briefing-thumbnail.webp'
         assert 'briefings' in abs_path.parts
-        assert 'static' in abs_path.parts
+        assert 'media' not in abs_path.parts
         assert web_path == '/images/briefings/my-briefing-thumbnail.webp'
 
     def test_article_path(self):
         abs_path, web_path = get_image_save_path('article', 'my-article')
         assert abs_path.name == 'my-article.webp'
-        assert 'static' in abs_path.parts
+        assert 'media' not in abs_path.parts
         assert web_path == '/images/my-article.webp'
 
     def test_custom_extension(self):
