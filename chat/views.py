@@ -456,24 +456,23 @@ def _handle_content_action(action_data, profile, conv, user):
 
 def _ensure_event_image(instance):
     """
-    For a LocalEvent, if the image field is set but the file doesn't exist on disk,
-    fetch it from the event link. Also fires when image is blank but link is present.
+    For a LocalEvent, fetch the og:image from the event link and save it to
+    MEDIA_ROOT/images/ (persistent volume). Skips if a valid file already exists.
     """
     from pathlib import Path
     from .services.scraper_service import scrape_general_url
     from .services.image_service import process_image
-    from .services.content_service import get_image_save_path
 
     link = getattr(instance, 'link', '')
     if not link:
         return
 
-    # Check if the file is missing (image blank, or path set but file not on disk)
+    # Check if image is already saved to the persistent media volume
     image = getattr(instance, 'image', '')
-    if image:
-        abs_path, _ = get_image_save_path('local_event', instance.slug)
-        if abs_path.exists():
-            return  # File already there — nothing to do
+    if image and image.startswith('/media/images/'):
+        media_path = Path(settings.MEDIA_ROOT) / 'images' / Path(image).name
+        if media_path.exists():
+            return  # Already saved to persistent volume
 
     try:
         data = scrape_general_url(link)
@@ -485,17 +484,13 @@ def _ensure_event_image(instance):
         if not img_bytes:
             logger.warning('_ensure_event_image: image processing failed for %s', image_url)
             return
-        abs_path, web_path = get_image_save_path('local_event', instance.slug)
-        abs_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(abs_path, 'wb') as f:
+        # Save to persistent MEDIA_ROOT volume
+        media_dir = Path(settings.MEDIA_ROOT) / 'images'
+        media_dir.mkdir(parents=True, exist_ok=True)
+        filename = f'{instance.slug}.webp'
+        with open(media_dir / filename, 'wb') as f:
             f.write(img_bytes)
-        # Also write to STATIC_ROOT so collectstatic-served paths work at runtime
-        from pathlib import Path as _Path
-        static_root = _Path(settings.STATIC_ROOT) / 'content' / 'images'
-        static_root.mkdir(parents=True, exist_ok=True)
-        static_dest = static_root / abs_path.name
-        with open(static_dest, 'wb') as f:
-            f.write(img_bytes)
+        web_path = f'/media/images/{filename}'
         instance.image = web_path
         instance.save(update_fields=['image'])
         logger.info('_ensure_event_image: saved %s for %s', web_path, instance.slug)

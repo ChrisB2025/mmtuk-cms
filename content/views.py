@@ -17,7 +17,10 @@ IMG_PREFIX = 'content/images/homepage/'
 
 def _static_image_url(path):
     """Convert /images/xxx to Django static URL for content/images/xxx.
+    /media/images/xxx paths (persistent volume) are returned as-is.
     Falls back to direct /static/ path for files written after last collectstatic."""
+    if path and path.startswith('/media/'):
+        return path
     if path and path.startswith('/images/'):
         try:
             return static('content/images/' + path[8:])
