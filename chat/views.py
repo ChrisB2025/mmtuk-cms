@@ -1127,22 +1127,15 @@ def send_message(request, conversation_id):
         conv.title = user_message[:80]
         conv.save(update_fields=['title'])
 
-    # STEP 2: URL detected → scrape and show preview, then ask what to do.
-    # The scraped data is saved in conversation history so Claude can use it in STEP 3.
+    # STEP 2: URL detected → scrape and inject data into conversation history.
+    # Then fall through to Claude so it can respond in context (using what it already
+    # knows from earlier in the conversation — e.g. "this is a local event for London").
     url_match = _GENERAL_URL_RE.search(user_message)
     if url_match:
-        scraped_data = _pre_scrape_url(user_message, conv)
-        if scraped_data:
-            preview = _format_scrape_preview(scraped_data)
-            Message.objects.create(conversation=conv, role='assistant', content=preview)
-            return JsonResponse({
-                'response': preview,
-                'conversation_id': str(conv.id),
-                'action_taken': None,
-            })
-        # If scrape failed, fall through to Claude (Step 3)
+        _pre_scrape_url(user_message, conv)
+        # Fall through to Claude regardless of scrape success/failure
 
-    # STEP 3: No URL and not a confirmation — call Claude normally.
+    # STEP 3: Call Claude with full conversation history (including any scraped data).
     # Build messages and call Claude
     try:
         t_prompt = time.monotonic()
