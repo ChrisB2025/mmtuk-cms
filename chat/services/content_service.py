@@ -162,7 +162,6 @@ def get_image_save_path(content_type, slug, extension='webp'):
 
     static_dir = Path(settings.BASE_DIR) / 'content' / 'static' / 'content'
     abs_path = static_dir / rel
-    abs_path.parent.mkdir(parents=True, exist_ok=True)
 
     web_path = f'/{rel}'
     return abs_path, web_path
