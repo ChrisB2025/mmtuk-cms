@@ -24,6 +24,7 @@ screenshot*.png
 screenshots/
 fix_profile.py
 
-# Tailwind build artifacts
-content/static/content/css/output.css
+# Tailwind source: input.css has @import "tailwindcss" which breaks WhiteNoise collectstatic
+# output.css is committed — built locally with Tailwind CLI before each push
+content/static/content/css/input.css
 bin/
