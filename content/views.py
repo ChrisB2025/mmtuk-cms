@@ -16,8 +16,14 @@ IMG_PREFIX = 'content/images/homepage/'
 
 
 def _static_image_url(path):
-    """Convert /images/xxx to Django static URL for content/images/xxx."""
+    """Convert /images/xxx to a URL. Media-uploaded images use /media/ prefix;
+    static images use Django static URL."""
     if path and path.startswith('/images/'):
+        from pathlib import Path
+        from django.conf import settings
+        media_path = Path(settings.MEDIA_ROOT) / path.lstrip('/')
+        if media_path.exists():
+            return settings.MEDIA_URL + path.lstrip('/')
         return static('content/images/' + path[8:])
     return path or static('content/images/placeholder-image.svg')
 

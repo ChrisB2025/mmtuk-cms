@@ -1127,40 +1127,6 @@ def send_message(request, conversation_id):
         conv.title = user_message[:80]
         conv.save(update_fields=['title'])
 
-    # STEP 1: Confirmation after URL preview → create briefing directly (no Claude call).
-    # This handles "yes" / "create it" / "go ahead" after a Substack URL was scraped.
-    if _is_confirmation(user_message):
-        scraped_url, scraped_data = _find_scraped_url_data(conv)
-        if scraped_data:
-            try:
-                import concurrent.futures
-                t_direct = time.monotonic()
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(
-                        _direct_briefing_from_scraped,
-                        scraped_url, scraped_data, profile, conv, request.user,
-                    )
-                    try:
-                        response_text, action_result = future.result(timeout=90)
-                    except concurrent.futures.TimeoutError:
-                        logger.warning('direct_briefing timed out after 90s for url=%s', scraped_url)
-                        raise TimeoutError('Briefing creation timed out')
-                logger.info('direct_briefing timing: %.1fs', time.monotonic() - t_direct)
-                return JsonResponse({
-                    'response': response_text,
-                    'conversation_id': str(conv.id),
-                    'action_taken': action_result,
-                })
-            except Exception:
-                logger.exception('Direct briefing creation failed')
-                error_msg = 'Sorry, I encountered an error creating the briefing. Please try again.'
-                Message.objects.create(conversation=conv, role='assistant', content=error_msg)
-                return JsonResponse({
-                    'response': error_msg,
-                    'conversation_id': str(conv.id),
-                    'action_taken': None,
-                })
-
     # STEP 2: URL detected → scrape and show preview, then ask what to do.
     # The scraped data is saved in conversation history so Claude can use it in STEP 3.
     url_match = _GENERAL_URL_RE.search(user_message)
