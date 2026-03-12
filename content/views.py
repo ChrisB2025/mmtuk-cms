@@ -16,13 +16,20 @@ IMG_PREFIX = 'content/images/homepage/'
 
 
 def _static_image_url(path):
-    """Convert /images/xxx to Django static URL for content/images/xxx.
-    Falls back to direct /static/ path if the file was written to the static dir
-    after the last collectstatic run (e.g. a freshly uploaded CMS image)."""
+    """Convert /images/xxx to a URL. Media-uploaded images use /media/ prefix;
+    static images use Django static URL. Falls back to direct /static/ path if
+    the file exists in staticfiles but is missing from the manifest."""
     if path and path.startswith('/images/'):
+        from pathlib import Path
+        from django.conf import settings
+        media_path = Path(settings.MEDIA_ROOT) / path.lstrip('/')
+        if media_path.exists():
+            return settings.MEDIA_URL + path.lstrip('/')
         try:
             return static('content/images/' + path[8:])
         except ValueError:
+            # File exists in staticfiles dir but not in WhiteNoise manifest
+            # (e.g. added after last collectstatic). Serve directly.
             return '/static/content/images/' + path[8:]
     return path or static('content/images/placeholder-image.svg')
 

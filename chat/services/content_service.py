@@ -147,10 +147,6 @@ def get_image_save_path(content_type, slug, extension='webp'):
     """
     Get the filesystem path for saving a CMS-uploaded image.
 
-    Images are saved to content/static/content/images/ so WhiteNoise can serve
-    them in production. MEDIA_ROOT is not used — Django only serves /media/ in
-    DEBUG mode and Railway's filesystem is ephemeral.
-
     Returns (absolute_path, relative_web_path).
     """
     if content_type == 'bio':
@@ -160,8 +156,8 @@ def get_image_save_path(content_type, slug, extension='webp'):
     else:
         rel = f'images/{slug}.{extension}'
 
-    static_dir = Path(settings.BASE_DIR) / 'content' / 'static' / 'content'
-    abs_path = static_dir / rel
+    abs_path = Path(settings.MEDIA_ROOT) / rel
+    abs_path.parent.mkdir(parents=True, exist_ok=True)
 
     web_path = f'/{rel}'
     return abs_path, web_path
