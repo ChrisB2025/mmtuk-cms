@@ -1046,7 +1046,7 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
     if publication:
         frontmatter['sourcePublication'] = publication
     if image_url:
-        frontmatter['thumbnail'] = f'/images/briefings/{slug}-thumbnail.webp'
+        frontmatter['thumbnail'] = f'/media/images/briefings/{slug}-thumbnail.webp'
 
     action_data = {
         'action': 'create',
@@ -1055,7 +1055,7 @@ def _direct_briefing_from_scraped(url, scraped, profile, conv, user):
         'body': body,
     }
     if image_url:
-        action_data['images'] = [{'url': image_url, 'save_as': f'images/briefings/{slug}-thumbnail.webp'}]
+        action_data['images'] = [{'url': image_url}]
 
     logger.info('direct_briefing: creating "%s" (slug=%s) from %s', title, slug, url)
     return _handle_content_action(action_data, profile, conv, user)

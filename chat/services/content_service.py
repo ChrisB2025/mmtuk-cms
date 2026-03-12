@@ -147,8 +147,13 @@ def get_image_save_path(content_type, slug, extension='webp'):
     """
     Get the filesystem path for saving a CMS-uploaded image.
 
-    Returns (absolute_path, relative_web_path).
+    All CMS content images are saved to MEDIA_ROOT (persistent Railway volume
+    at /app/media) so they survive deploys.
+
+    Returns (absolute_path, web_path).
     """
+    media_root = Path(settings.MEDIA_ROOT)
+
     if content_type == 'bio':
         rel = f'images/bios/{slug}.{extension}'
     elif content_type == 'briefing':
@@ -156,10 +161,8 @@ def get_image_save_path(content_type, slug, extension='webp'):
     else:
         rel = f'images/{slug}.{extension}'
 
-    static_dir = Path(settings.BASE_DIR) / 'content' / 'static' / 'content'
-    abs_path = static_dir / rel
-
-    web_path = f'/{rel}'
+    abs_path = media_root / rel
+    web_path = f'/media/{rel}'
     return abs_path, web_path
 
 
