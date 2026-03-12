@@ -63,34 +63,9 @@ class LocalEventAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        if not obj.image and obj.link:
-            self._fetch_event_image(obj)
-
-    def _fetch_event_image(self, obj):
-        import logging
-        from chat.services.scraper_service import scrape_general_url
-        from chat.services.image_service import process_image
-        from chat.services.content_service import get_image_save_path
-        logger = logging.getLogger(__name__)
-        try:
-            data = scrape_general_url(obj.link)
-            image_url = data.get('image_url', '')
-            if not image_url:
-                logger.info('LocalEvent admin: no og:image found for %s', obj.link)
-                return
-            img_bytes, _ = process_image(image_url, obj.slug)
-            if not img_bytes:
-                logger.warning('LocalEvent admin: image processing failed for %s', image_url)
-                return
-            abs_path, web_path = get_image_save_path('local_event', obj.slug)
-            abs_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(abs_path, 'wb') as f:
-                f.write(img_bytes)
-            obj.image = web_path
-            obj.save(update_fields=['image'])
-            logger.info('LocalEvent admin: saved image %s for %s', web_path, obj.slug)
-        except Exception:
-            logger.exception('LocalEvent admin: image auto-fetch failed for %s', obj.link)
+        if obj.link:
+            from chat.views import _ensure_event_image
+            _ensure_event_image(obj)
 
 
 @admin.register(LocalNews)
