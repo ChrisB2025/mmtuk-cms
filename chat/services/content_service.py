@@ -156,8 +156,8 @@ def get_image_save_path(content_type, slug, extension='webp'):
     else:
         rel = f'images/{slug}.{extension}'
 
-    abs_path = Path(settings.MEDIA_ROOT) / rel
-    abs_path.parent.mkdir(parents=True, exist_ok=True)
+    static_dir = Path(settings.BASE_DIR) / 'content' / 'static' / 'content'
+    abs_path = static_dir / rel
 
     web_path = f'/{rel}'
     return abs_path, web_path
