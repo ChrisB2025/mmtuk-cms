@@ -47,6 +47,7 @@ def _instance_to_list_item(content_type, instance):
         'frontmatter': instance_to_frontmatter(content_type, instance),
         'file_path': None,
         'modified_date': instance.updated_at,
+        'created_at': instance.created_at,
     }
 
 
@@ -64,7 +65,7 @@ def list_content(content_type=None):
         except ValueError:
             continue
 
-        for instance in Model.objects.all():
+        for instance in Model.objects.all().order_by('-created_at'):
             results.append(_instance_to_list_item(ct, instance))
 
     return results

@@ -1430,7 +1430,7 @@ def content_browser(request):
         fm = item.get('frontmatter', {})
         item['summary'] = fm.get('summary') or fm.get('description') or fm.get('text') or ''
         item['author'] = fm.get('author') or fm.get('sourceAuthor') or fm.get('name') or ''
-        item['date'] = fm.get('pubDate') or fm.get('date') or ''
+        item['date'] = fm.get('pubDate') or fm.get('date') or item.get('created_at') or ''
         # Normalise: if YAML left an ISO datetime string unparsed, convert it now
         if isinstance(item['date'], str) and item['date']:
             try:
@@ -1465,6 +1465,9 @@ def _sort_date(item):
     """Extract a sortable date string from a content item."""
     fm = item.get('frontmatter', {})
     d = fm.get('pubDate') or fm.get('date') or ''
+    if not d:
+        # Fall back to created_at for content types without a publication date
+        d = item.get('created_at', '')
     if isinstance(d, datetime):
         return d.isoformat()
     return str(d) if d else '0000'
