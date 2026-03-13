@@ -124,6 +124,42 @@ class ContentDraft(models.Model):
         return f'{self.content_type}: {self.title} ({self.get_status_display()})'
 
 
+class BugReport(models.Model):
+    SEVERITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('reviewing', 'Reviewing'),
+        ('need_info', 'Need Info'),
+        ('resolved', 'Resolved'),
+        ('wontfix', "Won't Fix"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='bug_reports')
+    description = models.TextField()
+    steps = models.TextField(blank=True, default='')
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='medium')
+    page_url = models.URLField(max_length=500, blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open', db_index=True)
+    admin_notes = models.TextField(blank=True, default='')
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'Bug #{str(self.id)[:8]} ({self.get_status_display()}) - {self.description[:50]}'
+
+
 class DeploymentLog(models.Model):
     """Track Railway deployment status for published changes."""
     STATUS_CHOICES = [

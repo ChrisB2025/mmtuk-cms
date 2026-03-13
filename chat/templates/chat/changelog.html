@@ -1,0 +1,54 @@
+{% extends "chat/base.html" %}
+
+{% block title %}Changelog — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="changelog-container">
+  <div class="changelog-layout">
+    <!-- Sticky Table of Contents -->
+    <nav class="changelog-toc">
+      <div class="changelog-toc-inner">
+        <h3 class="changelog-toc-title">Version History</h3>
+        <ul class="changelog-toc-list">
+          {% for entry in changelog %}
+          <li>
+            <a href="#v{{ entry.version|slugify }}" class="changelog-toc-link">v{{ entry.version }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="changelog-main">
+      <div class="browser-header">
+        <h2 class="page-title">Changelog</h2>
+        <p style="color: var(--text-secondary); font-size: var(--font-sm);">
+          A record of all platform releases. Current version:
+          <span class="changelog-version-badge">v{{ version }}</span>
+        </p>
+      </div>
+
+      {% for entry in changelog %}
+      <section id="v{{ entry.version|slugify }}" class="changelog-entry">
+        <div class="changelog-entry-header">
+          <span class="changelog-version-tag">v{{ entry.version }}</span>
+          <h3 class="changelog-entry-title">{{ entry.title }}</h3>
+          <span class="changelog-entry-date">{{ entry.date }}</span>
+        </div>
+        <div class="changelog-entry-card">
+          <ul class="changelog-changes">
+            {% for change in entry.changes %}
+            <li>
+              <span class="changelog-dash">&mdash;</span>
+              <span>{{ change }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "chat/base.html" %}
+
+{% block title %}Bug Tracker — MMTUK CMS{% endblock %}
+
+{% block content %}
+<div class="bug-container">
+  <div class="browser-header">
+    <h2 class="page-title">Bug Tracker</h2>
+    <p style="color: var(--text-secondary); font-size: var(--font-sm);">
+      Track and manage reported bugs. {% if profile.role == 'admin' or profile.role == 'editor' %}Click the status lozenge to update.{% endif %}
+    </p>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="bug-filter-tabs">
+    {% for value, label in status_choices %}
+    <a href="{% url 'bug_list' %}?status={{ value }}"
+       class="bug-filter-tab {% if current_status == value %}active{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Bug table -->
+  {% if bugs %}
+  <div class="bug-table-wrap">
+    <table class="bug-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Reporter</th>
+          <th>Severity</th>
+          <th>Status</th>
+          <th>Reported</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bug in bugs %}
+        <tr id="bug-{{ bug.id }}">
+          <td class="bug-desc-cell">
+            <p class="bug-desc-text">{{ bug.description|truncatechars:80 }}</p>
+            {% if bug.page_url %}
+            <a href="{{ bug.page_url }}" target="_blank" rel="noopener" class="bug-page-url">
+              {{ bug.page_url|cut:"https://"|cut:"http://"|truncatechars:50 }}
+            </a>
+            {% endif %}
+          </td>
+          <td>{{ bug.user.get_full_name|default:bug.user.username }}</td>
+          <td>
+            <span class="lozenge lozenge-severity-{{ bug.severity }}">{{ bug.get_severity_display }}</span>
+          </td>
+          <td class="bug-status-cell">
+            {% if profile.role == 'admin' or profile.role == 'editor' %}
+            <div class="bug-status-dropdown">
+              <button type="button" class="lozenge lozenge-status-{{ bug.status }} lozenge-clickable" onclick="toggleBugStatus(this)">
+                {{ bug.get_status_display }}
+                <svg class="lozenge-chevron" width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+              </button>
+              <div class="bug-status-menu" style="display:none;">
+                {% for sv, sl in all_statuses %}
+                {% if sv != bug.status %}
+                <button type="button" class="bug-status-option" onclick="updateBugStatus('{{ bug.id }}', '{{ sv }}', this)">
+                  <span class="status-dot lozenge-status-{{ sv }}"></span> {{ sl }}
+                </button>
+                {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            {% else %}
+            <span class="lozenge lozenge-status-{{ bug.status }}">{{ bug.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td class="bug-date-cell">{{ bug.created_at|date:"d M Y" }}</td>
+          <td>
+            <button type="button" class="bug-view-btn" onclick="showBugDetail('{{ bug.id }}')">View</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="bug-empty">
+    <p>No bugs match this filter.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Bug detail modal -->
+<div class="modal-overlay" id="bugDetailModal" style="display:none;">
+  <div class="modal-card" style="max-width:560px;">
+    <div id="bugDetailContent"></div>
+  </div>
+</div>
+
+<script>
+function toggleBugStatus(btn) {
+  var menu = btn.nextElementSibling;
+  var wasHidden = menu.style.display === 'none';
+  // Close all open menus first
+  document.querySelectorAll('.bug-status-menu').forEach(function(m) { m.style.display = 'none'; });
+  if (wasHidden) menu.style.display = '';
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.bug-status-dropdown')) {
+    document.querySelectorAll('.bug-status-menu').forEach(function(m) { m.style.display = 'none'; });
+  }
+});
+
+function updateBugStatus(bugId, newStatus, btn) {
+  var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  var formData = new FormData();
+  formData.append('status', newStatus);
+  formData.append('admin_notes', '');
+
+  fetch('{% url "bug_list" %}' + bugId + '/status/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    body: formData,
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      window.location.reload();
+    }
+  })
+  .catch(function(e) { console.error('Failed to update status', e); });
+}
+
+function showBugDetail(bugId) {
+  fetch('{% url "bug_list" %}' + bugId + '/')
+    .then(function(r) { return r.text(); })
+    .then(function(html) {
+      document.getElementById('bugDetailContent').innerHTML = html;
+      document.getElementById('bugDetailModal').style.display = '';
+    })
+    .catch(function(e) { console.error('Failed to load bug detail', e); });
+}
+
+function closeBugDetail() {
+  document.getElementById('bugDetailModal').style.display = 'none';
+}
+
+// Close modal on overlay click
+document.getElementById('bugDetailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeBugDetail();
+});
+</script>
+
+<!-- Hidden CSRF token for JS fetch calls -->
+<form style="display:none;">{% csrf_token %}</form>
+{% endblock %}

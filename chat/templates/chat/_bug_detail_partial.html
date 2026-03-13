@@ -1,0 +1,90 @@
+<div class="bug-detail">
+  <div class="bug-detail-header">
+    <h3>Bug Report</h3>
+    <button type="button" class="modal-close" onclick="closeBugDetail()">&times;</button>
+  </div>
+
+  <div class="bug-detail-meta">
+    <span class="lozenge lozenge-severity-{{ bug.severity }}">{{ bug.get_severity_display }}</span>
+    <span class="lozenge lozenge-status-{{ bug.status }}">{{ bug.get_status_display }}</span>
+    <span class="bug-detail-date">{{ bug.created_at|date:"d M Y H:i" }}</span>
+  </div>
+
+  <div class="bug-detail-section">
+    <label class="bug-detail-label">Reported by</label>
+    <p class="bug-detail-value">{{ bug.user.get_full_name|default:bug.user.username }}</p>
+  </div>
+
+  <div class="bug-detail-section">
+    <label class="bug-detail-label">Description</label>
+    <div class="bug-detail-block">{{ bug.description }}</div>
+  </div>
+
+  {% if bug.steps %}
+  <div class="bug-detail-section">
+    <label class="bug-detail-label">Steps to reproduce</label>
+    <div class="bug-detail-block">{{ bug.steps }}</div>
+  </div>
+  {% endif %}
+
+  {% if bug.page_url %}
+  <div class="bug-detail-section">
+    <label class="bug-detail-label">Page</label>
+    <a href="{{ bug.page_url }}" target="_blank" rel="noopener" class="bug-detail-link">
+      {{ bug.page_url|cut:"https://"|cut:"http://"|truncatechars:60 }}
+    </a>
+  </div>
+  {% endif %}
+
+  {% if bug.admin_notes %}
+  <div class="bug-detail-section">
+    <label class="bug-detail-label">Admin notes</label>
+    <div class="bug-detail-block bug-detail-block-notes">{{ bug.admin_notes }}</div>
+  </div>
+  {% endif %}
+
+  {% if bug.resolved_at %}
+  <p class="bug-detail-resolved">Resolved {{ bug.resolved_at|date:"d M Y H:i" }}</p>
+  {% endif %}
+
+  {% if profile.role == 'admin' or profile.role == 'editor' %}
+  <div class="bug-detail-form">
+    <div class="form-group">
+      <label class="bug-detail-label">Add notes</label>
+      <textarea id="bugAdminNotes" rows="2" placeholder="Notes, questions, or resolution details..."
+        class="bug-textarea">{{ bug.admin_notes }}</textarea>
+    </div>
+    <div class="bug-detail-form-actions">
+      <select id="bugStatusSelect" class="bug-select">
+        {% for value, label in status_options %}
+        <option value="{{ value }}" {% if value == bug.status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="button" class="btn btn-primary" onclick="submitBugUpdate('{{ bug.id }}')">Update</button>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function submitBugUpdate(bugId) {
+  var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  var formData = new FormData();
+  formData.append('status', document.getElementById('bugStatusSelect').value);
+  formData.append('admin_notes', document.getElementById('bugAdminNotes').value);
+
+  fetch('/cms/bugs/' + bugId + '/status/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    body: formData,
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      closeBugDetail();
+      window.location.reload();
+    }
+  })
+  .catch(function(e) { console.error('Failed to update', e); });
+}
+</script>

@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .models import Conversation, Message, ContentDraft, ContentAuditLog
+from .models import Conversation, Message, ContentDraft, ContentAuditLog, BugReport
 from .services.anthropic_service import (
     build_system_prompt,
     get_conversation_messages,
@@ -2634,3 +2634,125 @@ def help_view(request):
     """Help section — editorial guide, roles, and CMS how-tos."""
     profile = request.user.profile
     return render(request, 'chat/help.html', {'profile': profile})
+
+
+# ---------------------------------------------------------------------------
+# Bug Tracker
+# ---------------------------------------------------------------------------
+
+@login_required
+def bug_list(request):
+    """Bug tracker — list and filter bug reports."""
+    profile = request.user.profile
+    conversations = Conversation.objects.filter(user=request.user)[:20]
+    status_filter = request.GET.get('status', 'open')
+
+    bugs = BugReport.objects.select_related('user')
+    if status_filter != 'all':
+        bugs = bugs.filter(status=status_filter)
+
+    status_choices = [
+        ('open', 'Open'), ('reviewing', 'Reviewing'), ('need_info', 'Need Info'),
+        ('resolved', 'Resolved'), ('all', 'All'),
+    ]
+    all_statuses = [
+        ('open', 'Open'), ('reviewing', 'Reviewing'), ('need_info', 'Need Info'),
+        ('resolved', 'Resolved'), ('wontfix', "Won't Fix"),
+    ]
+
+    return render(request, 'chat/bug_list.html', {
+        'profile': profile,
+        'conversations': conversations,
+        'bugs': bugs[:100],
+        'current_status': status_filter,
+        'status_choices': status_choices,
+        'all_statuses': all_statuses,
+    })
+
+
+@login_required
+@require_POST
+def bug_submit(request):
+    """Submit a new bug report (called via fetch from modal)."""
+    description = request.POST.get('description', '').strip()
+    if not description:
+        return JsonResponse({'error': 'Description is required.'}, status=400)
+
+    steps = request.POST.get('steps', '').strip()
+    severity = request.POST.get('severity', 'medium')
+    if severity not in ('low', 'medium', 'high'):
+        severity = 'medium'
+
+    page_url = request.META.get('HTTP_REFERER', '')
+
+    BugReport.objects.create(
+        user=request.user,
+        description=description,
+        steps=steps,
+        severity=severity,
+        page_url=page_url,
+    )
+    return JsonResponse({'success': True})
+
+
+@login_required
+def bug_detail(request, bug_id):
+    """Return bug detail HTML fragment for modal display."""
+    bug = get_object_or_404(BugReport.objects.select_related('user'), pk=bug_id)
+    profile = request.user.profile
+    status_options = [
+        ('open', 'Open'), ('reviewing', 'Reviewing'), ('need_info', 'Need Info'),
+        ('resolved', 'Resolved'), ('wontfix', "Won't Fix"),
+    ]
+    return render(request, 'chat/_bug_detail_partial.html', {
+        'bug': bug,
+        'profile': profile,
+        'status_options': status_options,
+    })
+
+
+@login_required
+@require_POST
+def bug_update_status(request, bug_id):
+    """Update bug status and admin notes (admin/editor only)."""
+    profile = request.user.profile
+    if profile.role not in ('admin', 'editor'):
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    bug = get_object_or_404(BugReport, pk=bug_id)
+    new_status = request.POST.get('status', '').strip()
+    valid_statuses = ('open', 'reviewing', 'need_info', 'resolved', 'wontfix')
+    if new_status not in valid_statuses:
+        return JsonResponse({'error': 'Invalid status.'}, status=400)
+
+    admin_notes = request.POST.get('admin_notes', '').strip()
+
+    bug.status = new_status
+    bug.admin_notes = admin_notes
+
+    if new_status in ('resolved', 'wontfix'):
+        if not bug.resolved_at:
+            bug.resolved_at = timezone.now()
+    else:
+        bug.resolved_at = None
+
+    bug.save()
+    return JsonResponse({'success': True, 'status': new_status})
+
+
+# ---------------------------------------------------------------------------
+# Changelog
+# ---------------------------------------------------------------------------
+
+@login_required
+def changelog_view(request):
+    """Changelog — version history."""
+    from mmtuk_cms.version import VERSION, CHANGELOG
+    profile = request.user.profile
+    conversations = Conversation.objects.filter(user=request.user)[:20]
+    return render(request, 'chat/changelog.html', {
+        'profile': profile,
+        'conversations': conversations,
+        'version': VERSION,
+        'changelog': CHANGELOG,
+    })

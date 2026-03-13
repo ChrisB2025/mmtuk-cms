@@ -46,4 +46,11 @@ urlpatterns = [
     path('api/site-config/', views.site_config_api, name='site_config_api'),
     # Help
     path('help/', views.help_view, name='help'),
+    # Bug tracker
+    path('bugs/', views.bug_list, name='bug_list'),
+    path('bugs/submit/', views.bug_submit, name='bug_submit'),
+    path('bugs/<uuid:bug_id>/', views.bug_detail, name='bug_detail'),
+    path('bugs/<uuid:bug_id>/status/', views.bug_update_status, name='bug_update_status'),
+    # Changelog
+    path('changelog/', views.changelog_view, name='changelog'),
 ]

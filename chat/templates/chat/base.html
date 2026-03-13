@@ -82,6 +82,9 @@
       <div class="sidebar-footer">
         <a href="{% url 'media_library' %}" class="sidebar-link">Media Library</a>
         <a href="{% url 'help' %}" class="sidebar-link {% if request.resolver_match.url_name == 'help' %}active{% endif %}">Help</a>
+        <a href="{% url 'bug_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'bug_list' %}active{% endif %}">Bug Tracker</a>
+        <a href="{% url 'changelog' %}" class="sidebar-link {% if request.resolver_match.url_name == 'changelog' %}active{% endif %}">Changelog</a>
+        <button type="button" class="sidebar-link sidebar-link-danger" onclick="openBugModal()">Report Bug</button>
         {% if profile.role == 'admin' %}
         <a href="{% url 'site_config_editor' %}" class="sidebar-link">Site Config</a>
         <a href="/admin/" class="sidebar-link">Django Admin</a>
@@ -91,6 +94,7 @@
         <a href="{% url 'pending_list' %}" class="sidebar-link">Pending Approvals</a>
         <a href="{% url 'content_health' %}" class="sidebar-link">Health Check</a>
         {% endif %}
+        <a href="{% url 'changelog' %}" class="sidebar-version">v{{ cms_version }}</a>
         <div class="user-info">
           <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
           <span class="user-role">{{ profile.get_role_display }}</span>
@@ -164,6 +168,79 @@
 
   {% block modals %}{% endblock %}
 
+  <!-- Bug report modal -->
+  {% if user.is_authenticated %}
+  <div class="modal-overlay" id="bugReportModal" style="display:none;">
+    <div class="modal-card" style="max-width:520px;">
+      <h3>Report a Bug</h3>
+      <p style="color:var(--text-secondary);font-size:var(--font-sm);margin-bottom:var(--space-4);">
+        Describe the issue and we'll look into it.
+      </p>
+      <form id="bugReportForm">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom:var(--space-3);">
+          <label style="display:block;font-size:var(--font-sm);font-weight:var(--font-medium);margin-bottom:var(--space-1);">What happened?</label>
+          <textarea name="description" rows="3" required placeholder="Describe the bug..."
+            style="width:100%;border-radius:var(--radius-md);border:1px solid var(--border-primary);padding:var(--space-2) var(--space-3);font-size:var(--font-sm);font-family:var(--font-family);background:var(--bg-primary);color:var(--text-primary);resize:vertical;"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-3);">
+          <label style="display:block;font-size:var(--font-sm);font-weight:var(--font-medium);margin-bottom:var(--space-1);">Steps to reproduce (optional)</label>
+          <textarea name="steps" rows="3" placeholder="1. Go to..."
+            style="width:100%;border-radius:var(--radius-md);border:1px solid var(--border-primary);padding:var(--space-2) var(--space-3);font-size:var(--font-sm);font-family:var(--font-family);background:var(--bg-primary);color:var(--text-primary);resize:vertical;"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-4);">
+          <label style="display:block;font-size:var(--font-sm);font-weight:var(--font-medium);margin-bottom:var(--space-1);">Severity</label>
+          <select name="severity"
+            style="width:100%;border-radius:var(--radius-md);border:1px solid var(--border-primary);padding:var(--space-2) var(--space-3);font-size:var(--font-sm);font-family:var(--font-family);background:var(--bg-primary);color:var(--text-primary);">
+            <option value="low">Low — cosmetic issue</option>
+            <option value="medium" selected>Medium — broken feature</option>
+            <option value="high">High — blocking work</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeBugModal()">Cancel</button>
+          <button type="submit" class="btn" style="background:var(--danger);color:white;">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+  (function() {
+    var modal = document.getElementById('bugReportModal');
+    var form  = document.getElementById('bugReportForm');
+
+    window.openBugModal = function() { modal.style.display = ''; };
+    window.closeBugModal = function() { modal.style.display = 'none'; form.reset(); };
+
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) closeBugModal();
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var formData = new FormData(form);
+      fetch('{% url "bug_submit" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
+        body: formData,
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          closeBugModal();
+          if (window.showToast) window.showToast('Bug report submitted. Thank you!', 'success');
+        } else {
+          if (window.showToast) window.showToast(data.error || 'Failed to submit.', 'error');
+        }
+      })
+      .catch(function() {
+        if (window.showToast) window.showToast('Network error — please try again.', 'error');
+      });
+    });
+  })();
+  </script>
+  {% endif %}
+
   <!-- Command palette -->
   {% if user.is_authenticated %}
   <div id="cmdPalette" class="cmd-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="Command palette">
@@ -188,6 +265,9 @@
       { label: 'Content Browser',   icon: '📄',  url: '{% url "content_browser" %}',   section: 'Navigate' },
       { label: 'Media Library',     icon: '🖼',  url: '{% url "media_library" %}',     section: 'Navigate' },
       { label: 'Help',              icon: '?',   url: '{% url "help" %}',              section: 'Navigate' },
+      { label: 'Bug Tracker',       icon: 'B',   url: '{% url "bug_list" %}',          section: 'Navigate' },
+      { label: 'Changelog',         icon: 'C',   url: '{% url "changelog" %}',         section: 'Navigate' },
+      { label: 'Report Bug',        icon: '!',   url: '#',                             section: 'Actions', onclick: 'openBugModal' },
       {% if profile.role == 'admin' or profile.role == 'editor' %}
       { label: 'Page Manager',      icon: '📝',  url: '{% url "page_manager" %}',      section: 'Navigate' },
       {% endif %}
@@ -241,7 +321,8 @@
       Object.keys(sections).forEach(function(sec) {
         html += '<div class="cmd-section-label">' + sec + '</div>';
         sections[sec].forEach(function(c, i) {
-          html += '<div class="cmd-item" data-url="' + c.url + '">' +
+          html += '<div class="cmd-item" data-url="' + c.url + '"' +
+            (c.onclick ? ' data-onclick="' + c.onclick + '"' : '') + '>' +
             '<span class="cmd-item-icon">' + c.icon + '</span>' +
             '<span class="cmd-item-label">' + c.label + '</span>' +
             '</div>';
@@ -252,7 +333,9 @@
 
       results.querySelectorAll('.cmd-item').forEach(function(item) {
         item.addEventListener('click', function() {
-          window.location.href = this.getAttribute('data-url');
+          var fn = this.getAttribute('data-onclick');
+          if (fn && window[fn]) { closePalette(); window[fn](); }
+          else { window.location.href = this.getAttribute('data-url'); }
         });
         item.addEventListener('mouseenter', function() {
           setActive(Array.from(results.querySelectorAll('.cmd-item')).indexOf(this));

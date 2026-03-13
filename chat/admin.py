@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Conversation, Message, ContentDraft, ContentAuditLog
+from .models import Conversation, Message, ContentDraft, ContentAuditLog, BugReport
 
 
 class MessageInline(admin.TabularInline):
@@ -60,3 +60,20 @@ class ContentAuditLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(BugReport)
+class BugReportAdmin(admin.ModelAdmin):
+    list_display = ['short_id', 'description_short', 'severity', 'status', 'user', 'created_at']
+    list_filter = ['status', 'severity']
+    search_fields = ['description', 'admin_notes']
+    ordering = ['-created_at']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+
+    @admin.display(description='ID')
+    def short_id(self, obj):
+        return str(obj.id)[:8]
+
+    @admin.display(description='Description')
+    def description_short(self, obj):
+        return obj.description[:80] + ('...' if len(obj.description) > 80 else '')
