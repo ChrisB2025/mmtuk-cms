@@ -82,27 +82,32 @@
       <div class="sidebar-footer">
         <a href="{% url 'media_library' %}" class="sidebar-link">Media Library</a>
         <a href="{% url 'help' %}" class="sidebar-link {% if request.resolver_match.url_name == 'help' %}active{% endif %}">Help</a>
-        <a href="{% url 'bug_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'bug_list' %}active{% endif %}">Bug Tracker</a>
-        <a href="{% url 'changelog' %}" class="sidebar-link {% if request.resolver_match.url_name == 'changelog' %}active{% endif %}">Changelog</a>
-        <button type="button" class="sidebar-link sidebar-link-danger" onclick="openBugModal()">Report Bug</button>
-        {% if profile.role == 'admin' %}
-        <a href="{% url 'site_config_editor' %}" class="sidebar-link">Site Config</a>
-        <a href="/admin/" class="sidebar-link">Django Admin</a>
-        {% endif %}
         {% if profile.can_approve %}
-        <a href="{% url 'review_changes' %}" class="sidebar-link">Activity Log</a>
         <a href="{% url 'pending_list' %}" class="sidebar-link">Pending Approvals</a>
+        <a href="{% url 'review_changes' %}" class="sidebar-link">Activity Log</a>
         <a href="{% url 'content_health' %}" class="sidebar-link">Health Check</a>
         {% endif %}
-        <a href="{% url 'changelog' %}" class="sidebar-version">v{{ cms_version }}</a>
+        <div class="sidebar-divider"></div>
+        <a href="{% url 'bug_list' %}" class="sidebar-link sidebar-link-muted {% if request.resolver_match.url_name == 'bug_list' %}active{% endif %}">Bug Tracker</a>
+        <a href="{% url 'changelog' %}" class="sidebar-link sidebar-link-muted {% if request.resolver_match.url_name == 'changelog' %}active{% endif %}">Changelog</a>
+        {% if profile.role == 'admin' %}
+        <a href="{% url 'site_config_editor' %}" class="sidebar-link sidebar-link-muted">Site Config</a>
+        <a href="/admin/" class="sidebar-link sidebar-link-muted">Django Admin</a>
+        {% endif %}
+        <div class="sidebar-divider"></div>
         <div class="user-info">
-          <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
-          <span class="user-role">{{ profile.get_role_display }}</span>
+          <div class="user-info-row">
+            <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+            <a href="{% url 'changelog' %}" class="sidebar-version">v{{ cms_version }}</a>
+          </div>
+          <div class="user-info-row">
+            <span class="user-role">{{ profile.get_role_display }}</span>
+            <form method="post" action="{% url 'logout' %}" style="margin:0">
+              {% csrf_token %}
+              <button type="submit" class="sidebar-link-logout">Log out</button>
+            </form>
+          </div>
         </div>
-        <form method="post" action="{% url 'logout' %}" style="margin:0">
-          {% csrf_token %}
-          <button type="submit" class="sidebar-link logout-link">Log out</button>
-        </form>
       </div>
     </aside>
     <script>

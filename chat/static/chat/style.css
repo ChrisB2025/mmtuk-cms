@@ -323,19 +323,46 @@ body {
   padding: var(--space-1) 0;
 }
 .sidebar-link:hover { color: var(--s-active); }
-.logout-link { margin-top: var(--space-2); }
-.logout-link[type="submit"] { background: none; border: none; cursor: pointer; width: 100%; text-align: left; }
+.sidebar-divider {
+  height: 1px;
+  background: var(--border-primary);
+  margin: var(--space-2) var(--space-4);
+  opacity: 0.5;
+}
+.sidebar-link-muted {
+  color: var(--s-muted) !important;
+  font-size: var(--font-xs) !important;
+}
+.sidebar-link-muted:hover {
+  color: var(--s-active) !important;
+}
 
 .user-info {
-  margin: var(--space-2) 0;
+  padding: var(--space-1) var(--space-4);
+}
+.user-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .user-name {
-  display: block;
   font-weight: var(--font-semibold);
-  font-size: var(--font-base);
+  font-size: var(--font-sm);
 }
 .user-role {
   font-size: var(--font-xs);
+  color: var(--s-active);
+}
+.sidebar-link-logout {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-xs);
+  font-family: var(--font-family);
+  color: var(--s-muted);
+  padding: 0;
+}
+.sidebar-link-logout:hover {
   color: var(--s-active);
 }
 

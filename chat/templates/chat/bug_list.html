@@ -4,11 +4,14 @@
 
 {% block content %}
 <div class="bug-container">
-  <div class="browser-header">
-    <h2 class="page-title">Bug Tracker</h2>
-    <p style="color: var(--text-secondary); font-size: var(--font-sm);">
-      Track and manage reported bugs. {% if profile.role == 'admin' or profile.role == 'editor' %}Click the status lozenge to update.{% endif %}
-    </p>
+  <div class="browser-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+    <div>
+      <h2 class="page-title">Bug Tracker</h2>
+      <p style="color: var(--text-secondary); font-size: var(--font-sm);">
+        Track and manage reported bugs. {% if profile.role == 'admin' or profile.role == 'editor' %}Click the status lozenge to update.{% endif %}
+      </p>
+    </div>
+    <button type="button" class="btn" style="background:var(--danger);color:white;white-space:nowrap;" onclick="openBugModal()">Report Bug</button>
   </div>
 
   <!-- Filter tabs -->
