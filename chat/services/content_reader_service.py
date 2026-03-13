@@ -16,6 +16,9 @@ from .field_mapping import (
 
 logger = logging.getLogger(__name__)
 
+# Content types hidden from the content browser (not deleted, just hidden)
+HIDDEN_CONTENT_TYPES = {'ecosystem'}
+
 # Human-readable names for content types
 CONTENT_TYPE_NAMES = {
     'article': 'Article',
@@ -60,6 +63,8 @@ def list_content(content_type=None):
     types_to_scan = [content_type] if content_type else list(MODEL_MAP.keys())
 
     for ct in types_to_scan:
+        if ct in HIDDEN_CONTENT_TYPES:
+            continue
         try:
             Model = get_model_class(ct)
         except ValueError:
@@ -107,6 +112,8 @@ def search_content(query, content_type=None):
     types_to_scan = [content_type] if content_type else list(MODEL_MAP.keys())
 
     for ct in types_to_scan:
+        if ct in HIDDEN_CONTENT_TYPES:
+            continue
         try:
             Model = get_model_class(ct)
         except ValueError:
@@ -148,6 +155,8 @@ def get_content_stats():
     }
 
     for ct, Model in MODEL_MAP.items():
+        if ct in HIDDEN_CONTENT_TYPES:
+            continue
         count = Model.objects.count()
         if count == 0:
             continue
