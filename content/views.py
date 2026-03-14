@@ -152,26 +152,6 @@ def cookie_preferences(request):
     })
 
 
-def articles_index(request):
-    articles = list(
-        Article.objects.filter(status='published')
-        .order_by('-pub_date')
-    )
-    for a in articles:
-        a.thumbnail_url = _static_image_url(a.thumbnail)
-        is_simplified = a.layout in ('simplified', 'rebuttal')
-        a.url = f'/education/articles/{a.slug}/' if is_simplified else f'/articles/{a.slug}/'
-    return render(request, 'content/articles.html', {
-        'articles': articles,
-        'hero_image': static('content/images/homepage/Library.avif'),
-        'hero_srcset': ' '.join([
-            static('content/images/homepage/Library-p-500.avif') + ' 500w,',
-            static('content/images/homepage/Library-p-800.avif') + ' 800w,',
-            static('content/images/homepage/Library-p-1080.avif') + ' 1080w,',
-            static('content/images/homepage/Library.avif') + ' 2400w',
-        ]),
-    })
-
 
 def briefings_index(request):
     briefings = list(
@@ -308,12 +288,11 @@ def briefing_detail(request, slug):
 def article_detail(request, slug):
     article = get_object_or_404(Article, slug=slug, status='published')
     body_html = markdown.markdown(article.body, extensions=['extra', 'smarty'])
-    is_simplified = article.layout in ('simplified', 'rebuttal')
     return render(request, 'content/article_detail.html', {
         'article': article,
         'body_html': body_html,
-        'crumb_parent_label': 'Education' if is_simplified else 'Articles',
-        'crumb_parent_url': '/education/' if is_simplified else '/articles/',
+        'crumb_parent_label': 'Education',
+        'crumb_parent_url': '/education/',
     })
 
 

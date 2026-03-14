@@ -4,43 +4,13 @@ from . import views
 
 app_name = 'website'
 
-_LEGACY_ARTICLE_REDIRECTS = {
-    'mmt-uk-commentary-1': 'mmtuk-commentary-1',
-    'mmt-uk-commentary-10': 'mmtuk-commentary-10',
-    'mmt-uk-commentary-10-1940b': 'mmtuk-commentary-10-1940b',
-    'mmt-uk-commentary-1-1c57f': 'mmtuk-commentary-1-1c57f',
-    'mmt-uk-commentary-13': 'mmtuk-commentary-13',
-    'mmt-uk-commentary-16': 'mmtuk-commentary-16',
-    'mmt-uk-commentary-19': 'mmtuk-commentary-19',
-    'mmt-uk-commentary-4': 'mmtuk-commentary-4',
-    'mmt-uk-commentary-4-15f37': 'mmtuk-commentary-4-15f37',
-    'mmt-uk-commentary-7': 'mmtuk-commentary-7',
-    'mmt-uk-commentary-7-02474': 'mmtuk-commentary-7-02474',
-    'mmt-uk-feature-article-11': 'mmtuk-feature-article-11',
-    'mmt-uk-feature-article-14': 'mmtuk-feature-article-14',
-    'mmt-uk-feature-article-17': 'mmtuk-feature-article-17',
-    'mmt-uk-feature-article-2': 'mmtuk-feature-article-2',
-    'mmt-uk-feature-article-20': 'mmtuk-feature-article-20',
-    'mmt-uk-feature-article-2-7a1db': 'mmtuk-feature-article-2-7a1db',
-    'mmt-uk-feature-article-5': 'mmtuk-feature-article-5',
-    'mmt-uk-feature-article-5-4310b': 'mmtuk-feature-article-5-4310b',
-    'mmt-uk-feature-article-8': 'mmtuk-feature-article-8',
-    'mmt-uk-feature-article-8-30444': 'mmtuk-feature-article-8-30444',
-    'mmt-uk-research-12': 'mmtuk-research-12',
-    'mmt-uk-research-15': 'mmtuk-research-15',
-    'mmt-uk-research-18': 'mmtuk-research-18',
-    'mmt-uk-research-3': 'mmtuk-research-3',
-    'mmt-uk-research-3-c35d1': 'mmtuk-research-3-c35d1',
-    'mmt-uk-research-6': 'mmtuk-research-6',
-    'mmt-uk-research-6-72f4d': 'mmtuk-research-6-72f4d',
-    'mmt-uk-research-9': 'mmtuk-research-9',
-    'mmt-uk-research-9-3603a': 'mmtuk-research-9-3603a',
-}
+def _education_redirect(request, slug):
+    """Redirect /articles/<slug>/ and /education/articles/<slug>/ to /education/<slug>/."""
+    from django.shortcuts import redirect
+    return redirect(f'/education/{slug}/', permanent=True)
+
 
 urlpatterns = [
-    # Legacy mmt-uk-* article slug redirects (SEO preservation from Astro migration)
-    *[path(f'articles/{old}/', RedirectView.as_view(url=f'/articles/{new}/', permanent=True))
-      for old, new in _LEGACY_ARTICLE_REDIRECTS.items()],
     # Legacy ecosystem redirect
     path('ecosystem/mmt-uk-discord/', RedirectView.as_view(url='/ecosystem/mmtuk-discord/', permanent=True)),
     # Deleted briefing redirect (SEO preservation)
@@ -49,13 +19,15 @@ urlpatterns = [
 
     path('research/briefings/<slug:slug>/', views.briefing_detail, name='briefing_detail'),
     path('research/briefings/', views.briefings_index, name='briefings_index'),
-    path('articles/', views.articles_index, name='articles_index'),
-    path('articles/<slug:slug>/', views.article_detail, name='article_detail'),
-    path('education/articles/<slug:slug>/', views.article_detail, name='education_article_detail'),
     path('news/<slug:slug>/', views.news_detail, name='news_detail'),
     path('research/', views.research, name='research'),
     path('research/job-guarantee/', views.job_guarantee, name='job_guarantee'),
     path('education/', views.education, name='education'),
+    # Education articles — canonical URL (after /education/ to avoid slug capture)
+    path('education/<slug:slug>/', views.article_detail, name='education_article_detail'),
+    # Legacy article URL redirects (SEO preservation)
+    path('articles/<slug:slug>/', _education_redirect),
+    path('education/articles/<slug:slug>/', _education_redirect),
     path('community/', views.community, name='community'),
     path('founders/launch-event/', views.founders_launch_event, name='founders_launch_event'),
     path('founders/', views.founders, name='founders'),
