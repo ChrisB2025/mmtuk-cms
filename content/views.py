@@ -57,7 +57,6 @@ def robots_txt(request):
         'Disallow: /cms/',
         'Disallow: /admin/',
         '',
-        f'Sitemap: https://{host}/sitemap-index.xml',
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')
 
