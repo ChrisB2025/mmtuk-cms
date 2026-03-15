@@ -53,7 +53,7 @@ class LocalNewsSitemap(Sitemap):
     priority = 0.4
 
     def items(self):
-        return LocalNews.objects.filter(status='published')
+        return LocalNews.objects.filter(status='published', local_group__isnull=False)
 
     def lastmod(self, obj):
         return obj.updated_at

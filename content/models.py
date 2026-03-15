@@ -247,6 +247,8 @@ class LocalNews(models.Model):
         return self.heading
 
     def get_absolute_url(self):
+        if not self.local_group_id:
+            return '/'
         return reverse('website:local_news_detail', kwargs={
             'group_slug': self.local_group.slug,
             'news_slug': self.slug,
