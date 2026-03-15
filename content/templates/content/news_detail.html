@@ -6,6 +6,30 @@
 {% block og_title %}{{ news.title }}{% endblock %}
 {% block og_description %}{{ news.summary }}{% endblock %}
 {% if news.hero_image_url %}{% block og_image %}{{ news.hero_image_url }}{% endblock %}{% endif %}
+{% block og_type %}article{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": "{{ news.title|escapejs }}",
+  "description": "{{ news.summary|escapejs }}",
+  "datePublished": "{{ news.date|date:'c' }}",
+  "dateModified": "{{ news.updated_at|date:'c' }}",{% if news.hero_image_url %}
+  "image": "{{ news.hero_image_url }}",{% endif %}
+  "publisher": {
+    "@type": "Organization",
+    "name": "MMTUK",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ LOGO_URL }}"
+    }
+  },
+  "url": "{{ canonical_url }}"
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <article>

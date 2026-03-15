@@ -7,13 +7,19 @@
   <title>{% block title %}MMTUK{% endblock %} | MMTUK</title>
   <meta name="description" content="{% block meta_description %}MMTUK promotes better public understanding of money, economics and government spending.{% endblock %}">
   {% block robots_meta %}{% endblock %}
+  {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}">{% endif %}
 
   <!-- Open Graph -->
   <meta property="og:title" content="{% block og_title %}MMTUK{% endblock %}">
   <meta property="og:description" content="{% block og_description %}MMTUK promotes better public understanding of money, economics and government spending.{% endblock %}">
   <meta property="og:image" content="{% block og_image %}{% static 'content/images/og-image.webp' %}{% endblock %}">
-  <meta property="og:type" content="website">
+  <meta property="og:image:width" content="{% block og_image_width %}1200{% endblock %}">
+  <meta property="og:image:height" content="{% block og_image_height %}630{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  {% if canonical_url %}<meta property="og:url" content="{{ canonical_url }}">{% endif %}
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@MMTUK_PRG">
+  {% block twitter_creator %}{% endblock %}
 
   <!-- Favicon -->
   <link rel="icon" type="image/webp" href="{% static 'content/images/favicon.webp' %}">
@@ -23,6 +29,26 @@
   <link href="{% static 'content/css/output.css' %}" rel="stylesheet">
 
   {% block extra_head %}{% endblock %}
+
+  <!-- Structured data (JSON-LD) -->
+  {% block json_ld %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "MMTUK",
+    "url": "{{ SITE_URL }}",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ LOGO_URL }}"
+    },
+    "sameAs": [
+      "https://bsky.app/profile/mmtuk.bsky.social",
+      "https://x.com/MMTUK_PRG"
+    ]
+  }
+  </script>
+  {% endblock %}
 
   <!-- Analytics -->
   <script defer src="https://mmtuk-analytics.up.railway.app/script.js" data-website-id="f63fc379-0150-482b-8bd3-8a0ed540a58c"></script>

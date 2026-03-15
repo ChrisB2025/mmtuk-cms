@@ -6,6 +6,34 @@
 {% block og_title %}{{ briefing.title }}{% endblock %}
 {% block og_description %}{{ briefing.summary }}{% endblock %}
 {% if briefing.hero_image_url %}{% block og_image %}{{ briefing.hero_image_url }}{% endblock %}{% endif %}
+{% block og_type %}article{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ briefing.title|escapejs }}",
+  "description": "{{ briefing.summary|escapejs }}",
+  "author": {
+    "@type": "Person",
+    "name": "{{ briefing.author|escapejs }}"
+  },
+  "datePublished": "{{ briefing.pub_date|date:'c' }}",
+  "dateModified": "{{ briefing.updated_at|date:'c' }}",{% if briefing.hero_image_url %}
+  "image": "{{ briefing.hero_image_url }}",{% endif %}
+  "publisher": {
+    "@type": "Organization",
+    "name": "MMTUK",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ LOGO_URL }}"
+    }
+  },
+  "url": "{{ canonical_url }}"
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <article>

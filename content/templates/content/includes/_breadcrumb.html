@@ -20,3 +20,37 @@
     <span class="text-body-text/50 truncate">{{ crumb_current }}</span>
   {% endif %}
 </nav>
+
+{% if crumb_parent_label %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "{{ SITE_URL }}/"
+    }{% if crumb_parent_url %},
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ crumb_parent_label|escapejs }}",
+      "item": "{{ SITE_URL }}{{ crumb_parent_url }}"
+    }{% endif %}{% if crumb_child_label %},
+    {
+      "@type": "ListItem",
+      "position": {% if crumb_parent_url %}3{% else %}2{% endif %},
+      "name": "{{ crumb_child_label|escapejs }}"{% if crumb_child_url %},
+      "item": "{{ SITE_URL }}{{ crumb_child_url }}"{% endif %}
+    }{% endif %}{% if crumb_current %},
+    {
+      "@type": "ListItem",
+      "position": {% if crumb_parent_url and crumb_child_label %}4{% elif crumb_parent_url or crumb_child_label %}3{% else %}2{% endif %},
+      "name": "{{ crumb_current|escapejs }}"
+    }{% endif %}
+  ]
+}
+</script>
+{% endif %}

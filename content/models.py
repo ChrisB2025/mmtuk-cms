@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 STATUS_CHOICES = [
@@ -47,6 +48,9 @@ class Article(models.Model):
     def __str__(self):
         return self.title
 
+    def get_absolute_url(self):
+        return reverse('website:education_article_detail', kwargs={'slug': self.slug})
+
 
 class Briefing(models.Model):
     title = models.CharField(max_length=300)
@@ -75,6 +79,9 @@ class Briefing(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse('website:briefing_detail', kwargs={'slug': self.slug})
 
 
 class News(models.Model):
@@ -105,6 +112,9 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse('website:news_detail', kwargs={'slug': self.slug})
 
 
 class Bio(models.Model):
@@ -181,6 +191,9 @@ class LocalGroup(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse('website:local_group_detail', kwargs={'slug': self.slug})
+
 
 class LocalEvent(models.Model):
     title = models.CharField(max_length=300)
@@ -232,3 +245,9 @@ class LocalNews(models.Model):
 
     def __str__(self):
         return self.heading
+
+    def get_absolute_url(self):
+        return reverse('website:local_news_detail', kwargs={
+            'group_slug': self.local_group.slug,
+            'news_slug': self.slug,
+        })

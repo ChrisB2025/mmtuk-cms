@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
     'accounts',
     'chat',
     'content',
@@ -54,6 +55,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.static',
                 'chat.context_processors.cms_version',
+                'content.context_processors.site_config',
             ],
         },
     },
@@ -111,6 +113,10 @@ CACHES = {
         'LOCATION': 'rate-limit-cache',
     }
 }
+
+# Site metadata (used for canonical URLs, sitemaps, JSON-LD)
+SITE_URL = os.environ.get('SITE_URL', 'https://mmtuk.org')
+LOGO_URL = os.environ.get('LOGO_URL', 'https://mmtuk.org/static/content/images/mmtuk-logo.webp')
 
 # --- App-specific settings ---
 

@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import markdown
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
@@ -50,13 +51,14 @@ def _resolve_image(image):
 
 
 def robots_txt(request):
-    host = request.get_host()
+    site_url = getattr(settings, 'SITE_URL', 'https://mmtuk.org')
     lines = [
         'User-agent: *',
         'Allow: /',
         'Disallow: /cms/',
         'Disallow: /admin/',
         '',
+        f'Sitemap: {site_url}/sitemap.xml',
     ]
     return HttpResponse('\n'.join(lines), content_type='text/plain')
 
@@ -282,6 +284,7 @@ def briefing_detail(request, slug):
         'briefing': briefing,
         'body_html': body_html,
         'has_source': has_source,
+        'canonical_url': request.build_absolute_uri(briefing.get_absolute_url()),
     })
 
 
@@ -293,6 +296,7 @@ def article_detail(request, slug):
         'body_html': body_html,
         'crumb_parent_label': 'Education',
         'crumb_parent_url': '/education/',
+        'canonical_url': request.build_absolute_uri(article.get_absolute_url()),
     })
 
 
@@ -304,6 +308,7 @@ def news_detail(request, slug):
     return render(request, 'content/news_detail.html', {
         'news': news_item,
         'body_html': body_html,
+        'canonical_url': request.build_absolute_uri(news_item.get_absolute_url()),
     })
 
 
@@ -458,6 +463,7 @@ def local_group_detail(request, slug):
         'upcoming_events': upcoming_events,
         'has_events': bool(upcoming_events),
         'discord_image': static('content/images/pages/MMTUK-Discord-2.avif'),
+        'canonical_url': request.build_absolute_uri(group.get_absolute_url()),
     })
 
 
@@ -472,6 +478,7 @@ def local_news_detail(request, group_slug, news_slug):
         'group': group,
         'group_url': f'/local-group/{group.slug}/',
         'body_html': body_html,
+        'canonical_url': request.build_absolute_uri(news_item.get_absolute_url()),
     })
 
 

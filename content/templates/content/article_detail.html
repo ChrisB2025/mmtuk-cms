@@ -5,6 +5,34 @@
 {% block meta_description %}{{ article.summary }}{% endblock %}
 {% block og_title %}{{ article.title }}{% endblock %}
 {% block og_description %}{{ article.summary }}{% endblock %}
+{% block og_type %}article{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ article.title|escapejs }}",
+  "description": "{{ article.summary|escapejs }}",
+  "author": {
+    "@type": "Person",
+    "name": "{{ article.author|escapejs }}"
+  },
+  "datePublished": "{{ article.pub_date|date:'c' }}",
+  "dateModified": "{{ article.updated_at|date:'c' }}",{% if article.thumbnail %}
+  "image": "{{ SITE_URL }}{{ article.thumbnail }}",{% endif %}
+  "publisher": {
+    "@type": "Organization",
+    "name": "MMTUK",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ LOGO_URL }}"
+    }
+  },
+  "url": "{{ canonical_url }}"
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <article>
