@@ -135,6 +135,30 @@ Non-database page content lives in `content/data/pages/*.json` (home, donate, jo
 - **Fixture**: `content/fixtures/initial_content.json` — 71 items (16 articles, 7 briefings, 5 news, 12 bios, 6 local groups, 3 events, 7 local news, 15 ecosystem entries)
 - **Domain**: mmtuk.org + www.mmtuk.org via Railway custom domains with Cloudflare proxy
 
+## SEO
+
+### Implemented (March 2026)
+
+- **Canonical URLs** — `canonical_url` context var passed by all detail views, rendered as `<link rel="canonical">` in base.html. Uses `obj.get_absolute_url()` only — no query strings.
+- **XML Sitemap** — `/sitemap.xml` via `django.contrib.sitemaps`. Classes in `content/sitemaps.py` cover articles, briefings, news, local groups, local news, static pages. All with `lastmod` (from `updated_at`), `changefreq`, `priority`. Published-only filters applied.
+- **JSON-LD structured data** — `{% block json_ld %}` in base.html. Default: Organization schema. Detail pages override with Article (articles/briefings), NewsArticle (news), Organization (local groups). BreadcrumbList emitted from `_breadcrumb.html`.
+- **OG/Twitter** — `og:url`, `og:image:width/height`, `og:type` blocks added. `twitter:site: @MMTUK_PRG` hardcoded in base.
+- **robots.txt** — Includes `Sitemap: {SITE_URL}/sitemap.xml` line.
+- **`get_absolute_url()`** — Implemented on Article, Briefing, News, LocalGroup, LocalNews models.
+
+### Settings
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SITE_URL` | `https://mmtuk.org` | Used in JSON-LD, robots.txt sitemap pointer |
+| `LOGO_URL` | `https://mmtuk.org/static/content/images/mmtuk-logo.webp` | Used in JSON-LD publisher/logo fields |
+
+Both injected into all templates via `content/context_processors.site_config`.
+
+### Known: X-Robots-Tag on sitemap
+
+Django's sitemaps view deliberately adds `X-Robots-Tag: noindex, noodp, noarchive` to `/sitemap.xml` responses. This is correct behaviour — it prevents the XML file itself from appearing as a search result. Google Search Console "Couldn't fetch" immediately after first submission is normal; GSC fetches are queued and typically resolve within 24–48 hours.
+
 ## Key Patterns
 
 ### Image path resolution
