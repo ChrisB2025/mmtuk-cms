@@ -293,6 +293,142 @@ _CTA_PATTERNS = [
 ]
 
 
+# Schema.org types in priority order for extraction
+_SCHEMA_TYPES_PRIORITY = ['Event', 'Article', 'NewsArticle', 'BlogPosting', 'WebPage']
+
+
+def _extract_json_ld(soup):
+    """
+    Extract structured data from JSON-LD script blocks.
+
+    Searches for Schema.org types (Event, Article, etc.) and returns
+    a normalised dict with: title, author, date, image_url, body_markdown.
+    Returns None if no useful structured data found.
+    """
+    candidates = []
+    for script in soup.find_all('script', type='application/ld+json'):
+        try:
+            data = json.loads(script.string or '')
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        # Flatten: handle single objects, arrays, and @graph containers
+        items = []
+        if isinstance(data, list):
+            items.extend(data)
+        elif isinstance(data, dict):
+            if '@graph' in data:
+                graph = data['@graph']
+                items.extend(graph if isinstance(graph, list) else [graph])
+            else:
+                items.append(data)
+
+        for item in items:
+            schema_type = item.get('@type', '')
+            # @type can be a string or list
+            if isinstance(schema_type, list):
+                schema_type = schema_type[0] if schema_type else ''
+            if schema_type in _SCHEMA_TYPES_PRIORITY:
+                candidates.append((schema_type, item))
+
+    if not candidates:
+        return None
+
+    # Pick best candidate by priority
+    priority = {t: i for i, t in enumerate(_SCHEMA_TYPES_PRIORITY)}
+    candidates.sort(key=lambda c: priority.get(c[0], 999))
+    schema_type, item = candidates[0]
+
+    # Extract common fields
+    title = item.get('name') or item.get('headline') or ''
+    description = item.get('description') or item.get('articleBody') or ''
+    date = ''
+    if schema_type == 'Event':
+        date = (item.get('startDate') or '')[:10]
+    else:
+        date = (item.get('datePublished') or '')[:10]
+
+    # Author: can be string, dict, or list
+    author = ''
+    raw_author = item.get('author') or item.get('organizer')
+    if isinstance(raw_author, dict):
+        author = raw_author.get('name', '')
+    elif isinstance(raw_author, list) and raw_author:
+        first = raw_author[0]
+        author = first.get('name', '') if isinstance(first, dict) else str(first)
+    elif isinstance(raw_author, str):
+        author = raw_author
+
+    # Image: can be string, dict, or list
+    image_url = ''
+    raw_image = item.get('image')
+    if isinstance(raw_image, str):
+        image_url = raw_image
+    elif isinstance(raw_image, dict):
+        image_url = raw_image.get('url', '')
+    elif isinstance(raw_image, list) and raw_image:
+        first = raw_image[0]
+        image_url = first.get('url', '') if isinstance(first, dict) else str(first)
+
+    # Build body markdown from description + event-specific fields
+    body_parts = []
+    if description:
+        body_parts.append(description)
+
+    if schema_type == 'Event':
+        # Location
+        location = item.get('location')
+        if isinstance(location, dict):
+            loc_name = location.get('name', '')
+            address = location.get('address', '')
+            if isinstance(address, dict):
+                parts = [address.get('streetAddress', ''),
+                         address.get('addressLocality', ''),
+                         address.get('postalCode', '')]
+                address = ', '.join(p for p in parts if p)
+            if loc_name or address:
+                body_parts.append(f'\n\n**Location:** {loc_name}, {address}' if loc_name and address
+                                  else f'\n\n**Location:** {loc_name or address}')
+
+        # Date/time
+        start = item.get('startDate', '')
+        end = item.get('endDate', '')
+        if start:
+            body_parts.append(f'\n\n**Date:** {start}')
+            if end:
+                body_parts.append(f' to {end}')
+
+        # Offers/tickets
+        offers = item.get('offers')
+        if offers:
+            if isinstance(offers, dict):
+                offers = [offers]
+            if isinstance(offers, list) and offers:
+                ticket_lines = []
+                for offer in offers:
+                    if isinstance(offer, dict):
+                        name = offer.get('name', 'Ticket')
+                        price = offer.get('price', '')
+                        currency = offer.get('priceCurrency', '')
+                        if price:
+                            ticket_lines.append(f'- {name}: {currency} {price}')
+                if ticket_lines:
+                    body_parts.append('\n\n**Tickets:**\n' + '\n'.join(ticket_lines))
+
+    body_markdown = ''.join(body_parts).strip()
+
+    if not title and not body_markdown:
+        return None
+
+    return {
+        'title': title,
+        'author': author,
+        'date': date,
+        'image_url': image_url,
+        'body_markdown': body_markdown,
+    }
+
+
 def scrape_general_url(url):
     """
     Scrape a general URL for content import.
@@ -360,6 +496,25 @@ def scrape_general_url(url):
     body_md = _clean_markdown(body_md)
     body_md = _enforce_h2_only(body_md)
     body_md = _strip_title_heading(body_md, title)
+
+    # JSON-LD fallback: if HTML extraction yielded little content,
+    # try extracting structured data from JSON-LD script blocks.
+    # This handles JS-heavy pages (Humanitix, SPAs) that embed
+    # Schema.org data server-side even when the UI needs JS to render.
+    if len(body_md) < 100:
+        ld_data = _extract_json_ld(soup)
+        if ld_data:
+            logger.info('scrape_general: HTML body too short (%d chars), using JSON-LD fallback', len(body_md))
+            if not title and ld_data.get('title'):
+                title = ld_data['title']
+            if not author and ld_data.get('author'):
+                author = ld_data['author']
+            if not pub_date and ld_data.get('date'):
+                pub_date = ld_data['date']
+            if not image_url and ld_data.get('image_url'):
+                image_url = ld_data['image_url']
+            if ld_data.get('body_markdown'):
+                body_md = ld_data['body_markdown']
 
     return {
         'title': title,

@@ -55,6 +55,7 @@ You help users create, read, edit, and delete the following content types: Artic
    - Write a vivid, specific description (1-3 sentences) that tells people what to expect — mention the format (talk, pub meetup, workshop), the topic, and the vibe. Never use generic filler like "Join us for an exciting event."
    - Do NOT write body content for events — the body field is not displayed on the website. Always set body to empty string.
    - Set the tag to match the event format: Meetup, Lecture, Workshop, Festival, Conference, Social, Public Meeting, Discussion, etc.
+   - Ask whether this is a **partner event** (organised by another organisation, not MMTUK directly). If yes, set partnerEvent to true.
 
    **For local news:**
    - Local news has TWO text fields with different purposes:
