@@ -314,13 +314,36 @@ def news_detail(request, slug):
 
 def education(request):
     data = _load_page_data('education.json')
+
+    core_insights_qs = Article.objects.filter(
+        category='Core Insights', status='published',
+    ).order_by('education_order', '-pub_date')
+
+    objections_qs = Article.objects.filter(
+        category='But what about...?', status='published',
+    ).order_by('education_order', '-pub_date')
+
+    def _to_item(article):
+        return {
+            'title': article.title,
+            'body': article.accordion_text or article.summary,
+            'link_href': f'/education/{article.slug}',
+        }
+
     return render(request, 'content/education.html', {
         'meta': data['meta'],
         'hero': data['hero'],
         'library': data['library'],
         'what_is_mmt': data['what_is_mmt'],
-        'core_insights': data['core_insights'],
-        'objections': data['objections'],
+        'core_insights': {
+            'heading': data['core_insights']['heading'],
+            'items': [_to_item(a) for a in core_insights_qs],
+        },
+        'objections': {
+            'heading': data['objections']['heading'],
+            'description': data['objections']['description'],
+            'items': [_to_item(a) for a in objections_qs],
+        },
         'advisory_services': data['advisory_services'],
         'hero_image': static('content/images/pages/hands-up.avif'),
     })

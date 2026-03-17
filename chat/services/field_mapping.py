@@ -36,6 +36,8 @@ FIELD_MAP = {
     'activityStatus': 'activity_status',
     'headerVideo': 'header_video',
     'registrationLink': 'registration_link',
+    'accordionText': 'accordion_text',
+    'educationOrder': 'education_order',
 }
 
 REVERSE_FIELD_MAP = {v: k for k, v in FIELD_MAP.items()}

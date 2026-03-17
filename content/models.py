@@ -37,6 +37,8 @@ class Article(models.Model):
     main_image = models.CharField(max_length=500, blank=True, default='')
     featured = models.BooleanField(default=False)
     color = models.CharField(max_length=20, blank=True, default='')
+    accordion_text = models.TextField(blank=True, default='')
+    education_order = models.PositiveIntegerField(default=9999)
     body = models.TextField(blank=True, default='')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='published')
     created_at = models.DateTimeField(auto_now_add=True)

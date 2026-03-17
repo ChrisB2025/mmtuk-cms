@@ -8,10 +8,16 @@ from .models import (
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ['title', 'category', 'author', 'pub_date', 'status']
+    list_display = ['title', 'category', 'author', 'pub_date', 'education_order', 'status']
     list_filter = ['category', 'layout', 'status', 'featured']
+    list_editable = ['education_order']
     search_fields = ['title', 'slug', 'author', 'summary']
     prepopulated_fields = {'slug': ('title',)}
+    fieldsets = (
+        (None, {'fields': ('title', 'slug', 'category', 'layout', 'author', 'author_title', 'pub_date')}),
+        ('Content', {'fields': ('summary', 'accordion_text', 'body')}),
+        ('Display', {'fields': ('education_order', 'read_time', 'thumbnail', 'main_image', 'featured', 'color', 'sector', 'status')}),
+    )
 
 
 @admin.register(Briefing)

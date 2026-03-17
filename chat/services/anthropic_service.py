@@ -29,6 +29,12 @@ You help users create, read, edit, and delete the following content types: Artic
    - Body should use ## (H2) headings — never H1 (the title is already H1 on the page).
    - The summary field is used in meta tags and listing cards — write a clear, factual one-sentence summary (100-250 characters).
    - Ask for an author name and optional author title (e.g. "Economist, UMKC").
+   - For "Core Insights" and "But what about...?" articles: also collect an **accordionText** — a 1-3 sentence
+     description (150-300 chars) shown in the education page accordion. This is different from the summary
+     (which is for SEO meta tags). Write a clear, accessible explanation for a general audience.
+   - For "Core Insights" and "But what about...?" articles: ask which **position** (educationOrder) the article
+     should appear at in the education page accordion. Show the current articles in order so the user can choose.
+     If they say "top" or "first", use 1. If they say "end" or don't specify, use 9999.
 
    **For briefings:**
    - Briefings are imported from external sources (usually Substack). If the user provides a URL, trigger a scrape action.
@@ -199,6 +205,8 @@ Fields:
   - **mainImage** (string, optional) — Larger hero image path. NOT displayed on the article detail page.
   - **featured** (boolean) Default: false
   - **color** (string, optional)
+  - **accordionText** (string, optional) — 1-3 sentence description (150-300 chars) shown in the education page accordion. Only used for "Core Insights" and "But what about...?" categories. Different from summary (which is for SEO). If not provided, falls back to summary.
+  - **educationOrder** (number, optional) Default: 9999 — Display position within the education page accordion section. Lower numbers appear first. Only relevant for "Core Insights" and "But what about...?" categories.
 
 Route: /articles/{slug} or /education/articles/{slug} (simplified/rebuttal layouts)
 Notes:
