@@ -29,7 +29,6 @@ class TestStaticPages:
         '/privacy-policy/',
         '/terms-of-engagement/',
         '/cookie-preferences/',
-        '/articles/',
         '/research/briefings/',
         '/research/job-guarantee/',
     ])
@@ -51,7 +50,7 @@ class TestStaticPages:
 
 class TestArticleDetail:
     def test_returns_200(self, client, article):
-        response = client.get(f'/articles/{article.slug}/')
+        response = client.get(f'/education/{article.slug}/')
         assert response.status_code == 200
 
     def test_draft_returns_404(self, client, db):
@@ -61,11 +60,11 @@ class TestArticleDetail:
             title='Draft Article', slug='draft-article', category='Article',
             author='Author', pub_date=date(2026, 1, 1), status='draft',
         )
-        response = client.get('/articles/draft-article/')
+        response = client.get('/education/draft-article/')
         assert response.status_code == 404
 
     def test_nonexistent_returns_404(self, client):
-        response = client.get('/articles/does-not-exist/')
+        response = client.get('/education/does-not-exist/')
         assert response.status_code == 404
 
     def test_education_article_url(self, client, db):
@@ -76,7 +75,7 @@ class TestArticleDetail:
             category='Core Ideas', layout='simplified',
             author='Author', pub_date=date(2026, 1, 1),
         )
-        response = client.get('/education/articles/core-ideas-test/')
+        response = client.get('/education/core-ideas-test/')
         assert response.status_code == 200
 
 

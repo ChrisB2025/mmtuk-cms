@@ -188,22 +188,22 @@ class TestGetImageSavePath:
         abs_path, web_path = get_image_save_path('bio', 'jane-doe')
         assert abs_path.name == 'jane-doe.webp'
         assert 'bios' in abs_path.parts
-        assert web_path == '/images/bios/jane-doe.webp'
+        assert web_path == '/media/images/bios/jane-doe.webp'
 
     def test_briefing_path(self):
         abs_path, web_path = get_image_save_path('briefing', 'my-briefing')
         assert abs_path.name == 'my-briefing-thumbnail.webp'
         assert 'briefings' in abs_path.parts
-        assert web_path == '/images/briefings/my-briefing-thumbnail.webp'
+        assert web_path == '/media/images/briefings/my-briefing-thumbnail.webp'
 
     def test_article_path(self):
         abs_path, web_path = get_image_save_path('article', 'my-article')
         assert abs_path.name == 'my-article.webp'
-        assert web_path == '/images/my-article.webp'
+        assert web_path == '/media/images/my-article.webp'
 
     def test_custom_extension(self):
         _, web_path = get_image_save_path('article', 'test', extension='png')
-        assert web_path == '/images/test.png'
+        assert web_path == '/media/images/test.png'
 
 
 class TestEstimateReadTime:

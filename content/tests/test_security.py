@@ -143,7 +143,7 @@ class TestXSSSafety:
             body='<script>alert("xss")</script>Normal text',
             status='published',
         )
-        response = client.get('/articles/xss-test/')
+        response = client.get('/education/xss-test/')
         html = response.content.decode()
         # The raw <script> tag should NOT appear unescaped in output
         # Note: markdown may convert it, but |safe renders it as-is
